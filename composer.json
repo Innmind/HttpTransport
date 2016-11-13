@@ -15,7 +15,8 @@
         "issues": "http://github.com/Innmind/HttpTransport/issues"
     },
     "require": {
-        "php": "~7.0"
+        "php": "~7.0",
+        "innmind/http": "^1.4"
     },
     "autoload": {
         "psr-4": {
