@@ -97,6 +97,27 @@ class LoggerTransportTest extends \PHPUnit_Framework_TestCase
             ->expects($this->once())
             ->method('statusCode')
             ->willReturn(new StatusCode(200));
+        $expected
+            ->expects($this->once())
+            ->method('headers')
+            ->willReturn(
+                new Headers(
+                    (new Map('string', HeaderInterface::class))
+                        ->put(
+                            'x-debug',
+                            new Header(
+                                'x-debug',
+                                (new Set(HeaderValueInterface::class))
+                                    ->add(new HeaderValue('yay'))
+                                    ->add(new HeaderValue('nay'))
+                            )
+                        )
+                )
+            );
+        $expected
+            ->expects($this->once())
+            ->method('body')
+            ->willReturn(new StringStream('idk'));
         $this
             ->logger
             ->expects($this->at(0))
@@ -122,6 +143,8 @@ class LoggerTransportTest extends \PHPUnit_Framework_TestCase
                 'Http request sent',
                 $this->callback(function(array $data) use (&$reference): bool {
                     return $data['statusCode'] === 200 &&
+                        $data['headers'] === ['x-debug' => 'yay, nay'] &&
+                        $data['body'] === 'idk' &&
                         $data['reference'] === $reference;
                 })
             );
