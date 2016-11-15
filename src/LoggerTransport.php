@@ -6,7 +6,7 @@ namespace Innmind\HttpTransport;
 use Innmind\Http\{
     Message\RequestInterface,
     Message\ResponseInterface,
-    Headers
+    HeadersInterface
 };
 use Psr\Log\{
     LoggerInterface,
@@ -59,7 +59,7 @@ final class LoggerTransport implements TransportInterface
         return $response;
     }
 
-    private function normalize(Headers $headers): array
+    private function normalize(HeadersInterface $headers): array
     {
         $normalized = [];
 
