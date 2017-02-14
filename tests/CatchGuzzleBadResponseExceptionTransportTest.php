@@ -11,7 +11,6 @@ use Innmind\Http\{
     Message\RequestInterface,
     Message\ResponseInterface,
     Translator\Response\Psr7Translator,
-    Factory\Header\DefaultFactory,
     Factory\HeaderFactoryInterface
 };
 use Innmind\Immutable\Map;
@@ -21,8 +20,9 @@ use GuzzleHttp\{
     Exception\ServerException
 };
 use Psr\Http\Message\RequestInterface as PsrRequestInterface;
+use PHPUnit\Framework\TestCase;
 
-class CatchGuzzleBadResponseExceptionTransportTest extends \PHPUnit_Framework_TestCase
+class CatchGuzzleBadResponseExceptionTransportTest extends TestCase
 {
     private $transport;
     private $inner;
@@ -32,9 +32,7 @@ class CatchGuzzleBadResponseExceptionTransportTest extends \PHPUnit_Framework_Te
         $this->transport = new CatchGuzzleBadResponseExceptionTransport(
             $this->inner = $this->createMock(TransportInterface::class),
             new Psr7Translator(
-                new DefaultFactory(
-                    new Map('string', HeaderFactoryInterface::class)
-                )
+                $this->createMock(HeaderFactoryInterface::class)
             )
         );
     }

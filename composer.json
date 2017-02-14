@@ -15,16 +15,26 @@
         "issues": "http://github.com/Innmind/HttpTransport/issues"
     },
     "require": {
-        "php": "~7.0",
-        "innmind/http": "^1.4",
+        "php": "~7.1",
+        "innmind/http": "~2.0",
         "guzzlehttp/guzzle": "^6.2",
         "psr/log": "^1.0",
         "ramsey/uuid": "^3.5"
     },
     "autoload": {
         "psr-4": {
-            "Innmind\\HttpTransport\\": "src/",
+            "Innmind\\HttpTransport\\": "src/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
             "Tests\\Innmind\\HttpTransport\\": "tests/"
         }
+    },
+    "scripts": {
+        "test": "vendor/bin/phpunit --colors=always"
+    },
+    "require-dev": {
+        "phpunit/phpunit": "~6.0"
     }
 }

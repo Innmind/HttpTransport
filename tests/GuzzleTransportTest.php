@@ -10,7 +10,6 @@ use Innmind\HttpTransport\{
 use Innmind\Url\Url;
 use Innmind\Http\{
     Translator\Response\Psr7Translator,
-    Factory\Header\DefaultFactory,
     Factory\HeaderFactoryInterface,
     Message\ResponseInterface,
     Message\Request,
@@ -26,17 +25,16 @@ use Innmind\Filesystem\Stream\StringStream;
 use Innmind\Immutable\Map;
 use GuzzleHttp\ClientInterface;
 use Psr\Http\Message\ResponseInterface as Psr7ResponseInterface;
+use PHPUnit\Framework\TestCase;
 
-class GuzzleTransportTest extends \PHPUnit_Framework_TestCase
+class GuzzleTransportTest extends TestCase
 {
     public function testFulfill()
     {
         $transport = new GuzzleTransport(
             $client = $this->createMock(ClientInterface::class),
             new Psr7Translator(
-                new DefaultFactory(
-                    new Map('string', HeaderFactoryInterface::class)
-                )
+                $this->createMock(HeaderFactoryInterface::class)
             )
         );
         $client
@@ -79,9 +77,7 @@ class GuzzleTransportTest extends \PHPUnit_Framework_TestCase
         $transport = new GuzzleTransport(
             $client = $this->createMock(ClientInterface::class),
             new Psr7Translator(
-                new DefaultFactory(
-                    new Map('string', HeaderFactoryInterface::class)
-                )
+                $this->createMock(HeaderFactoryInterface::class)
             )
         );
         $client
@@ -123,9 +119,7 @@ class GuzzleTransportTest extends \PHPUnit_Framework_TestCase
         $transport = new GuzzleTransport(
             $client = $this->createMock(ClientInterface::class),
             new Psr7Translator(
-                new DefaultFactory(
-                    new Map('string', HeaderFactoryInterface::class)
-                )
+                $this->createMock(HeaderFactoryInterface::class)
             )
         );
         $client
@@ -181,9 +175,7 @@ class GuzzleTransportTest extends \PHPUnit_Framework_TestCase
         $transport = new GuzzleTransport(
             $client = $this->createMock(ClientInterface::class),
             new Psr7Translator(
-                new DefaultFactory(
-                    new Map('string', HeaderFactoryInterface::class)
-                )
+                $this->createMock(HeaderFactoryInterface::class)
             )
         );
         $client
@@ -227,9 +219,7 @@ class GuzzleTransportTest extends \PHPUnit_Framework_TestCase
         $transport = new GuzzleTransport(
             $client = $this->createMock(ClientInterface::class),
             new Psr7Translator(
-                new DefaultFactory(
-                    new Map('string', HeaderFactoryInterface::class)
-                )
+                $this->createMock(HeaderFactoryInterface::class)
             )
         );
         $client
