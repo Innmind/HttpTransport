@@ -21,8 +21,9 @@ use GuzzleHttp\{
     Exception\ServerException
 };
 use Psr\Http\Message\RequestInterface as PsrRequestInterface;
+use PHPUnit\Framework\TestCase;
 
-class CatchGuzzleBadResponseExceptionTransportTest extends \PHPUnit_Framework_TestCase
+class CatchGuzzleBadResponseExceptionTransportTest extends TestCase
 {
     private $transport;
     private $inner;

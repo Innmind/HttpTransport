@@ -13,8 +13,9 @@ use Innmind\Http\Message\{
     ResponseInterface,
     StatusCode
 };
+use PHPUnit\Framework\TestCase;
 
-class ThrowOnServerErrorTransportTest extends \PHPUnit_Framework_TestCase
+class ThrowOnServerErrorTransportTest extends TestCase
 {
     private $transport;
     private $inner;

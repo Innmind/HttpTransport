@@ -24,8 +24,9 @@ use Innmind\Immutable\{
     Set
 };
 use Psr\Log\LoggerInterface;
+use PHPUnit\Framework\TestCase;
 
-class LoggerTransportTest extends \PHPUnit_Framework_TestCase
+class LoggerTransportTest extends TestCase
 {
     private $transport;
     private $inner;

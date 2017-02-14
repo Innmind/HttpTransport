@@ -26,8 +26,9 @@ use Innmind\Filesystem\Stream\StringStream;
 use Innmind\Immutable\Map;
 use GuzzleHttp\ClientInterface;
 use Psr\Http\Message\ResponseInterface as Psr7ResponseInterface;
+use PHPUnit\Framework\TestCase;
 
-class GuzzleTransportTest extends \PHPUnit_Framework_TestCase
+class GuzzleTransportTest extends TestCase
 {
     public function testFulfill()
     {

@@ -23,8 +23,18 @@
     },
     "autoload": {
         "psr-4": {
-            "Innmind\\HttpTransport\\": "src/",
+            "Innmind\\HttpTransport\\": "src/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
             "Tests\\Innmind\\HttpTransport\\": "tests/"
         }
+    },
+    "scripts": {
+        "test": "vendor/bin/phpunit --colors=always"
+    },
+    "require-dev": {
+        "phpunit/phpunit": "~6.0"
     }
 }
