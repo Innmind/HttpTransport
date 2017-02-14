@@ -10,7 +10,6 @@ use Innmind\HttpTransport\{
 use Innmind\Url\Url;
 use Innmind\Http\{
     Translator\Response\Psr7Translator,
-    Factory\Header\DefaultFactory,
     Factory\HeaderFactoryInterface,
     Message\ResponseInterface,
     Message\Request,
@@ -35,9 +34,7 @@ class GuzzleTransportTest extends TestCase
         $transport = new GuzzleTransport(
             $client = $this->createMock(ClientInterface::class),
             new Psr7Translator(
-                new DefaultFactory(
-                    new Map('string', HeaderFactoryInterface::class)
-                )
+                $this->createMock(HeaderFactoryInterface::class)
             )
         );
         $client
@@ -80,9 +77,7 @@ class GuzzleTransportTest extends TestCase
         $transport = new GuzzleTransport(
             $client = $this->createMock(ClientInterface::class),
             new Psr7Translator(
-                new DefaultFactory(
-                    new Map('string', HeaderFactoryInterface::class)
-                )
+                $this->createMock(HeaderFactoryInterface::class)
             )
         );
         $client
@@ -124,9 +119,7 @@ class GuzzleTransportTest extends TestCase
         $transport = new GuzzleTransport(
             $client = $this->createMock(ClientInterface::class),
             new Psr7Translator(
-                new DefaultFactory(
-                    new Map('string', HeaderFactoryInterface::class)
-                )
+                $this->createMock(HeaderFactoryInterface::class)
             )
         );
         $client
@@ -182,9 +175,7 @@ class GuzzleTransportTest extends TestCase
         $transport = new GuzzleTransport(
             $client = $this->createMock(ClientInterface::class),
             new Psr7Translator(
-                new DefaultFactory(
-                    new Map('string', HeaderFactoryInterface::class)
-                )
+                $this->createMock(HeaderFactoryInterface::class)
             )
         );
         $client
@@ -228,9 +219,7 @@ class GuzzleTransportTest extends TestCase
         $transport = new GuzzleTransport(
             $client = $this->createMock(ClientInterface::class),
             new Psr7Translator(
-                new DefaultFactory(
-                    new Map('string', HeaderFactoryInterface::class)
-                )
+                $this->createMock(HeaderFactoryInterface::class)
             )
         );
         $client
