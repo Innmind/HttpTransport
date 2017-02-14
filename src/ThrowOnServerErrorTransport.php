@@ -21,9 +21,8 @@ final class ThrowOnServerErrorTransport implements TransportInterface
     public function fulfill(RequestInterface $request): ResponseInterface
     {
         $response = $this->transport->fulfill($request);
-        $level = (int) ($response->statusCode()->value() / 100);
 
-        if ($level === 5) {
+        if ($response->statusCode()->value() % 500 < 100) {
             throw new ServerErrorException($request, $response);
         }
 
