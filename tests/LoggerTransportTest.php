@@ -11,6 +11,7 @@ use Innmind\Http\{
     Message\RequestInterface,
     Message\ResponseInterface,
     Message\StatusCode,
+    Message\Method,
     Headers,
     Header\HeaderInterface,
     Header\HeaderValueInterface,
@@ -52,6 +53,10 @@ class LoggerTransportTest extends TestCase
     public function testFulfill()
     {
         $request = $this->createMock(RequestInterface::class);
+        $request
+            ->expects($this->once())
+            ->method('method')
+            ->willReturn(new Method('POST'));
         $request
             ->expects($this->once())
             ->method('url')
@@ -129,7 +134,8 @@ class LoggerTransportTest extends TestCase
                 $this->callback(function(array $data) use (&$reference): bool {
                     $reference = $data['reference'];
 
-                    return $data['url'] === 'http://example.com/' &&
+                    return $data['method'] === 'POST' &&
+                        $data['url'] === 'http://example.com/' &&
                         $data['headers'] === ['foo' => 'bar, baz', 'foobar' => 'whatever'] &&
                         $data['body'] === 'foo' &&
                         !empty($data['reference']);

@@ -36,6 +36,7 @@ final class LoggerTransport implements TransportInterface
             $this->level,
             'Http request about to be sent',
             [
+                'method' => (string) $request->method(),
                 'url' => (string) $request->url(),
                 'headers' => $this->normalize($request->headers()),
                 'body' => (string) $request->body(),
