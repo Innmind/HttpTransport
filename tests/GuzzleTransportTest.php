@@ -23,7 +23,10 @@ use Innmind\Http\{
 };
 use Innmind\Filesystem\Stream\StringStream;
 use Innmind\Immutable\Map;
-use GuzzleHttp\ClientInterface;
+use GuzzleHttp\{
+    ClientInterface,
+    Exception\ConnectException
+};
 use Psr\Http\Message\ResponseInterface as Psr7ResponseInterface;
 use PHPUnit\Framework\TestCase;
 
@@ -70,6 +73,42 @@ class GuzzleTransportTest extends TestCase
 
         $this->assertInstanceOf(TransportInterface::class, $transport);
         $this->assertInstanceOf(ResponseInterface::class, $response);
+    }
+
+    /**
+     * @expectedException Innmind\HttpTransport\Exception\ConnectException
+     */
+    public function testThrowOnConnectException()
+    {
+        $transport = new GuzzleTransport(
+            $client = $this->createMock(ClientInterface::class),
+            new Psr7Translator(
+                $this->createMock(HeaderFactoryInterface::class)
+            )
+        );
+        $client
+            ->expects($this->once())
+            ->method('request')
+            ->with(
+                'GET',
+                'http://example.com/',
+                []
+            )
+            ->will(
+                $this->throwException(
+                    $this->createMock(ConnectException::class)
+                )
+            );
+
+        $transport->fulfill(
+            new Request(
+                Url::fromString('http://example.com'),
+                new Method('GET'),
+                new ProtocolVersion(1, 1),
+                new Headers(new Map('string', HeaderInterface::class)),
+                new StringStream('')
+            )
+        );
     }
 
     public function testFulfillWithMethod()

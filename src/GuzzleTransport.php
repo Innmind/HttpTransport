@@ -3,13 +3,17 @@ declare(strict_types = 1);
 
 namespace Innmind\HttpTransport;
 
+use Innmind\HttpTransport\Exception\ConnectException;
 use Innmind\Http\{
     Message\RequestInterface,
     Message\ResponseInterface,
     Translator\Response\Psr7Translator,
     Header\HeaderValueInterface
 };
-use GuzzleHttp\ClientInterface;
+use GuzzleHttp\{
+    ClientInterface,
+    Exception\ConnectException as GuzzleConnectException
+};
 
 final class GuzzleTransport implements TransportInterface
 {
@@ -50,11 +54,15 @@ final class GuzzleTransport implements TransportInterface
             $options['body'] = (string) $request->body();
         }
 
-        $response = $this->client->request(
-            (string) $request->method(),
-            (string) $request->url(),
-            $options
-        );
+        try {
+            $response = $this->client->request(
+                (string) $request->method(),
+                (string) $request->url(),
+                $options
+            );
+        } catch (GuzzleConnectException $e) {
+            throw new ConnectException($request, $e);
+        }
 
         return $this->translator->translate($response);
     }
