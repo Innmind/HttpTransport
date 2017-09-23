@@ -8,10 +8,10 @@ use Innmind\HttpTransport\{
     TransportInterface
 };
 use Innmind\Http\{
-    Message\RequestInterface,
-    Message\ResponseInterface,
+    Message\Request,
+    Message\Response,
     Translator\Response\Psr7Translator,
-    Factory\HeaderFactoryInterface
+    Factory\HeaderFactory
 };
 use Innmind\Immutable\Map;
 use GuzzleHttp\{
@@ -32,7 +32,7 @@ class CatchGuzzleBadResponseExceptionTransportTest extends TestCase
         $this->transport = new CatchGuzzleBadResponseExceptionTransport(
             $this->inner = $this->createMock(TransportInterface::class),
             new Psr7Translator(
-                $this->createMock(HeaderFactoryInterface::class)
+                $this->createMock(HeaderFactory::class)
             )
         );
     }
@@ -47,14 +47,14 @@ class CatchGuzzleBadResponseExceptionTransportTest extends TestCase
 
     public function testFulfill()
     {
-        $request = $this->createMock(RequestInterface::class);
+        $request = $this->createMock(Request::class);
         $this
             ->inner
             ->expects($this->once())
             ->method('fulfill')
             ->with($request)
             ->willReturn(
-                $expected = $this->createMock(ResponseInterface::class)
+                $expected = $this->createMock(Response::class)
             );
 
         $response = $this->transport->fulfill($request);
@@ -69,7 +69,7 @@ class CatchGuzzleBadResponseExceptionTransportTest extends TestCase
             $this->createMock(PsrRequestInterface::class),
             new PsrResponse(404)
         );
-        $request = $this->createMock(RequestInterface::class);
+        $request = $this->createMock(Request::class);
         $this
             ->inner
             ->expects($this->once())
@@ -81,7 +81,7 @@ class CatchGuzzleBadResponseExceptionTransportTest extends TestCase
 
         $response = $this->transport->fulfill($request);
 
-        $this->assertInstanceOf(ResponseInterface::class, $response);
+        $this->assertInstanceOf(Response::class, $response);
         $this->assertSame(404, $response->statusCode()->value());
     }
 
@@ -92,7 +92,7 @@ class CatchGuzzleBadResponseExceptionTransportTest extends TestCase
             $this->createMock(PsrRequestInterface::class),
             new PsrResponse(503)
         );
-        $request = $this->createMock(RequestInterface::class);
+        $request = $this->createMock(Request::class);
         $this
             ->inner
             ->expects($this->once())
@@ -104,7 +104,7 @@ class CatchGuzzleBadResponseExceptionTransportTest extends TestCase
 
         $response = $this->transport->fulfill($request);
 
-        $this->assertInstanceOf(ResponseInterface::class, $response);
+        $this->assertInstanceOf(Response::class, $response);
         $this->assertSame(503, $response->statusCode()->value());
     }
 
@@ -117,7 +117,7 @@ class CatchGuzzleBadResponseExceptionTransportTest extends TestCase
             'foo',
             $this->createMock(PsrRequestInterface::class)
         );
-        $request = $this->createMock(RequestInterface::class);
+        $request = $this->createMock(Request::class);
         $this
             ->inner
             ->expects($this->once())
@@ -139,7 +139,7 @@ class CatchGuzzleBadResponseExceptionTransportTest extends TestCase
             'foo',
             $this->createMock(PsrRequestInterface::class)
         );
-        $request = $this->createMock(RequestInterface::class);
+        $request = $this->createMock(Request::class);
         $this
             ->inner
             ->expects($this->once())

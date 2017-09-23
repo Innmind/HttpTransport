@@ -5,10 +5,10 @@ namespace Innmind\HttpTransport;
 
 use Innmind\HttpTransport\Exception\ConnectException;
 use Innmind\Http\{
-    Message\RequestInterface,
-    Message\ResponseInterface,
+    Message\Request,
+    Message\Response,
     Translator\Response\Psr7Translator,
-    Header\HeaderValueInterface
+    Header\Value
 };
 use GuzzleHttp\{
     ClientInterface,
@@ -28,7 +28,7 @@ final class GuzzleTransport implements TransportInterface
         $this->translator = $translator;
     }
 
-    public function fulfill(RequestInterface $request): ResponseInterface
+    public function fulfill(Request $request): Response
     {
         $options = [];
         $headers = [];
@@ -38,7 +38,7 @@ final class GuzzleTransport implements TransportInterface
                 ->values()
                 ->reduce(
                     [],
-                    function(array $raw, HeaderValueInterface $value): array {
+                    function(array $raw, Value $value): array {
                         $raw[] = (string) $value;
 
                         return $raw;
@@ -50,7 +50,7 @@ final class GuzzleTransport implements TransportInterface
             $options['headers'] = $headers;
         }
 
-        if ($request->body()->size() > 0) {
+        if ($request->body()->size()->toInt() > 0) {
             $options['body'] = (string) $request->body();
         }
 

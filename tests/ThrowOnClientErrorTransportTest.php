@@ -9,9 +9,9 @@ use Innmind\HttpTransport\{
     Exception\ClientErrorException
 };
 use Innmind\Http\Message\{
-    RequestInterface,
-    ResponseInterface,
-    StatusCode
+    Request,
+    Response,
+    StatusCode\StatusCode
 };
 use PHPUnit\Framework\TestCase;
 
@@ -37,14 +37,14 @@ class ThrowOnClientErrorTransportTest extends TestCase
 
     public function testFulfill()
     {
-        $request = $this->createMock(RequestInterface::class);
+        $request = $this->createMock(Request::class);
         $this
             ->inner
             ->expects($this->once())
             ->method('fulfill')
             ->with($request)
             ->willReturn(
-                $expected = $this->createMock(ResponseInterface::class)
+                $expected = $this->createMock(Response::class)
             );
         $expected
             ->expects($this->once())
@@ -58,14 +58,14 @@ class ThrowOnClientErrorTransportTest extends TestCase
 
     public function testThrow()
     {
-        $request = $this->createMock(RequestInterface::class);
+        $request = $this->createMock(Request::class);
         $this
             ->inner
             ->expects($this->once())
             ->method('fulfill')
             ->with($request)
             ->willReturn(
-                $response = $this->createMock(ResponseInterface::class)
+                $response = $this->createMock(Response::class)
             );
         $response
             ->expects($this->once())

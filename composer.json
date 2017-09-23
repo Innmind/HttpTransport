@@ -16,7 +16,7 @@
     },
     "require": {
         "php": "~7.1",
-        "innmind/http": "~2.0",
+        "innmind/http": "~3.0",
         "guzzlehttp/guzzle": "^6.2",
         "psr/log": "^1.0",
         "ramsey/uuid": "^3.5"

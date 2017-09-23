@@ -4,11 +4,11 @@ declare(strict_types = 1);
 namespace Innmind\HttpTransport;
 
 use Innmind\Http\Message\{
-    RequestInterface,
-    ResponseInterface
+    Request,
+    Response
 };
 
 interface TransportInterface
 {
-    public function fulfill(RequestInterface $request): ResponseInterface;
+    public function fulfill(Request $request): Response;
 }

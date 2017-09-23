@@ -5,8 +5,8 @@ namespace Innmind\HttpTransport;
 
 use Innmind\HttpTransport\Exception\ServerErrorException;
 use Innmind\Http\Message\{
-    RequestInterface,
-    ResponseInterface
+    Request,
+    Response
 };
 
 final class ThrowOnServerErrorTransport implements TransportInterface
@@ -18,7 +18,7 @@ final class ThrowOnServerErrorTransport implements TransportInterface
         $this->transport = $transport;
     }
 
-    public function fulfill(RequestInterface $request): ResponseInterface
+    public function fulfill(Request $request): Response
     {
         $response = $this->transport->fulfill($request);
 

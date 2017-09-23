@@ -4,8 +4,8 @@ declare(strict_types = 1);
 namespace Innmind\HttpTransport;
 
 use Innmind\Http\{
-    Message\RequestInterface,
-    Message\ResponseInterface,
+    Message\Request,
+    Message\Response,
     Translator\Response\Psr7Translator
 };
 use GuzzleHttp\Exception\BadResponseException;
@@ -23,7 +23,7 @@ final class CatchGuzzleBadResponseExceptionTransport implements TransportInterfa
         $this->translator = $translator;
     }
 
-    public function fulfill(RequestInterface $request): ResponseInterface
+    public function fulfill(Request $request): Response
     {
         try {
             return $this->transport->fulfill($request);

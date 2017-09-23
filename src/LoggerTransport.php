@@ -4,9 +4,9 @@ declare(strict_types = 1);
 namespace Innmind\HttpTransport;
 
 use Innmind\Http\{
-    Message\RequestInterface,
-    Message\ResponseInterface,
-    HeadersInterface
+    Message\Request,
+    Message\Response,
+    Headers
 };
 use Psr\Log\{
     LoggerInterface,
@@ -30,7 +30,7 @@ final class LoggerTransport implements TransportInterface
         $this->level = $level;
     }
 
-    public function fulfill(RequestInterface $request): ResponseInterface
+    public function fulfill(Request $request): Response
     {
         $this->logger->log(
             $this->level,
@@ -60,7 +60,7 @@ final class LoggerTransport implements TransportInterface
         return $response;
     }
 
-    private function normalize(HeadersInterface $headers): array
+    private function normalize(Headers $headers): array
     {
         $normalized = [];
 

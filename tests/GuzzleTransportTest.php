@@ -10,16 +10,15 @@ use Innmind\HttpTransport\{
 use Innmind\Url\Url;
 use Innmind\Http\{
     Translator\Response\Psr7Translator,
-    Factory\HeaderFactoryInterface,
-    Message\ResponseInterface,
-    Message\Request,
-    Message\Method,
-    ProtocolVersion,
-    Headers,
-    Header\HeaderInterface,
+    Factory\HeaderFactory,
+    Message\Response,
+    Message\Request\Request,
+    Message\Method\Method,
+    ProtocolVersion\ProtocolVersion,
+    Headers\Headers,
+    Header,
     Header\ContentType,
-    Header\ContentTypeValue,
-    Header\ParameterInterface
+    Header\ContentTypeValue
 };
 use Innmind\Filesystem\Stream\StringStream;
 use Innmind\Immutable\Map;
@@ -37,7 +36,7 @@ class GuzzleTransportTest extends TestCase
         $transport = new GuzzleTransport(
             $client = $this->createMock(ClientInterface::class),
             new Psr7Translator(
-                $this->createMock(HeaderFactoryInterface::class)
+                $this->createMock(HeaderFactory::class)
             )
         );
         $client
@@ -66,13 +65,13 @@ class GuzzleTransportTest extends TestCase
                 Url::fromString('http://example.com'),
                 new Method('GET'),
                 new ProtocolVersion(1, 1),
-                new Headers(new Map('string', HeaderInterface::class)),
+                new Headers(new Map('string', Header::class)),
                 new StringStream('')
             )
         );
 
         $this->assertInstanceOf(TransportInterface::class, $transport);
-        $this->assertInstanceOf(ResponseInterface::class, $response);
+        $this->assertInstanceOf(Response::class, $response);
     }
 
     /**
@@ -83,7 +82,7 @@ class GuzzleTransportTest extends TestCase
         $transport = new GuzzleTransport(
             $client = $this->createMock(ClientInterface::class),
             new Psr7Translator(
-                $this->createMock(HeaderFactoryInterface::class)
+                $this->createMock(HeaderFactory::class)
             )
         );
         $client
@@ -105,7 +104,7 @@ class GuzzleTransportTest extends TestCase
                 Url::fromString('http://example.com'),
                 new Method('GET'),
                 new ProtocolVersion(1, 1),
-                new Headers(new Map('string', HeaderInterface::class)),
+                new Headers(new Map('string', Header::class)),
                 new StringStream('')
             )
         );
@@ -116,7 +115,7 @@ class GuzzleTransportTest extends TestCase
         $transport = new GuzzleTransport(
             $client = $this->createMock(ClientInterface::class),
             new Psr7Translator(
-                $this->createMock(HeaderFactoryInterface::class)
+                $this->createMock(HeaderFactory::class)
             )
         );
         $client
@@ -145,12 +144,12 @@ class GuzzleTransportTest extends TestCase
                 Url::fromString('http://example.com'),
                 new Method('POST'),
                 new ProtocolVersion(1, 1),
-                new Headers(new Map('string', HeaderInterface::class)),
+                new Headers(new Map('string', Header::class)),
                 new StringStream('')
             )
         );
 
-        $this->assertInstanceOf(ResponseInterface::class, $response);
+        $this->assertInstanceOf(Response::class, $response);
     }
 
     public function testFulfillWithHeaders()
@@ -158,7 +157,7 @@ class GuzzleTransportTest extends TestCase
         $transport = new GuzzleTransport(
             $client = $this->createMock(ClientInterface::class),
             new Psr7Translator(
-                $this->createMock(HeaderFactoryInterface::class)
+                $this->createMock(HeaderFactory::class)
             )
         );
         $client
@@ -190,14 +189,13 @@ class GuzzleTransportTest extends TestCase
                 new Method('GET'),
                 new ProtocolVersion(1, 1),
                 new Headers(
-                    (new Map('string', HeaderInterface::class))
+                    (new Map('string', Header::class))
                         ->put(
                             'Content-Type',
                             new ContentType(
                                 new ContentTypeValue(
                                     'application',
-                                    'json',
-                                    new Map('string', ParameterInterface::class)
+                                    'json'
                                 )
                             )
                         )
@@ -206,7 +204,7 @@ class GuzzleTransportTest extends TestCase
             )
         );
 
-        $this->assertInstanceOf(ResponseInterface::class, $response);
+        $this->assertInstanceOf(Response::class, $response);
     }
 
     public function testFulfillWithPayload()
@@ -214,7 +212,7 @@ class GuzzleTransportTest extends TestCase
         $transport = new GuzzleTransport(
             $client = $this->createMock(ClientInterface::class),
             new Psr7Translator(
-                $this->createMock(HeaderFactoryInterface::class)
+                $this->createMock(HeaderFactory::class)
             )
         );
         $client
@@ -245,12 +243,12 @@ class GuzzleTransportTest extends TestCase
                 Url::fromString('http://example.com'),
                 new Method('GET'),
                 new ProtocolVersion(1, 1),
-                new Headers(new Map('string', HeaderInterface::class)),
+                new Headers(new Map('string', Header::class)),
                 new StringStream('content')
             )
         );
 
-        $this->assertInstanceOf(ResponseInterface::class, $response);
+        $this->assertInstanceOf(Response::class, $response);
     }
 
     public function testFulfillCompletelyModifiedRequest()
@@ -258,7 +256,7 @@ class GuzzleTransportTest extends TestCase
         $transport = new GuzzleTransport(
             $client = $this->createMock(ClientInterface::class),
             new Psr7Translator(
-                $this->createMock(HeaderFactoryInterface::class)
+                $this->createMock(HeaderFactory::class)
             )
         );
         $client
@@ -291,14 +289,13 @@ class GuzzleTransportTest extends TestCase
                 new Method('POST'),
                 new ProtocolVersion(1, 1),
                 new Headers(
-                    (new Map('string', HeaderInterface::class))
+                    (new Map('string', Header::class))
                         ->put(
                             'Content-Type',
                             new ContentType(
                                 new ContentTypeValue(
                                     'application',
-                                    'json',
-                                    new Map('string', ParameterInterface::class)
+                                    'json'
                                 )
                             )
                         )
@@ -307,6 +304,6 @@ class GuzzleTransportTest extends TestCase
             )
         );
 
-        $this->assertInstanceOf(ResponseInterface::class, $response);
+        $this->assertInstanceOf(Response::class, $response);
     }
 }
