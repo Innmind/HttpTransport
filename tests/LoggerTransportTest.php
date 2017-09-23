@@ -5,25 +5,20 @@ namespace Tests\Innmind\HttpTransport;
 
 use Innmind\HttpTransport\{
     LoggerTransport,
-    TransportInterface
+    Transport
 };
 use Innmind\Http\{
-    Message\RequestInterface,
-    Message\ResponseInterface,
-    Message\StatusCode,
-    Message\Method,
-    Headers,
-    Header\HeaderInterface,
-    Header\HeaderValueInterface,
-    Header\Header,
-    Header\HeaderValue
+    Message\Request,
+    Message\Response,
+    Message\StatusCode\StatusCode,
+    Message\Method\Method,
+    Headers\Headers,
+    Header,
+    Header\Value\Value
 };
 use Innmind\Url\Url;
 use Innmind\Filesystem\Stream\StringStream;
-use Innmind\Immutable\{
-    Map,
-    Set
-};
+use Innmind\Immutable\Map;
 use Psr\Log\LoggerInterface;
 use PHPUnit\Framework\TestCase;
 
@@ -36,7 +31,7 @@ class LoggerTransportTest extends TestCase
     public function setUp()
     {
         $this->transport = new LoggerTransport(
-            $this->inner = $this->createMock(TransportInterface::class),
+            $this->inner = $this->createMock(Transport::class),
             $this->logger = $this->createMock(LoggerInterface::class),
             'emergency'
         );
@@ -45,14 +40,14 @@ class LoggerTransportTest extends TestCase
     public function testInterface()
     {
         $this->assertInstanceOf(
-            TransportInterface::class,
+            Transport::class,
             $this->transport
         );
     }
 
     public function testFulfill()
     {
-        $request = $this->createMock(RequestInterface::class);
+        $request = $this->createMock(Request::class);
         $request
             ->expects($this->once())
             ->method('method')
@@ -70,22 +65,20 @@ class LoggerTransportTest extends TestCase
             ->method('headers')
             ->willReturn(
                 new Headers(
-                    (new Map('string', HeaderInterface::class))
+                    (new Map('string', Header::class))
                         ->put(
                             'foo',
-                            new Header(
+                            new Header\Header(
                                 'foo',
-                                (new Set(HeaderValueInterface::class))
-                                    ->add(new HeaderValue('bar'))
-                                    ->add(new HeaderValue('baz'))
+                                new Value('bar'),
+                                new Value('baz')
                             )
                         )
                         ->put(
                             'foobar',
-                            new Header(
+                            new Header\Header(
                                 'foobar',
-                                (new Set(HeaderValueInterface::class))
-                                    ->add(new HeaderValue('whatever'))
+                                new Value('whatever')
                             )
                         )
                 )
@@ -97,7 +90,7 @@ class LoggerTransportTest extends TestCase
             ->method('fulfill')
             ->with($request)
             ->willReturn(
-                $expected = $this->createMock(ResponseInterface::class)
+                $expected = $this->createMock(Response::class)
             );
         $expected
             ->expects($this->once())
@@ -108,14 +101,13 @@ class LoggerTransportTest extends TestCase
             ->method('headers')
             ->willReturn(
                 new Headers(
-                    (new Map('string', HeaderInterface::class))
+                    (new Map('string', Header::class))
                         ->put(
                             'x-debug',
-                            new Header(
+                            new Header\Header(
                                 'x-debug',
-                                (new Set(HeaderValueInterface::class))
-                                    ->add(new HeaderValue('yay'))
-                                    ->add(new HeaderValue('nay'))
+                                new Value('yay'),
+                                new Value('nay')
                             )
                         )
                 )

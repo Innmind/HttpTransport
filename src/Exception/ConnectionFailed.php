@@ -3,14 +3,14 @@ declare(strict_types = 1);
 
 namespace Innmind\HttpTransport\Exception;
 
-use Innmind\Http\Message\RequestInterface;
+use Innmind\Http\Message\Request;
 
-final class ConnectException extends RuntimeException
+final class ConnectionFailed extends RuntimeException
 {
     private $request;
 
     public function __construct(
-        RequestInterface $request,
+        Request $request,
         \Exception $e
     ) {
         $this->request = $request;
@@ -21,7 +21,7 @@ final class ConnectException extends RuntimeException
         );
     }
 
-    public function request(): RequestInterface
+    public function request(): Request
     {
         return $this->request;
     }

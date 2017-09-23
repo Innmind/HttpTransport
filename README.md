@@ -23,8 +23,8 @@ use Innmind\HttpTransport\GuzzleTransport;
 use Innmind\Http\{
     Translator\Response\Psr7Translator,
     Factory\Header\DefaultFactory,
-    Factory\HeaderFactoryInterface,
-    Message\Request
+    Factory\HeaderFactory,
+    Message\Request\Request
 };
 use Innmind\Immutable\Map;
 
@@ -32,7 +32,7 @@ $transport = new GuzzleTransport(
     new Client,
     new Psr7Translator(
         new DefaultFactory(
-            new Map('string', HeaderFactoryInterface::class)
+            new Map('string', HeaderFactory::class)
         )
     )
 );

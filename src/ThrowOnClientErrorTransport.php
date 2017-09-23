@@ -3,27 +3,27 @@ declare(strict_types = 1);
 
 namespace Innmind\HttpTransport;
 
-use Innmind\HttpTransport\Exception\ClientErrorException;
+use Innmind\HttpTransport\Exception\ClientError;
 use Innmind\Http\Message\{
-    RequestInterface,
-    ResponseInterface
+    Request,
+    Response
 };
 
-final class ThrowOnClientErrorTransport implements TransportInterface
+final class ThrowOnClientErrorTransport implements Transport
 {
     private $transport;
 
-    public function __construct(TransportInterface $transport)
+    public function __construct(Transport $transport)
     {
         $this->transport = $transport;
     }
 
-    public function fulfill(RequestInterface $request): ResponseInterface
+    public function fulfill(Request $request): Response
     {
         $response = $this->transport->fulfill($request);
 
         if ($response->statusCode()->value() % 400 < 100) {
-            throw new ClientErrorException($request, $response);
+            throw new ClientError($request, $response);
         }
 
         return $response;

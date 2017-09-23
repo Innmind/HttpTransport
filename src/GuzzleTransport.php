@@ -3,19 +3,19 @@ declare(strict_types = 1);
 
 namespace Innmind\HttpTransport;
 
-use Innmind\HttpTransport\Exception\ConnectException;
+use Innmind\HttpTransport\Exception\ConnectionFailed;
 use Innmind\Http\{
-    Message\RequestInterface,
-    Message\ResponseInterface,
+    Message\Request,
+    Message\Response,
     Translator\Response\Psr7Translator,
-    Header\HeaderValueInterface
+    Header\Value
 };
 use GuzzleHttp\{
     ClientInterface,
     Exception\ConnectException as GuzzleConnectException
 };
 
-final class GuzzleTransport implements TransportInterface
+final class GuzzleTransport implements Transport
 {
     private $client;
     private $translator;
@@ -28,7 +28,7 @@ final class GuzzleTransport implements TransportInterface
         $this->translator = $translator;
     }
 
-    public function fulfill(RequestInterface $request): ResponseInterface
+    public function fulfill(Request $request): Response
     {
         $options = [];
         $headers = [];
@@ -38,7 +38,7 @@ final class GuzzleTransport implements TransportInterface
                 ->values()
                 ->reduce(
                     [],
-                    function(array $raw, HeaderValueInterface $value): array {
+                    function(array $raw, Value $value): array {
                         $raw[] = (string) $value;
 
                         return $raw;
@@ -50,7 +50,7 @@ final class GuzzleTransport implements TransportInterface
             $options['headers'] = $headers;
         }
 
-        if ($request->body()->size() > 0) {
+        if ($request->body()->size()->toInt() > 0) {
             $options['body'] = (string) $request->body();
         }
 
@@ -61,7 +61,7 @@ final class GuzzleTransport implements TransportInterface
                 $options
             );
         } catch (GuzzleConnectException $e) {
-            throw new ConnectException($request, $e);
+            throw new ConnectionFailed($request, $e);
         }
 
         return $this->translator->translate($response);

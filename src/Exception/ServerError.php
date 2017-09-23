@@ -4,29 +4,29 @@ declare(strict_types = 1);
 namespace Innmind\HttpTransport\Exception;
 
 use Innmind\Http\Message\{
-    RequestInterface,
-    ResponseInterface
+    Request,
+    Response
 };
 
-final class ClientErrorException extends RuntimeException
+final class ServerError extends RuntimeException
 {
     private $request;
     private $response;
 
     public function __construct(
-        RequestInterface $request,
-        ResponseInterface $response
+        Request $request,
+        Response $response
     ) {
         $this->request = $request;
         $this->response = $response;
     }
 
-    public function request(): RequestInterface
+    public function request(): Request
     {
         return $this->request;
     }
 
-    public function response(): ResponseInterface
+    public function response(): Response
     {
         return $this->response;
     }

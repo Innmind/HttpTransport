@@ -5,13 +5,13 @@ namespace Tests\Innmind\HttpTransport;
 
 use Innmind\HttpTransport\{
     ThrowOnServerErrorTransport,
-    TransportInterface,
-    Exception\ServerErrorException
+    Transport,
+    Exception\ServerError
 };
 use Innmind\Http\Message\{
-    RequestInterface,
-    ResponseInterface,
-    StatusCode
+    Request,
+    Response,
+    StatusCode\StatusCode
 };
 use PHPUnit\Framework\TestCase;
 
@@ -23,28 +23,28 @@ class ThrowOnServerErrorTransportTest extends TestCase
     public function setUp()
     {
         $this->transport = new ThrowOnServerErrorTransport(
-            $this->inner = $this->createMock(TransportInterface::class)
+            $this->inner = $this->createMock(Transport::class)
         );
     }
 
     public function testInterface()
     {
         $this->assertInstanceOf(
-            TransportInterface::class,
+            Transport::class,
             $this->transport
         );
     }
 
     public function testFulfill()
     {
-        $request = $this->createMock(RequestInterface::class);
+        $request = $this->createMock(Request::class);
         $this
             ->inner
             ->expects($this->once())
             ->method('fulfill')
             ->with($request)
             ->willReturn(
-                $expected = $this->createMock(ResponseInterface::class)
+                $expected = $this->createMock(Response::class)
             );
         $expected
             ->expects($this->once())
@@ -58,14 +58,14 @@ class ThrowOnServerErrorTransportTest extends TestCase
 
     public function testThrow()
     {
-        $request = $this->createMock(RequestInterface::class);
+        $request = $this->createMock(Request::class);
         $this
             ->inner
             ->expects($this->once())
             ->method('fulfill')
             ->with($request)
             ->willReturn(
-                $response = $this->createMock(ResponseInterface::class)
+                $response = $this->createMock(Response::class)
             );
         $response
             ->expects($this->once())
@@ -76,7 +76,7 @@ class ThrowOnServerErrorTransportTest extends TestCase
             $this->transport->fulfill($request);
 
             $this->fail('it should throw an exception');
-        } catch (ServerErrorException $e) {
+        } catch (ServerError $e) {
             $this->assertSame($request, $e->request());
             $this->assertSame($response, $e->response());
         }
