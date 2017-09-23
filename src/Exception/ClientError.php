@@ -8,7 +8,7 @@ use Innmind\Http\Message\{
     Response
 };
 
-final class ServerErrorException extends RuntimeException
+final class ClientError extends RuntimeException
 {
     private $request;
     private $response;

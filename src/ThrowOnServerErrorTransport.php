@@ -3,7 +3,7 @@ declare(strict_types = 1);
 
 namespace Innmind\HttpTransport;
 
-use Innmind\HttpTransport\Exception\ServerErrorException;
+use Innmind\HttpTransport\Exception\ServerError;
 use Innmind\Http\Message\{
     Request,
     Response
@@ -23,7 +23,7 @@ final class ThrowOnServerErrorTransport implements Transport
         $response = $this->transport->fulfill($request);
 
         if ($response->statusCode()->value() % 500 < 100) {
-            throw new ServerErrorException($request, $response);
+            throw new ServerError($request, $response);
         }
 
         return $response;

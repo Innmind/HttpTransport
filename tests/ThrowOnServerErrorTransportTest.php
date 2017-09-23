@@ -6,7 +6,7 @@ namespace Tests\Innmind\HttpTransport;
 use Innmind\HttpTransport\{
     ThrowOnServerErrorTransport,
     Transport,
-    Exception\ServerErrorException
+    Exception\ServerError
 };
 use Innmind\Http\Message\{
     Request,
@@ -76,7 +76,7 @@ class ThrowOnServerErrorTransportTest extends TestCase
             $this->transport->fulfill($request);
 
             $this->fail('it should throw an exception');
-        } catch (ServerErrorException $e) {
+        } catch (ServerError $e) {
             $this->assertSame($request, $e->request());
             $this->assertSame($response, $e->response());
         }

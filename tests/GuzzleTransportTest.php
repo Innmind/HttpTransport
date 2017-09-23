@@ -75,7 +75,7 @@ class GuzzleTransportTest extends TestCase
     }
 
     /**
-     * @expectedException Innmind\HttpTransport\Exception\ConnectException
+     * @expectedException Innmind\HttpTransport\Exception\ConnectionFailed
      */
     public function testThrowOnConnectException()
     {

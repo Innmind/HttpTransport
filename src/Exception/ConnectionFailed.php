@@ -5,7 +5,7 @@ namespace Innmind\HttpTransport\Exception;
 
 use Innmind\Http\Message\Request;
 
-final class ConnectException extends RuntimeException
+final class ConnectionFailed extends RuntimeException
 {
     private $request;
 

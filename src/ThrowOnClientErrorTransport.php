@@ -3,7 +3,7 @@ declare(strict_types = 1);
 
 namespace Innmind\HttpTransport;
 
-use Innmind\HttpTransport\Exception\ClientErrorException;
+use Innmind\HttpTransport\Exception\ClientError;
 use Innmind\Http\Message\{
     Request,
     Response
@@ -23,7 +23,7 @@ final class ThrowOnClientErrorTransport implements Transport
         $response = $this->transport->fulfill($request);
 
         if ($response->statusCode()->value() % 400 < 100) {
-            throw new ClientErrorException($request, $response);
+            throw new ClientError($request, $response);
         }
 
         return $response;

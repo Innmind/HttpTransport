@@ -3,7 +3,7 @@ declare(strict_types = 1);
 
 namespace Innmind\HttpTransport;
 
-use Innmind\HttpTransport\Exception\ConnectException;
+use Innmind\HttpTransport\Exception\ConnectionFailed;
 use Innmind\Http\{
     Message\Request,
     Message\Response,
@@ -61,7 +61,7 @@ final class GuzzleTransport implements Transport
                 $options
             );
         } catch (GuzzleConnectException $e) {
-            throw new ConnectException($request, $e);
+            throw new ConnectionFailed($request, $e);
         }
 
         return $this->translator->translate($response);
