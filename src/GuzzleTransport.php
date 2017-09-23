@@ -15,7 +15,7 @@ use GuzzleHttp\{
     Exception\ConnectException as GuzzleConnectException
 };
 
-final class GuzzleTransport implements TransportInterface
+final class GuzzleTransport implements Transport
 {
     private $client;
     private $translator;

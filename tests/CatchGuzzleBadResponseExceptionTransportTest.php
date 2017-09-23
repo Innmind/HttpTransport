@@ -5,7 +5,7 @@ namespace Tests\Innmind\HttpTransport;
 
 use Innmind\HttpTransport\{
     CatchGuzzleBadResponseExceptionTransport,
-    TransportInterface
+    Transport
 };
 use Innmind\Http\{
     Message\Request,
@@ -30,7 +30,7 @@ class CatchGuzzleBadResponseExceptionTransportTest extends TestCase
     public function setUp()
     {
         $this->transport = new CatchGuzzleBadResponseExceptionTransport(
-            $this->inner = $this->createMock(TransportInterface::class),
+            $this->inner = $this->createMock(Transport::class),
             new Psr7Translator(
                 $this->createMock(HeaderFactory::class)
             )
@@ -40,7 +40,7 @@ class CatchGuzzleBadResponseExceptionTransportTest extends TestCase
     public function testInterface()
     {
         $this->assertInstanceOf(
-            TransportInterface::class,
+            Transport::class,
             $this->transport
         );
     }

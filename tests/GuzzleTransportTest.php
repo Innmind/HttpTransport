@@ -5,7 +5,7 @@ namespace Tests\Innmind\HttpTransport;
 
 use Innmind\HttpTransport\{
     GuzzleTransport,
-    TransportInterface
+    Transport
 };
 use Innmind\Url\Url;
 use Innmind\Http\{
@@ -70,7 +70,7 @@ class GuzzleTransportTest extends TestCase
             )
         );
 
-        $this->assertInstanceOf(TransportInterface::class, $transport);
+        $this->assertInstanceOf(Transport::class, $transport);
         $this->assertInstanceOf(Response::class, $response);
     }
 

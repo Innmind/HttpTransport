@@ -10,13 +10,13 @@ use Innmind\Http\{
 };
 use GuzzleHttp\Exception\BadResponseException;
 
-final class CatchGuzzleBadResponseExceptionTransport implements TransportInterface
+final class CatchGuzzleBadResponseExceptionTransport implements Transport
 {
     private $transport;
     private $translator;
 
     public function __construct(
-        TransportInterface $transport,
+        Transport $transport,
         Psr7Translator $translator
     ) {
         $this->transport = $transport;

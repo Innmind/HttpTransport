@@ -8,7 +8,7 @@ use Innmind\Http\Message\{
     Response
 };
 
-interface TransportInterface
+interface Transport
 {
     public function fulfill(Request $request): Response;
 }

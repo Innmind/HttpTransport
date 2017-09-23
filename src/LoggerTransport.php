@@ -14,14 +14,14 @@ use Psr\Log\{
 };
 use Ramsey\Uuid\Uuid;
 
-final class LoggerTransport implements TransportInterface
+final class LoggerTransport implements Transport
 {
     private $transport;
     private $logger;
     private $level;
 
     public function __construct(
-        TransportInterface $transport,
+        Transport $transport,
         LoggerInterface $logger,
         string $level = LogLevel::DEBUG
     ) {

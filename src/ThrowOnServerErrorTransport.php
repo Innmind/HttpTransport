@@ -9,11 +9,11 @@ use Innmind\Http\Message\{
     Response
 };
 
-final class ThrowOnServerErrorTransport implements TransportInterface
+final class ThrowOnServerErrorTransport implements Transport
 {
     private $transport;
 
-    public function __construct(TransportInterface $transport)
+    public function __construct(Transport $transport)
     {
         $this->transport = $transport;
     }

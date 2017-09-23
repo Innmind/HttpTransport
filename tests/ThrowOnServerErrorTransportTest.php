@@ -5,7 +5,7 @@ namespace Tests\Innmind\HttpTransport;
 
 use Innmind\HttpTransport\{
     ThrowOnServerErrorTransport,
-    TransportInterface,
+    Transport,
     Exception\ServerErrorException
 };
 use Innmind\Http\Message\{
@@ -23,14 +23,14 @@ class ThrowOnServerErrorTransportTest extends TestCase
     public function setUp()
     {
         $this->transport = new ThrowOnServerErrorTransport(
-            $this->inner = $this->createMock(TransportInterface::class)
+            $this->inner = $this->createMock(Transport::class)
         );
     }
 
     public function testInterface()
     {
         $this->assertInstanceOf(
-            TransportInterface::class,
+            Transport::class,
             $this->transport
         );
     }

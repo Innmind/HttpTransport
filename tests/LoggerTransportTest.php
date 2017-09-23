@@ -5,7 +5,7 @@ namespace Tests\Innmind\HttpTransport;
 
 use Innmind\HttpTransport\{
     LoggerTransport,
-    TransportInterface
+    Transport
 };
 use Innmind\Http\{
     Message\Request,
@@ -31,7 +31,7 @@ class LoggerTransportTest extends TestCase
     public function setUp()
     {
         $this->transport = new LoggerTransport(
-            $this->inner = $this->createMock(TransportInterface::class),
+            $this->inner = $this->createMock(Transport::class),
             $this->logger = $this->createMock(LoggerInterface::class),
             'emergency'
         );
@@ -40,7 +40,7 @@ class LoggerTransportTest extends TestCase
     public function testInterface()
     {
         $this->assertInstanceOf(
-            TransportInterface::class,
+            Transport::class,
             $this->transport
         );
     }
