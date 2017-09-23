@@ -24,7 +24,7 @@ use Innmind\Http\{
     Translator\Response\Psr7Translator,
     Factory\Header\DefaultFactory,
     Factory\HeaderFactory,
-    Message\Request
+    Message\Request\Request
 };
 use Innmind\Immutable\Map;
 
