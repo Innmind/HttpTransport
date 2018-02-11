@@ -1,0 +1,35 @@
+arguments:
+    client: GuzzleHttp\ClientInterface
+    logger: '?Psr\Log\LoggerInterface'
+    log_level: '?string'
+
+expose:
+    guzzle: $transport.guzzle
+    conservative: $transport.logger
+    thrower: $transport.throw_server
+
+services:
+    transport:
+        guzzle Innmind\HttpTransport\GuzzleTransport:
+            - '$client'
+            - '$psr7_translator'
+
+        cacth_guzzle_exceptions Innmind\HttpTransport\CatchGuzzleBadResponseExceptionTransport:
+            - '$transport.guzzle'
+            - '$psr7_translator'
+
+        logger Innmind\HttpTransport\LoggerTransport:
+            - '$transport.cacth_guzzle_exceptions'
+            - '$logger'
+            - '$log_level'
+
+        throw_client Innmind\HttpTransport\ThrowOnClientErrorTransport:
+            - '$transport.logger'
+
+        throw_server Innmind\HttpTransport\ThrowOnServerErrorTransport:
+            - '$transport.throw_client'
+
+    psr7_translator Innmind\Http\Translator\Response\Psr7Translator:
+        - '$header_factory'
+
+    header_factory Innmind\Http\Factory\Header\Factories::default: []

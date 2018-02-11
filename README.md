@@ -19,23 +19,19 @@ composer require innmind/http-transport
 Send request via guzzle:
 
 ```php
-use Innmind\HttpTransport\GuzzleTransport;
-use Innmind\Http\{
-    Translator\Response\Psr7Translator,
-    Factory\Header\DefaultFactory,
-    Factory\HeaderFactory,
-    Message\Request\Request
+use Innmind\Compose\{
+    ContainerBuilder\ContainerBuilder,
+    Loader\Yaml
 };
+use Innmind\Url\Path;
+use Innmind\Http\Message\Request\Request;
 use Innmind\Immutable\Map;
 
-$transport = new GuzzleTransport(
-    new Client,
-    new Psr7Translator(
-        new DefaultFactory(
-            new Map('string', HeaderFactory::class)
-        )
-    )
+$container = (new ContainerBuilder(new Yaml))(
+    new Path('container.yml'),
+    (new Map('string', 'mixed'))->put('client', new Client)
 );
+$transport = $container->get('guzzle');
 
 $response = $transport->fulfill(
     new Request(/* initialize your request */)
@@ -47,14 +43,16 @@ $response = $transport->fulfill(
 You can easily log all your request like so:
 
 ```php
-use Innmind\HttpTransport\LoggerTransport;
 use Psr\Log\LoggerInterface;
 
-$transport = new LoggerTransport(
-    $transport,
-    /* an instance og LoggerInterface */,
-    'info' //level of log, default to debug
+$container = (new ContainerBuilder(new Yaml))(
+    new Path('container.yml'),
+    (new Map('string', 'mixed'))
+        ->put('client', new Client)
+        ->put('logger', /* an instance of LoggerInterface */)
+        ->put('log_level', 'info') // default to debug
 );
+$transport = $container->get('logger');
 
 $transport->fulfill(/* your request */):
 ```
