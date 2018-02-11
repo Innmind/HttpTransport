@@ -19,7 +19,8 @@
         "innmind/http": "~3.0",
         "guzzlehttp/guzzle": "^6.2",
         "psr/log": "^1.0",
-        "ramsey/uuid": "^3.5"
+        "ramsey/uuid": "^3.5",
+        "innmind/compose": "^1.0"
     },
     "autoload": {
         "psr-4": {

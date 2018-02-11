@@ -23,11 +23,11 @@ final class LoggerTransport implements Transport
     public function __construct(
         Transport $transport,
         LoggerInterface $logger,
-        string $level = LogLevel::DEBUG
+        string $level = null
     ) {
         $this->transport = $transport;
         $this->logger = $logger;
-        $this->level = $level;
+        $this->level = $level ?? LogLevel::DEBUG;
     }
 
     public function fulfill(Request $request): Response
