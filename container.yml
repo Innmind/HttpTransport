@@ -1,6 +1,6 @@
 arguments:
-    client: GuzzleHttp\ClientInterface
-    logger: '?Psr\Log\LoggerInterface'
+    client: GuzzleHttp\ClientInterface ?? $guzzle_client
+    logger: Psr\Log\LoggerInterface ?? $null_logger
     log_level: '?string'
 
 expose:
@@ -33,3 +33,7 @@ services:
         - '$header_factory'
 
     header_factory Innmind\Http\Factory\Header\Factories::default: []
+
+    guzzle_client GuzzleHttp\Client: []
+
+    null_logger Psr\Log\NullLogger: []
