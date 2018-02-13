@@ -14,8 +14,6 @@ use Innmind\Compose\{
 };
 use Innmind\Url\Path;
 use Innmind\Immutable\Map;
-use GuzzleHttp\Client;
-use Psr\Log\NullLogger;
 use PHPUnit\Framework\TestCase;
 
 class ContainerTest extends TestCase
@@ -24,9 +22,7 @@ class ContainerTest extends TestCase
     {
         $container = (new ContainerBuilder(new Yaml))(
             new Path('container.yml'),
-            (new Map('string', 'mixed'))
-                ->put('client', new Client)
-                ->put('logger', new NullLogger)
+            new Map('string', 'mixed')
         );
 
         $this->assertInstanceOf(GuzzleTransport::class, $container->get('guzzle'));
