@@ -115,7 +115,7 @@ class LoggerTransportTest extends TestCase
         $expected
             ->expects($this->once())
             ->method('body')
-            ->willReturn(new StringStream('idk'));
+            ->willReturn($body = new StringStream('idk'));
         $this
             ->logger
             ->expects($this->at(0))
@@ -151,5 +151,6 @@ class LoggerTransportTest extends TestCase
         $response = $this->transport->fulfill($request);
 
         $this->assertSame($expected, $response);
+        $this->assertSame('idk', (string) $body->read());
     }
 }
