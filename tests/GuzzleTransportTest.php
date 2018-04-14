@@ -5,7 +5,8 @@ namespace Tests\Innmind\HttpTransport;
 
 use Innmind\HttpTransport\{
     GuzzleTransport,
-    Transport
+    Transport,
+    Exception\ConnectionFailed
 };
 use Innmind\Url\Url;
 use Innmind\Http\{
@@ -74,9 +75,6 @@ class GuzzleTransportTest extends TestCase
         $this->assertInstanceOf(Response::class, $response);
     }
 
-    /**
-     * @expectedException Innmind\HttpTransport\Exception\ConnectionFailed
-     */
     public function testThrowOnConnectException()
     {
         $transport = new GuzzleTransport(
@@ -99,15 +97,20 @@ class GuzzleTransportTest extends TestCase
                 )
             );
 
-        $transport->fulfill(
-            new Request(
-                Url::fromString('http://example.com'),
-                new Method('GET'),
-                new ProtocolVersion(1, 1),
-                new Headers(new Map('string', Header::class)),
-                new StringStream('')
-            )
-        );
+        try {
+            $transport->fulfill(
+                $request = new Request(
+                    Url::fromString('http://example.com'),
+                    new Method('GET'),
+                    new ProtocolVersion(1, 1),
+                    new Headers(new Map('string', Header::class)),
+                    new StringStream('')
+                )
+            );
+            $this->fail('it should throw');
+        } catch (ConnectionFailed $e) {
+            $this->assertSame($request, $e->request());
+        }
     }
 
     public function testFulfillWithMethod()
