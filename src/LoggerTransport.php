@@ -45,6 +45,7 @@ final class LoggerTransport implements Transport
         );
 
         $response = $this->transport->fulfill($request);
+        $body = $response->body();
 
         $this->logger->log(
             $this->level,
@@ -52,10 +53,11 @@ final class LoggerTransport implements Transport
             [
                 'statusCode' => $response->statusCode()->value(),
                 'headers' => $this->normalize($response->headers()),
-                'body' => (string) $response->body(),
+                'body' => (string) $body,
                 'reference' => $reference,
             ]
         );
+        $body->rewind();
 
         return $response;
     }
