@@ -19,19 +19,10 @@ composer require innmind/http-transport
 Send request via guzzle:
 
 ```php
-use Innmind\Compose\{
-    ContainerBuilder\ContainerBuilder,
-    Loader\Yaml
-};
-use Innmind\Url\Path;
+use function Innmind\HttpTransport\bootstrap;
 use Innmind\Http\Message\Request\Request;
-use Innmind\Immutable\Map;
 
-$container = (new ContainerBuilder(new Yaml))(
-    new Path('container.yml'),
-    (new Map('string', 'mixed'))->put('client', new Client)
-);
-$transport = $container->get('guzzle');
+$transport = bootstrap()['guzzle']();
 
 $response = $transport->fulfill(
     new Request(/* initialize your request */)
@@ -45,14 +36,15 @@ You can easily log all your request like so:
 ```php
 use Psr\Log\LoggerInterface;
 
-$container = (new ContainerBuilder(new Yaml))(
-    new Path('container.yml'),
-    (new Map('string', 'mixed'))
-        ->put('client', new Client)
-        ->put('logger', /* an instance of LoggerInterface */)
-        ->put('log_level', 'info') // default to debug
+$transports = bootstrap();
+$guzzle = $transports['guzzle']();
+$catchGuzzleExceptions = $transports['cacth_guzzle_exceptions'];
+$log = $transports['logger'](/* an instance of LoggerInterface */, 'info' /* default to debug */);
+$transport = $log(
+    $catchGuzzleExceptions(
+        $guzzle
+    )
 );
-$transport = $container->get('logger');
 
 $transport->fulfill(/* your request */):
 ```
