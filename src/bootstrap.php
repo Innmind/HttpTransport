@@ -24,7 +24,7 @@ function bootstrap(): array
                 $translator
             );
         },
-        'cacth_guzzle_exceptions' => static function(Transport $transport) use ($translator): Transport {
+        'catch_guzzle_exceptions' => static function(Transport $transport) use ($translator): Transport {
             return new CatchGuzzleBadResponseExceptionTransport(
                 $transport,
                 $translator
