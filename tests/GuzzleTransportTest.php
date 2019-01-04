@@ -34,7 +34,7 @@ class GuzzleTransportTest extends TestCase
 {
     public function testFulfill()
     {
-        $transport = new GuzzleTransport(
+        $fulfill = new GuzzleTransport(
             $client = $this->createMock(ClientInterface::class),
             new Psr7Translator(
                 $this->createMock(HeaderFactory::class)
@@ -61,7 +61,7 @@ class GuzzleTransportTest extends TestCase
             ->method('getHeaders')
             ->willReturn([]);
 
-        $response = $transport->fulfill(
+        $response = ($fulfill)(
             new Request(
                 Url::fromString('http://example.com'),
                 new Method('GET'),
@@ -71,13 +71,13 @@ class GuzzleTransportTest extends TestCase
             )
         );
 
-        $this->assertInstanceOf(Transport::class, $transport);
+        $this->assertInstanceOf(Transport::class, $fulfill);
         $this->assertInstanceOf(Response::class, $response);
     }
 
     public function testThrowOnConnectException()
     {
-        $transport = new GuzzleTransport(
+        $fulfill = new GuzzleTransport(
             $client = $this->createMock(ClientInterface::class),
             new Psr7Translator(
                 $this->createMock(HeaderFactory::class)
@@ -98,7 +98,7 @@ class GuzzleTransportTest extends TestCase
             );
 
         try {
-            $transport->fulfill(
+            ($fulfill)(
                 $request = new Request(
                     Url::fromString('http://example.com'),
                     new Method('GET'),
@@ -115,7 +115,7 @@ class GuzzleTransportTest extends TestCase
 
     public function testFulfillWithMethod()
     {
-        $transport = new GuzzleTransport(
+        $fulfill = new GuzzleTransport(
             $client = $this->createMock(ClientInterface::class),
             new Psr7Translator(
                 $this->createMock(HeaderFactory::class)
@@ -142,7 +142,7 @@ class GuzzleTransportTest extends TestCase
             ->method('getHeaders')
             ->willReturn([]);
 
-        $response = $transport->fulfill(
+        $response = ($fulfill)(
             new Request(
                 Url::fromString('http://example.com'),
                 new Method('POST'),
@@ -157,7 +157,7 @@ class GuzzleTransportTest extends TestCase
 
     public function testFulfillWithHeaders()
     {
-        $transport = new GuzzleTransport(
+        $fulfill = new GuzzleTransport(
             $client = $this->createMock(ClientInterface::class),
             new Psr7Translator(
                 $this->createMock(HeaderFactory::class)
@@ -186,7 +186,7 @@ class GuzzleTransportTest extends TestCase
             ->method('getHeaders')
             ->willReturn([]);
 
-        $response = $transport->fulfill(
+        $response = ($fulfill)(
             new Request(
                 Url::fromString('http://example.com'),
                 new Method('GET'),
@@ -212,7 +212,7 @@ class GuzzleTransportTest extends TestCase
 
     public function testFulfillWithPayload()
     {
-        $transport = new GuzzleTransport(
+        $fulfill = new GuzzleTransport(
             $client = $this->createMock(ClientInterface::class),
             new Psr7Translator(
                 $this->createMock(HeaderFactory::class)
@@ -241,7 +241,7 @@ class GuzzleTransportTest extends TestCase
             ->method('getHeaders')
             ->willReturn([]);
 
-        $response = $transport->fulfill(
+        $response = ($fulfill)(
             new Request(
                 Url::fromString('http://example.com'),
                 new Method('GET'),
@@ -256,7 +256,7 @@ class GuzzleTransportTest extends TestCase
 
     public function testFulfillCompletelyModifiedRequest()
     {
-        $transport = new GuzzleTransport(
+        $fulfill = new GuzzleTransport(
             $client = $this->createMock(ClientInterface::class),
             new Psr7Translator(
                 $this->createMock(HeaderFactory::class)
@@ -286,7 +286,7 @@ class GuzzleTransportTest extends TestCase
             ->method('getHeaders')
             ->willReturn([]);
 
-        $response = $transport->fulfill(
+        $response = ($fulfill)(
             new Request(
                 Url::fromString('http://example.com'),
                 new Method('POST'),

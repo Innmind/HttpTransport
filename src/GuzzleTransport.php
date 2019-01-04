@@ -28,7 +28,7 @@ final class GuzzleTransport implements Transport
         $this->translator = $translator;
     }
 
-    public function fulfill(Request $request): Response
+    public function __invoke(Request $request): Response
     {
         $options = [];
         $headers = [];

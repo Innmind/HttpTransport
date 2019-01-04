@@ -16,21 +16,21 @@ use Ramsey\Uuid\Uuid;
 
 final class LoggerTransport implements Transport
 {
-    private $transport;
+    private $fulfill;
     private $logger;
     private $level;
 
     public function __construct(
-        Transport $transport,
+        Transport $fulfill,
         LoggerInterface $logger,
         string $level = null
     ) {
-        $this->transport = $transport;
+        $this->fulfill = $fulfill;
         $this->logger = $logger;
         $this->level = $level ?? LogLevel::DEBUG;
     }
 
-    public function fulfill(Request $request): Response
+    public function __invoke(Request $request): Response
     {
         $this->logger->log(
             $this->level,
@@ -44,7 +44,7 @@ final class LoggerTransport implements Transport
             ]
         );
 
-        $response = $this->transport->fulfill($request);
+        $response = ($this->fulfill)($request);
         $body = $response->body();
 
         $this->logger->log(

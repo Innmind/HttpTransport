@@ -12,21 +12,21 @@ use GuzzleHttp\Exception\BadResponseException;
 
 final class CatchGuzzleBadResponseExceptionTransport implements Transport
 {
-    private $transport;
+    private $fulfill;
     private $translator;
 
     public function __construct(
-        Transport $transport,
+        Transport $fulfill,
         Psr7Translator $translator
     ) {
-        $this->transport = $transport;
+        $this->fulfill = $fulfill;
         $this->translator = $translator;
     }
 
-    public function fulfill(Request $request): Response
+    public function __invoke(Request $request): Response
     {
         try {
-            return $this->transport->fulfill($request);
+            return ($this->fulfill)($request);
         } catch (BadResponseException $e) {
             if ($e->hasResponse()) {
                 return $this->translator->translate($e->getResponse());

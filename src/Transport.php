@@ -10,5 +10,5 @@ use Innmind\Http\Message\{
 
 interface Transport
 {
-    public function fulfill(Request $request): Response;
+    public function __invoke(Request $request): Response;
 }

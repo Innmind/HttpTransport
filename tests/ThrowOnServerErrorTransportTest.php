@@ -17,12 +17,12 @@ use PHPUnit\Framework\TestCase;
 
 class ThrowOnServerErrorTransportTest extends TestCase
 {
-    private $transport;
+    private $fulfill;
     private $inner;
 
     public function setUp()
     {
-        $this->transport = new ThrowOnServerErrorTransport(
+        $this->fulfill = new ThrowOnServerErrorTransport(
             $this->inner = $this->createMock(Transport::class)
         );
     }
@@ -31,7 +31,7 @@ class ThrowOnServerErrorTransportTest extends TestCase
     {
         $this->assertInstanceOf(
             Transport::class,
-            $this->transport
+            $this->fulfill
         );
     }
 
@@ -41,7 +41,7 @@ class ThrowOnServerErrorTransportTest extends TestCase
         $this
             ->inner
             ->expects($this->once())
-            ->method('fulfill')
+            ->method('__invoke')
             ->with($request)
             ->willReturn(
                 $expected = $this->createMock(Response::class)
@@ -51,7 +51,7 @@ class ThrowOnServerErrorTransportTest extends TestCase
             ->method('statusCode')
             ->willReturn(new StatusCode(400));
 
-        $response = $this->transport->fulfill($request);
+        $response = ($this->fulfill)($request);
 
         $this->assertSame($expected, $response);
     }
@@ -62,7 +62,7 @@ class ThrowOnServerErrorTransportTest extends TestCase
         $this
             ->inner
             ->expects($this->once())
-            ->method('fulfill')
+            ->method('__invoke')
             ->with($request)
             ->willReturn(
                 $response = $this->createMock(Response::class)
@@ -73,7 +73,7 @@ class ThrowOnServerErrorTransportTest extends TestCase
             ->willReturn(new StatusCode(503));
 
         try {
-            $this->transport->fulfill($request);
+            ($this->fulfill)($request);
 
             $this->fail('it should throw an exception');
         } catch (ServerError $e) {

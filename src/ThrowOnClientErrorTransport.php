@@ -11,16 +11,16 @@ use Innmind\Http\Message\{
 
 final class ThrowOnClientErrorTransport implements Transport
 {
-    private $transport;
+    private $fulfill;
 
-    public function __construct(Transport $transport)
+    public function __construct(Transport $fulfill)
     {
-        $this->transport = $transport;
+        $this->fulfill = $fulfill;
     }
 
-    public function fulfill(Request $request): Response
+    public function __invoke(Request $request): Response
     {
-        $response = $this->transport->fulfill($request);
+        $response = ($this->fulfill)($request);
 
         if ($response->statusCode()->value() % 400 < 100) {
             throw new ClientError($request, $response);

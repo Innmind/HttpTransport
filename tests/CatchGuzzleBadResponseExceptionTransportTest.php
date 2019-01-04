@@ -24,12 +24,12 @@ use PHPUnit\Framework\TestCase;
 
 class CatchGuzzleBadResponseExceptionTransportTest extends TestCase
 {
-    private $transport;
+    private $fulfill;
     private $inner;
 
     public function setUp()
     {
-        $this->transport = new CatchGuzzleBadResponseExceptionTransport(
+        $this->fulfill = new CatchGuzzleBadResponseExceptionTransport(
             $this->inner = $this->createMock(Transport::class),
             new Psr7Translator(
                 $this->createMock(HeaderFactory::class)
@@ -41,7 +41,7 @@ class CatchGuzzleBadResponseExceptionTransportTest extends TestCase
     {
         $this->assertInstanceOf(
             Transport::class,
-            $this->transport
+            $this->fulfill
         );
     }
 
@@ -51,13 +51,13 @@ class CatchGuzzleBadResponseExceptionTransportTest extends TestCase
         $this
             ->inner
             ->expects($this->once())
-            ->method('fulfill')
+            ->method('__invoke')
             ->with($request)
             ->willReturn(
                 $expected = $this->createMock(Response::class)
             );
 
-        $response = $this->transport->fulfill($request);
+        $response = ($this->fulfill)($request);
 
         $this->assertSame($expected, $response);
     }
@@ -73,13 +73,13 @@ class CatchGuzzleBadResponseExceptionTransportTest extends TestCase
         $this
             ->inner
             ->expects($this->once())
-            ->method('fulfill')
+            ->method('__invoke')
             ->with($request)
             ->will(
                 $this->throwException($exception)
             );
 
-        $response = $this->transport->fulfill($request);
+        $response = ($this->fulfill)($request);
 
         $this->assertInstanceOf(Response::class, $response);
         $this->assertSame(404, $response->statusCode()->value());
@@ -96,13 +96,13 @@ class CatchGuzzleBadResponseExceptionTransportTest extends TestCase
         $this
             ->inner
             ->expects($this->once())
-            ->method('fulfill')
+            ->method('__invoke')
             ->with($request)
             ->will(
                 $this->throwException($exception)
             );
 
-        $response = $this->transport->fulfill($request);
+        $response = ($this->fulfill)($request);
 
         $this->assertInstanceOf(Response::class, $response);
         $this->assertSame(503, $response->statusCode()->value());
@@ -121,13 +121,13 @@ class CatchGuzzleBadResponseExceptionTransportTest extends TestCase
         $this
             ->inner
             ->expects($this->once())
-            ->method('fulfill')
+            ->method('__invoke')
             ->with($request)
             ->will(
                 $this->throwException($exception)
             );
 
-        $this->transport->fulfill($request);
+        ($this->fulfill)($request);
     }
 
     /**
@@ -143,12 +143,12 @@ class CatchGuzzleBadResponseExceptionTransportTest extends TestCase
         $this
             ->inner
             ->expects($this->once())
-            ->method('fulfill')
+            ->method('__invoke')
             ->with($request)
             ->will(
                 $this->throwException($exception)
             );
 
-        $this->transport->fulfill($request);
+        ($this->fulfill)($request);
     }
 }
