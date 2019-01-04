@@ -21,6 +21,10 @@ final class ThrowOnErrorTransport implements Transport
         $this->fulfill = $fulfill;
     }
 
+    /**
+     * @throws ClientError When the status code is 4**
+     * @throws ServerError When the status code is 5**
+     */
     public function __invoke(Request $request): Response
     {
         $response = ($this->fulfill)($request);
