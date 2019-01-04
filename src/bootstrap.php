@@ -31,11 +31,8 @@ function bootstrap(): array
                 );
             };
         },
-        'throw_client' => static function(Transport $transport): Transport {
-            return new ThrowOnClientErrorTransport($transport);
-        },
-        'throw_server' => static function(Transport $transport): Transport {
-            return new ThrowOnServerErrorTransport($transport);
+        'throw_on_error' => static function(Transport $transport): Transport {
+            return new ThrowOnErrorTransport($transport);
         },
     ];
 }

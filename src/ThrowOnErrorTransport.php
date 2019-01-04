@@ -3,13 +3,16 @@ declare(strict_types = 1);
 
 namespace Innmind\HttpTransport;
 
-use Innmind\HttpTransport\Exception\ClientError;
+use Innmind\HttpTransport\Exception\{
+    ClientError,
+    ServerError
+};
 use Innmind\Http\Message\{
     Request,
     Response
 };
 
-final class ThrowOnClientErrorTransport implements Transport
+final class ThrowOnErrorTransport implements Transport
 {
     private $fulfill;
 
@@ -24,6 +27,10 @@ final class ThrowOnClientErrorTransport implements Transport
 
         if ($response->statusCode()->value() % 400 < 100) {
             throw new ClientError($request, $response);
+        }
+
+        if ($response->statusCode()->value() % 500 < 100) {
+            throw new ServerError($request, $response);
         }
 
         return $response;

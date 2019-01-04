@@ -7,7 +7,7 @@ use Innmind\HttpTransport\{
     DefaultTransport,
     CatchGuzzleBadResponseExceptionTransport,
     LoggerTransport,
-    ThrowOnClientErrorTransport,
+    ThrowOnErrorTransport,
     ThrowOnServerErrorTransport,
 };
 use function Innmind\HttpTransport\bootstrap;
@@ -22,8 +22,7 @@ class BootstrapTest extends TestCase
         $transports = bootstrap();
         $default = $transports['default'];
         $log = $transports['logger']($this->createMock(LoggerInterface::class));
-        $throwClient = $transports['throw_client'];
-        $throwServer = $transports['throw_server'];
+        $throw = $transports['throw_on_error'];
 
         $this->assertInstanceOf(DefaultTransport::class, $default());
         $this->assertInstanceOf(DefaultTransport::class, $default(
@@ -31,9 +30,7 @@ class BootstrapTest extends TestCase
         ));
         $this->assertInternalType('callable', $log);
         $this->assertInstanceOf(LoggerTransport::class, $log($default()));
-        $this->assertInternalType('callable', $throwClient);
-        $this->assertInstanceOf(ThrowOnClientErrorTransport::class, $throwClient($default()));
-        $this->assertInternalType('callable', $throwServer);
-        $this->assertInstanceOf(ThrowOnServerErrorTransport::class, $throwServer($default()));
+        $this->assertInternalType('callable', $throw);
+        $this->assertInstanceOf(ThrowOnErrorTransport::class, $throw($default()));
     }
 }

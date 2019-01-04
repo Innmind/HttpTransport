@@ -4,9 +4,10 @@ declare(strict_types = 1);
 namespace Tests\Innmind\HttpTransport;
 
 use Innmind\HttpTransport\{
-    ThrowOnClientErrorTransport,
+    ThrowOnErrorTransport,
     Transport,
-    Exception\ClientError
+    Exception\ClientError,
+    Exception\ServerError
 };
 use Innmind\Http\Message\{
     Request,
@@ -15,14 +16,14 @@ use Innmind\Http\Message\{
 };
 use PHPUnit\Framework\TestCase;
 
-class ThrowOnClientErrorTransportTest extends TestCase
+class ThrowOnErrorTransportTest extends TestCase
 {
     private $fulfill;
     private $inner;
 
     public function setUp()
     {
-        $this->fulfill = new ThrowOnClientErrorTransport(
+        $this->fulfill = new ThrowOnErrorTransport(
             $this->inner = $this->createMock(Transport::class)
         );
     }
@@ -47,16 +48,16 @@ class ThrowOnClientErrorTransportTest extends TestCase
                 $expected = $this->createMock(Response::class)
             );
         $expected
-            ->expects($this->once())
+            ->expects($this->any())
             ->method('statusCode')
-            ->willReturn(new StatusCode(500));
+            ->willReturn(new StatusCode(300));
 
         $response = ($this->fulfill)($request);
 
         $this->assertSame($expected, $response);
     }
 
-    public function testThrow()
+    public function testThrowOnClientError()
     {
         $request = $this->createMock(Request::class);
         $this
@@ -77,6 +78,32 @@ class ThrowOnClientErrorTransportTest extends TestCase
 
             $this->fail('it should throw an exception');
         } catch (ClientError $e) {
+            $this->assertSame($request, $e->request());
+            $this->assertSame($response, $e->response());
+        }
+    }
+
+    public function testThrowOnServerError()
+    {
+        $request = $this->createMock(Request::class);
+        $this
+            ->inner
+            ->expects($this->once())
+            ->method('__invoke')
+            ->with($request)
+            ->willReturn(
+                $response = $this->createMock(Response::class)
+            );
+        $response
+            ->expects($this->any())
+            ->method('statusCode')
+            ->willReturn(new StatusCode(500));
+
+        try {
+            ($this->fulfill)($request);
+
+            $this->fail('it should throw an exception');
+        } catch (ServerError $e) {
             $this->assertSame($request, $e->request());
             $this->assertSame($response, $e->response());
         }
