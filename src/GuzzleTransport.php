@@ -12,7 +12,8 @@ use Innmind\Http\{
 };
 use GuzzleHttp\{
     ClientInterface,
-    Exception\ConnectException as GuzzleConnectException
+    Exception\ConnectException as GuzzleConnectException,
+    Exception\BadResponseException
 };
 
 final class GuzzleTransport implements Transport
@@ -62,6 +63,8 @@ final class GuzzleTransport implements Transport
             );
         } catch (GuzzleConnectException $e) {
             throw new ConnectionFailed($request, $e);
+        } catch (BadResponseException $e) {
+            $response = $e->getResponse();
         }
 
         return $this->translator->translate($response);

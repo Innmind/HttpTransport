@@ -21,7 +21,6 @@ class BootstrapTest extends TestCase
     {
         $transports = bootstrap();
         $guzzle = $transports['guzzle'];
-        $catchExceptions = $transports['catch_guzzle_exceptions'];
         $log = $transports['logger']($this->createMock(LoggerInterface::class));
         $throwClient = $transports['throw_client'];
         $throwServer = $transports['throw_server'];
@@ -30,10 +29,6 @@ class BootstrapTest extends TestCase
         $this->assertInstanceOf(GuzzleTransport::class, $guzzle(
             $this->createMock(ClientInterface::class)
         ));
-        $this->assertInstanceOf(
-            CatchGuzzleBadResponseExceptionTransport::class,
-            $catchExceptions($guzzle())
-        );
         $this->assertInternalType('callable', $log);
         $this->assertInstanceOf(LoggerTransport::class, $log($guzzle()));
         $this->assertInternalType('callable', $throwClient);
