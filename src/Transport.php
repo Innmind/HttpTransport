@@ -5,7 +5,7 @@ namespace Innmind\HttpTransport;
 
 use Innmind\Http\Message\{
     Request,
-    Response
+    Response,
 };
 
 interface Transport

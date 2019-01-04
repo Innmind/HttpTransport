@@ -8,12 +8,12 @@ use Innmind\Http\{
     Message\Request,
     Message\Response,
     Translator\Response\Psr7Translator,
-    Header\Value
+    Header\Value,
 };
 use GuzzleHttp\{
     ClientInterface,
     Exception\ConnectException as GuzzleConnectException,
-    Exception\BadResponseException
+    Exception\BadResponseException,
 };
 
 final class DefaultTransport implements Transport

@@ -5,11 +5,11 @@ namespace Innmind\HttpTransport;
 
 use Innmind\HttpTransport\Exception\{
     ClientError,
-    ServerError
+    ServerError,
 };
 use Innmind\Http\Message\{
     Request,
-    Response
+    Response,
 };
 
 final class ThrowOnErrorTransport implements Transport

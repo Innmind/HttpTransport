@@ -6,7 +6,7 @@ namespace Tests\Innmind\HttpTransport;
 use Innmind\HttpTransport\{
     DefaultTransport,
     Transport,
-    Exception\ConnectionFailed
+    Exception\ConnectionFailed,
 };
 use Innmind\Url\Url;
 use Innmind\Http\{
@@ -19,18 +19,18 @@ use Innmind\Http\{
     Headers\Headers,
     Header,
     Header\ContentType,
-    Header\ContentTypeValue
+    Header\ContentTypeValue,
 };
 use Innmind\Filesystem\Stream\StringStream;
 use Innmind\Immutable\Map;
 use GuzzleHttp\{
     ClientInterface,
     Exception\ConnectException,
-    Exception\BadResponseException
+    Exception\BadResponseException,
 };
 use Psr\Http\Message\{
     ResponseInterface as Psr7ResponseInterface,
-    RequestInterface as Psr7RequestInterface
+    RequestInterface as Psr7RequestInterface,
 };
 use PHPUnit\Framework\TestCase;
 

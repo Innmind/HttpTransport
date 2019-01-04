@@ -7,12 +7,12 @@ use Innmind\HttpTransport\{
     ThrowOnErrorTransport,
     Transport,
     Exception\ClientError,
-    Exception\ServerError
+    Exception\ServerError,
 };
 use Innmind\Http\Message\{
     Request,
     Response,
-    StatusCode\StatusCode
+    StatusCode\StatusCode,
 };
 use PHPUnit\Framework\TestCase;
 

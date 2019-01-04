@@ -5,7 +5,7 @@ namespace Tests\Innmind\HttpTransport;
 
 use Innmind\HttpTransport\{
     LoggerTransport,
-    Transport
+    Transport,
 };
 use Innmind\Http\{
     Message\Request,
@@ -14,7 +14,7 @@ use Innmind\Http\{
     Message\Method\Method,
     Headers\Headers,
     Header,
-    Header\Value\Value
+    Header\Value\Value,
 };
 use Innmind\Url\Url;
 use Innmind\Filesystem\Stream\StringStream;

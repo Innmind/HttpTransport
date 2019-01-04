@@ -6,11 +6,11 @@ namespace Innmind\HttpTransport;
 use Innmind\Http\{
     Message\Request,
     Message\Response,
-    Headers
+    Headers,
 };
 use Psr\Log\{
     LoggerInterface,
-    LogLevel
+    LogLevel,
 };
 use Ramsey\Uuid\Uuid;
 

@@ -5,7 +5,7 @@ namespace Innmind\HttpTransport\Exception;
 
 use Innmind\Http\Message\{
     Request,
-    Response
+    Response,
 };
 
 final class ServerError extends RuntimeException
