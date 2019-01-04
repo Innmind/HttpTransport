@@ -16,15 +16,15 @@ composer require innmind/http-transport
 
 ## Usage
 
-Send request via guzzle:
+Send a request:
 
 ```php
 use function Innmind\HttpTransport\bootstrap;
 use Innmind\Http\Message\Request\Request;
 
-$transport = bootstrap()['guzzle']();
+$fulfill = bootstrap()['default']();
 
-$response = $transport->fulfill(
+$response = $fulfill(
     new Request(/* initialize your request */)
 );
 ```
@@ -37,16 +37,13 @@ You can easily log all your request like so:
 use Psr\Log\LoggerInterface;
 
 $transports = bootstrap();
-$guzzle = $transports['guzzle']();
-$catchGuzzleExceptions = $transports['cacth_guzzle_exceptions'];
-$log = $transports['logger'](/* an instance of LoggerInterface */, 'info' /* default to debug */);
-$transport = $log(
-    $catchGuzzleExceptions(
-        $guzzle
-    )
+$guzzle = $transports['default']();
+$log = $transports['logger'](/* an instance of LoggerInterface */);
+$fulfill = $log(
+    $default
 );
 
-$transport->fulfill(/* your request */):
+$fulfill(/* your request */):
 ```
 
 Here a message is logged before the request is sent and another one once its sent.

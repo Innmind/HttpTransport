@@ -5,7 +5,7 @@ namespace Tests\Innmind\HttpTransport;
 
 use Innmind\HttpTransport\{
     LoggerTransport,
-    Transport
+    Transport,
 };
 use Innmind\Http\{
     Message\Request,
@@ -14,7 +14,7 @@ use Innmind\Http\{
     Message\Method\Method,
     Headers\Headers,
     Header,
-    Header\Value\Value
+    Header\Value\Value,
 };
 use Innmind\Url\Url;
 use Innmind\Filesystem\Stream\StringStream;
@@ -24,16 +24,15 @@ use PHPUnit\Framework\TestCase;
 
 class LoggerTransportTest extends TestCase
 {
-    private $transport;
+    private $fulfill;
     private $inner;
     private $logger;
 
     public function setUp()
     {
-        $this->transport = new LoggerTransport(
+        $this->fulfill = new LoggerTransport(
             $this->inner = $this->createMock(Transport::class),
-            $this->logger = $this->createMock(LoggerInterface::class),
-            'emergency'
+            $this->logger = $this->createMock(LoggerInterface::class)
         );
     }
 
@@ -41,7 +40,7 @@ class LoggerTransportTest extends TestCase
     {
         $this->assertInstanceOf(
             Transport::class,
-            $this->transport
+            $this->fulfill
         );
     }
 
@@ -87,7 +86,7 @@ class LoggerTransportTest extends TestCase
         $this
             ->inner
             ->expects($this->once())
-            ->method('fulfill')
+            ->method('__invoke')
             ->with($request)
             ->willReturn(
                 $expected = $this->createMock(Response::class)
@@ -119,9 +118,8 @@ class LoggerTransportTest extends TestCase
         $this
             ->logger
             ->expects($this->at(0))
-            ->method('log')
+            ->method('debug')
             ->with(
-                'emergency',
                 'Http request about to be sent',
                 $this->callback(function(array $data) use (&$reference): bool {
                     $reference = $data['reference'];
@@ -136,9 +134,8 @@ class LoggerTransportTest extends TestCase
         $this
             ->logger
             ->expects($this->at(1))
-            ->method('log')
+            ->method('debug')
             ->with(
-                'emergency',
                 'Http request sent',
                 $this->callback(function(array $data) use (&$reference): bool {
                     return $data['statusCode'] === 200 &&
@@ -148,7 +145,7 @@ class LoggerTransportTest extends TestCase
                 })
             );
 
-        $response = $this->transport->fulfill($request);
+        $response = ($this->fulfill)($request);
 
         $this->assertSame($expected, $response);
         $this->assertSame('idk', (string) $body->read());

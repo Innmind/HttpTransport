@@ -4,9 +4,9 @@ declare(strict_types = 1);
 namespace Tests\Innmind\HttpTransport;
 
 use Innmind\HttpTransport\{
-    GuzzleTransport,
+    DefaultTransport,
     Transport,
-    Exception\ConnectionFailed
+    Exception\ConnectionFailed,
 };
 use Innmind\Url\Url;
 use Innmind\Http\{
@@ -19,22 +19,26 @@ use Innmind\Http\{
     Headers\Headers,
     Header,
     Header\ContentType,
-    Header\ContentTypeValue
+    Header\ContentTypeValue,
 };
 use Innmind\Filesystem\Stream\StringStream;
 use Innmind\Immutable\Map;
 use GuzzleHttp\{
     ClientInterface,
-    Exception\ConnectException
+    Exception\ConnectException,
+    Exception\BadResponseException,
 };
-use Psr\Http\Message\ResponseInterface as Psr7ResponseInterface;
+use Psr\Http\Message\{
+    ResponseInterface as Psr7ResponseInterface,
+    RequestInterface as Psr7RequestInterface,
+};
 use PHPUnit\Framework\TestCase;
 
-class GuzzleTransportTest extends TestCase
+class DefaultTransportTest extends TestCase
 {
     public function testFulfill()
     {
-        $transport = new GuzzleTransport(
+        $fulfill = new DefaultTransport(
             $client = $this->createMock(ClientInterface::class),
             new Psr7Translator(
                 $this->createMock(HeaderFactory::class)
@@ -61,7 +65,7 @@ class GuzzleTransportTest extends TestCase
             ->method('getHeaders')
             ->willReturn([]);
 
-        $response = $transport->fulfill(
+        $response = ($fulfill)(
             new Request(
                 Url::fromString('http://example.com'),
                 new Method('GET'),
@@ -71,13 +75,13 @@ class GuzzleTransportTest extends TestCase
             )
         );
 
-        $this->assertInstanceOf(Transport::class, $transport);
+        $this->assertInstanceOf(Transport::class, $fulfill);
         $this->assertInstanceOf(Response::class, $response);
     }
 
     public function testThrowOnConnectException()
     {
-        $transport = new GuzzleTransport(
+        $fulfill = new DefaultTransport(
             $client = $this->createMock(ClientInterface::class),
             new Psr7Translator(
                 $this->createMock(HeaderFactory::class)
@@ -98,7 +102,7 @@ class GuzzleTransportTest extends TestCase
             );
 
         try {
-            $transport->fulfill(
+            ($fulfill)(
                 $request = new Request(
                     Url::fromString('http://example.com'),
                     new Method('GET'),
@@ -115,7 +119,7 @@ class GuzzleTransportTest extends TestCase
 
     public function testFulfillWithMethod()
     {
-        $transport = new GuzzleTransport(
+        $fulfill = new DefaultTransport(
             $client = $this->createMock(ClientInterface::class),
             new Psr7Translator(
                 $this->createMock(HeaderFactory::class)
@@ -142,7 +146,7 @@ class GuzzleTransportTest extends TestCase
             ->method('getHeaders')
             ->willReturn([]);
 
-        $response = $transport->fulfill(
+        $response = ($fulfill)(
             new Request(
                 Url::fromString('http://example.com'),
                 new Method('POST'),
@@ -157,7 +161,7 @@ class GuzzleTransportTest extends TestCase
 
     public function testFulfillWithHeaders()
     {
-        $transport = new GuzzleTransport(
+        $fulfill = new DefaultTransport(
             $client = $this->createMock(ClientInterface::class),
             new Psr7Translator(
                 $this->createMock(HeaderFactory::class)
@@ -186,7 +190,7 @@ class GuzzleTransportTest extends TestCase
             ->method('getHeaders')
             ->willReturn([]);
 
-        $response = $transport->fulfill(
+        $response = ($fulfill)(
             new Request(
                 Url::fromString('http://example.com'),
                 new Method('GET'),
@@ -212,7 +216,7 @@ class GuzzleTransportTest extends TestCase
 
     public function testFulfillWithPayload()
     {
-        $transport = new GuzzleTransport(
+        $fulfill = new DefaultTransport(
             $client = $this->createMock(ClientInterface::class),
             new Psr7Translator(
                 $this->createMock(HeaderFactory::class)
@@ -241,7 +245,7 @@ class GuzzleTransportTest extends TestCase
             ->method('getHeaders')
             ->willReturn([]);
 
-        $response = $transport->fulfill(
+        $response = ($fulfill)(
             new Request(
                 Url::fromString('http://example.com'),
                 new Method('GET'),
@@ -256,7 +260,7 @@ class GuzzleTransportTest extends TestCase
 
     public function testFulfillCompletelyModifiedRequest()
     {
-        $transport = new GuzzleTransport(
+        $fulfill = new DefaultTransport(
             $client = $this->createMock(ClientInterface::class),
             new Psr7Translator(
                 $this->createMock(HeaderFactory::class)
@@ -286,7 +290,7 @@ class GuzzleTransportTest extends TestCase
             ->method('getHeaders')
             ->willReturn([]);
 
-        $response = $transport->fulfill(
+        $response = ($fulfill)(
             new Request(
                 Url::fromString('http://example.com'),
                 new Method('POST'),
@@ -307,6 +311,49 @@ class GuzzleTransportTest extends TestCase
             )
         );
 
+        $this->assertInstanceOf(Response::class, $response);
+    }
+
+    public function testCatchBadResponse()
+    {
+        $fulfill = new DefaultTransport(
+            $client = $this->createMock(ClientInterface::class),
+            new Psr7Translator(
+                $this->createMock(HeaderFactory::class)
+            )
+        );
+        $client
+            ->expects($this->once())
+            ->method('request')
+            ->with(
+                'GET',
+                'http://example.com/',
+                []
+            )
+            ->will($this->throwException(new BadResponseException(
+                'watev',
+                $this->createMock(Psr7RequestInterface::class),
+                $response = $this->createMock(Psr7ResponseInterface::class)
+            )));
+        $response
+            ->method('getProtocolVersion')
+            ->willReturn('1.1');
+        $response
+            ->method('getStatusCode')
+            ->willReturn(200);
+        $response
+            ->method('getHeaders')
+            ->willReturn([]);
+
+        $response = ($fulfill)(
+            new Request(
+                Url::fromString('http://example.com'),
+                new Method('GET'),
+                new ProtocolVersion(1, 1)
+            )
+        );
+
+        $this->assertInstanceOf(Transport::class, $fulfill);
         $this->assertInstanceOf(Response::class, $response);
     }
 }

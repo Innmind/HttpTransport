@@ -15,35 +15,23 @@ use Psr\Log\LoggerInterface;
 
 function bootstrap(): array
 {
-    $translator = new Psr7Translator(Factories::default());
-
     return [
-        'guzzle' => static function(ClientInterface $client = null) use ($translator): Transport {
-            return new GuzzleTransport(
+        'default' => static function(ClientInterface $client = null): Transport {
+            return new DefaultTransport(
                 $client ?? new Client,
-                $translator
+                new Psr7Translator(Factories::default())
             );
         },
-        'catch_guzzle_exceptions' => static function(Transport $transport) use ($translator): Transport {
-            return new CatchGuzzleBadResponseExceptionTransport(
-                $transport,
-                $translator
-            );
-        },
-        'logger' => static function(LoggerInterface $logger, string $level = null): callable {
-            return static function(Transport $transport) use ($logger, $level): Transport {
+        'logger' => static function(LoggerInterface $logger): callable {
+            return static function(Transport $transport) use ($logger): Transport {
                 return new LoggerTransport(
                     $transport,
-                    $logger,
-                    $level
+                    $logger
                 );
             };
         },
-        'throw_client' => static function(Transport $transport): Transport {
-            return new ThrowOnClientErrorTransport($transport);
-        },
-        'throw_server' => static function(Transport $transport): Transport {
-            return new ThrowOnServerErrorTransport($transport);
+        'throw_on_error' => static function(Transport $transport): Transport {
+            return new ThrowOnErrorTransport($transport);
         },
     ];
 }

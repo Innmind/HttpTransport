@@ -4,11 +4,9 @@ declare(strict_types = 1);
 namespace Tests\Innmind\HttpTransport;
 
 use Innmind\HttpTransport\{
-    GuzzleTransport,
-    CatchGuzzleBadResponseExceptionTransport,
+    DefaultTransport,
     LoggerTransport,
-    ThrowOnClientErrorTransport,
-    ThrowOnServerErrorTransport,
+    ThrowOnErrorTransport,
 };
 use function Innmind\HttpTransport\bootstrap;
 use GuzzleHttp\ClientInterface;
@@ -20,25 +18,17 @@ class BootstrapTest extends TestCase
     public function testBootstrap()
     {
         $transports = bootstrap();
-        $guzzle = $transports['guzzle'];
-        $catchExceptions = $transports['catch_guzzle_exceptions'];
+        $default = $transports['default'];
         $log = $transports['logger']($this->createMock(LoggerInterface::class));
-        $throwClient = $transports['throw_client'];
-        $throwServer = $transports['throw_server'];
+        $throw = $transports['throw_on_error'];
 
-        $this->assertInstanceOf(GuzzleTransport::class, $guzzle());
-        $this->assertInstanceOf(GuzzleTransport::class, $guzzle(
+        $this->assertInstanceOf(DefaultTransport::class, $default());
+        $this->assertInstanceOf(DefaultTransport::class, $default(
             $this->createMock(ClientInterface::class)
         ));
-        $this->assertInstanceOf(
-            CatchGuzzleBadResponseExceptionTransport::class,
-            $catchExceptions($guzzle())
-        );
         $this->assertInternalType('callable', $log);
-        $this->assertInstanceOf(LoggerTransport::class, $log($guzzle()));
-        $this->assertInternalType('callable', $throwClient);
-        $this->assertInstanceOf(ThrowOnClientErrorTransport::class, $throwClient($guzzle()));
-        $this->assertInternalType('callable', $throwServer);
-        $this->assertInstanceOf(ThrowOnServerErrorTransport::class, $throwServer($guzzle()));
+        $this->assertInstanceOf(LoggerTransport::class, $log($default()));
+        $this->assertInternalType('callable', $throw);
+        $this->assertInstanceOf(ThrowOnErrorTransport::class, $throw($default()));
     }
 }

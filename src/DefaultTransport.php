@@ -8,14 +8,15 @@ use Innmind\Http\{
     Message\Request,
     Message\Response,
     Translator\Response\Psr7Translator,
-    Header\Value
+    Header\Value,
 };
 use GuzzleHttp\{
     ClientInterface,
-    Exception\ConnectException as GuzzleConnectException
+    Exception\ConnectException as GuzzleConnectException,
+    Exception\BadResponseException,
 };
 
-final class GuzzleTransport implements Transport
+final class DefaultTransport implements Transport
 {
     private $client;
     private $translator;
@@ -28,7 +29,7 @@ final class GuzzleTransport implements Transport
         $this->translator = $translator;
     }
 
-    public function fulfill(Request $request): Response
+    public function __invoke(Request $request): Response
     {
         $options = [];
         $headers = [];
@@ -62,6 +63,8 @@ final class GuzzleTransport implements Transport
             );
         } catch (GuzzleConnectException $e) {
             throw new ConnectionFailed($request, $e);
+        } catch (BadResponseException $e) {
+            $response = $e->getResponse();
         }
 
         return $this->translator->translate($response);

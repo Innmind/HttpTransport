@@ -5,10 +5,10 @@ namespace Innmind\HttpTransport;
 
 use Innmind\Http\Message\{
     Request,
-    Response
+    Response,
 };
 
 interface Transport
 {
-    public function fulfill(Request $request): Response;
+    public function __invoke(Request $request): Response;
 }

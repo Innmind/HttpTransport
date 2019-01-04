@@ -4,25 +4,26 @@ declare(strict_types = 1);
 namespace Tests\Innmind\HttpTransport;
 
 use Innmind\HttpTransport\{
-    ThrowOnServerErrorTransport,
+    ThrowOnErrorTransport,
     Transport,
-    Exception\ServerError
+    Exception\ClientError,
+    Exception\ServerError,
 };
 use Innmind\Http\Message\{
     Request,
     Response,
-    StatusCode\StatusCode
+    StatusCode\StatusCode,
 };
 use PHPUnit\Framework\TestCase;
 
-class ThrowOnServerErrorTransportTest extends TestCase
+class ThrowOnErrorTransportTest extends TestCase
 {
-    private $transport;
+    private $fulfill;
     private $inner;
 
     public function setUp()
     {
-        $this->transport = new ThrowOnServerErrorTransport(
+        $this->fulfill = new ThrowOnErrorTransport(
             $this->inner = $this->createMock(Transport::class)
         );
     }
@@ -31,7 +32,7 @@ class ThrowOnServerErrorTransportTest extends TestCase
     {
         $this->assertInstanceOf(
             Transport::class,
-            $this->transport
+            $this->fulfill
         );
     }
 
@@ -41,28 +42,28 @@ class ThrowOnServerErrorTransportTest extends TestCase
         $this
             ->inner
             ->expects($this->once())
-            ->method('fulfill')
+            ->method('__invoke')
             ->with($request)
             ->willReturn(
                 $expected = $this->createMock(Response::class)
             );
         $expected
-            ->expects($this->once())
+            ->expects($this->any())
             ->method('statusCode')
-            ->willReturn(new StatusCode(400));
+            ->willReturn(new StatusCode(300));
 
-        $response = $this->transport->fulfill($request);
+        $response = ($this->fulfill)($request);
 
         $this->assertSame($expected, $response);
     }
 
-    public function testThrow()
+    public function testThrowOnClientError()
     {
         $request = $this->createMock(Request::class);
         $this
             ->inner
             ->expects($this->once())
-            ->method('fulfill')
+            ->method('__invoke')
             ->with($request)
             ->willReturn(
                 $response = $this->createMock(Response::class)
@@ -70,10 +71,36 @@ class ThrowOnServerErrorTransportTest extends TestCase
         $response
             ->expects($this->once())
             ->method('statusCode')
-            ->willReturn(new StatusCode(503));
+            ->willReturn(new StatusCode(404));
 
         try {
-            $this->transport->fulfill($request);
+            ($this->fulfill)($request);
+
+            $this->fail('it should throw an exception');
+        } catch (ClientError $e) {
+            $this->assertSame($request, $e->request());
+            $this->assertSame($response, $e->response());
+        }
+    }
+
+    public function testThrowOnServerError()
+    {
+        $request = $this->createMock(Request::class);
+        $this
+            ->inner
+            ->expects($this->once())
+            ->method('__invoke')
+            ->with($request)
+            ->willReturn(
+                $response = $this->createMock(Response::class)
+            );
+        $response
+            ->expects($this->any())
+            ->method('statusCode')
+            ->willReturn(new StatusCode(500));
+
+        try {
+            ($this->fulfill)($request);
 
             $this->fail('it should throw an exception');
         } catch (ServerError $e) {
