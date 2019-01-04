@@ -16,8 +16,8 @@ use Psr\Log\LoggerInterface;
 function bootstrap(): array
 {
     return [
-        'guzzle' => static function(ClientInterface $client = null): Transport {
-            return new GuzzleTransport(
+        'default' => static function(ClientInterface $client = null): Transport {
+            return new DefaultTransport(
                 $client ?? new Client,
                 new Psr7Translator(Factories::default())
             );

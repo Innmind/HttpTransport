@@ -4,7 +4,7 @@ declare(strict_types = 1);
 namespace Tests\Innmind\HttpTransport;
 
 use Innmind\HttpTransport\{
-    GuzzleTransport,
+    DefaultTransport,
     Transport,
     Exception\ConnectionFailed
 };
@@ -34,11 +34,11 @@ use Psr\Http\Message\{
 };
 use PHPUnit\Framework\TestCase;
 
-class GuzzleTransportTest extends TestCase
+class DefaultTransportTest extends TestCase
 {
     public function testFulfill()
     {
-        $fulfill = new GuzzleTransport(
+        $fulfill = new DefaultTransport(
             $client = $this->createMock(ClientInterface::class),
             new Psr7Translator(
                 $this->createMock(HeaderFactory::class)
@@ -81,7 +81,7 @@ class GuzzleTransportTest extends TestCase
 
     public function testThrowOnConnectException()
     {
-        $fulfill = new GuzzleTransport(
+        $fulfill = new DefaultTransport(
             $client = $this->createMock(ClientInterface::class),
             new Psr7Translator(
                 $this->createMock(HeaderFactory::class)
@@ -119,7 +119,7 @@ class GuzzleTransportTest extends TestCase
 
     public function testFulfillWithMethod()
     {
-        $fulfill = new GuzzleTransport(
+        $fulfill = new DefaultTransport(
             $client = $this->createMock(ClientInterface::class),
             new Psr7Translator(
                 $this->createMock(HeaderFactory::class)
@@ -161,7 +161,7 @@ class GuzzleTransportTest extends TestCase
 
     public function testFulfillWithHeaders()
     {
-        $fulfill = new GuzzleTransport(
+        $fulfill = new DefaultTransport(
             $client = $this->createMock(ClientInterface::class),
             new Psr7Translator(
                 $this->createMock(HeaderFactory::class)
@@ -216,7 +216,7 @@ class GuzzleTransportTest extends TestCase
 
     public function testFulfillWithPayload()
     {
-        $fulfill = new GuzzleTransport(
+        $fulfill = new DefaultTransport(
             $client = $this->createMock(ClientInterface::class),
             new Psr7Translator(
                 $this->createMock(HeaderFactory::class)
@@ -260,7 +260,7 @@ class GuzzleTransportTest extends TestCase
 
     public function testFulfillCompletelyModifiedRequest()
     {
-        $fulfill = new GuzzleTransport(
+        $fulfill = new DefaultTransport(
             $client = $this->createMock(ClientInterface::class),
             new Psr7Translator(
                 $this->createMock(HeaderFactory::class)
@@ -316,7 +316,7 @@ class GuzzleTransportTest extends TestCase
 
     public function testCatchBadResponse()
     {
-        $fulfill = new GuzzleTransport(
+        $fulfill = new DefaultTransport(
             $client = $this->createMock(ClientInterface::class),
             new Psr7Translator(
                 $this->createMock(HeaderFactory::class)

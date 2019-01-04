@@ -16,7 +16,7 @@ use GuzzleHttp\{
     Exception\BadResponseException
 };
 
-final class GuzzleTransport implements Transport
+final class DefaultTransport implements Transport
 {
     private $client;
     private $translator;
