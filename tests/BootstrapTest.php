@@ -5,10 +5,8 @@ namespace Tests\Innmind\HttpTransport;
 
 use Innmind\HttpTransport\{
     DefaultTransport,
-    CatchGuzzleBadResponseExceptionTransport,
     LoggerTransport,
     ThrowOnErrorTransport,
-    ThrowOnServerErrorTransport,
 };
 use function Innmind\HttpTransport\bootstrap;
 use GuzzleHttp\ClientInterface;
