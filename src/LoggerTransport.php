@@ -8,32 +8,25 @@ use Innmind\Http\{
     Message\Response,
     Headers,
 };
-use Psr\Log\{
-    LoggerInterface,
-    LogLevel,
-};
+use Psr\Log\LoggerInterface;
 use Ramsey\Uuid\Uuid;
 
 final class LoggerTransport implements Transport
 {
     private $fulfill;
     private $logger;
-    private $level;
 
     public function __construct(
         Transport $fulfill,
-        LoggerInterface $logger,
-        string $level = null
+        LoggerInterface $logger
     ) {
         $this->fulfill = $fulfill;
         $this->logger = $logger;
-        $this->level = $level ?? LogLevel::DEBUG;
     }
 
     public function __invoke(Request $request): Response
     {
-        $this->logger->log(
-            $this->level,
+        $this->logger->debug(
             'Http request about to be sent',
             [
                 'method' => (string) $request->method(),
@@ -47,8 +40,7 @@ final class LoggerTransport implements Transport
         $response = ($this->fulfill)($request);
         $body = $response->body();
 
-        $this->logger->log(
-            $this->level,
+        $this->logger->debug(
             'Http request sent',
             [
                 'statusCode' => $response->statusCode()->value(),

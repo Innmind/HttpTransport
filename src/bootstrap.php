@@ -22,12 +22,11 @@ function bootstrap(): array
                 new Psr7Translator(Factories::default())
             );
         },
-        'logger' => static function(LoggerInterface $logger, string $level = null): callable {
-            return static function(Transport $transport) use ($logger, $level): Transport {
+        'logger' => static function(LoggerInterface $logger): callable {
+            return static function(Transport $transport) use ($logger): Transport {
                 return new LoggerTransport(
                     $transport,
-                    $logger,
-                    $level
+                    $logger
                 );
             };
         },

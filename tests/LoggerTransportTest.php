@@ -32,8 +32,7 @@ class LoggerTransportTest extends TestCase
     {
         $this->fulfill = new LoggerTransport(
             $this->inner = $this->createMock(Transport::class),
-            $this->logger = $this->createMock(LoggerInterface::class),
-            'emergency'
+            $this->logger = $this->createMock(LoggerInterface::class)
         );
     }
 
@@ -119,9 +118,8 @@ class LoggerTransportTest extends TestCase
         $this
             ->logger
             ->expects($this->at(0))
-            ->method('log')
+            ->method('debug')
             ->with(
-                'emergency',
                 'Http request about to be sent',
                 $this->callback(function(array $data) use (&$reference): bool {
                     $reference = $data['reference'];
@@ -136,9 +134,8 @@ class LoggerTransportTest extends TestCase
         $this
             ->logger
             ->expects($this->at(1))
-            ->method('log')
+            ->method('debug')
             ->with(
-                'emergency',
                 'Http request sent',
                 $this->callback(function(array $data) use (&$reference): bool {
                     return $data['statusCode'] === 200 &&
