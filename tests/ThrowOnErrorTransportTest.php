@@ -69,7 +69,7 @@ class ThrowOnErrorTransportTest extends TestCase
                 $response = $this->createMock(Response::class)
             );
         $response
-            ->expects($this->once())
+            ->expects($this->any())
             ->method('statusCode')
             ->willReturn(new StatusCode(404));
 

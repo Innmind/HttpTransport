@@ -10,6 +10,7 @@ use Innmind\HttpTransport\Exception\{
 use Innmind\Http\Message\{
     Request,
     Response,
+    StatusCode\StatusCode,
 };
 
 final class ThrowOnErrorTransport implements Transport
@@ -29,11 +30,11 @@ final class ThrowOnErrorTransport implements Transport
     {
         $response = ($this->fulfill)($request);
 
-        if ($response->statusCode()->value() % 400 < 100) {
+        if (StatusCode::isClientError($response->statusCode())) {
             throw new ClientError($request, $response);
         }
 
-        if ($response->statusCode()->value() % 500 < 100) {
+        if (StatusCode::isServerError($response->statusCode())) {
             throw new ServerError($request, $response);
         }
 
