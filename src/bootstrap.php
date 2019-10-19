@@ -7,6 +7,8 @@ use Innmind\Http\{
     Translator\Response\Psr7Translator,
     Factory\Header\Factories,
 };
+use Innmind\TimeWarp\Halt;
+use Innmind\TimeContinuum\TimeContinuumInterface;
 use GuzzleHttp\{
     ClientInterface,
     Client,
@@ -33,5 +35,8 @@ function bootstrap(): array
         'throw_on_error' => static function(Transport $transport): Transport {
             return new ThrowOnErrorTransport($transport);
         },
+        'exponential_backoff' => static function(Transport $transport, Halt $halt, TimeContinuumInterface $clock): Transport {
+            return ExponentialBackoffTransport::of($transport, $halt, $clock);
+        }
     ];
 }
