@@ -7,8 +7,15 @@ use Innmind\HttpTransport\{
     DefaultTransport,
     LoggerTransport,
     ThrowOnErrorTransport,
+    ExponentialBackoffTransport,
+    CircuitBreakerTransport,
 };
 use function Innmind\HttpTransport\bootstrap;
+use Innmind\TimeWarp\Halt;
+use Innmind\TimeContinuum\{
+    TimeContinuumInterface,
+    PeriodInterface,
+};
 use GuzzleHttp\ClientInterface;
 use Psr\Log\LoggerInterface;
 use PHPUnit\Framework\TestCase;
@@ -21,6 +28,8 @@ class BootstrapTest extends TestCase
         $default = $transports['default'];
         $log = $transports['logger']($this->createMock(LoggerInterface::class));
         $throw = $transports['throw_on_error'];
+        $backoff = $transports['exponential_backoff'];
+        $breaker = $transports['circuit_breaker'];
 
         $this->assertInstanceOf(DefaultTransport::class, $default());
         $this->assertInstanceOf(DefaultTransport::class, $default(
@@ -30,5 +39,23 @@ class BootstrapTest extends TestCase
         $this->assertInstanceOf(LoggerTransport::class, $log($default()));
         $this->assertInternalType('callable', $throw);
         $this->assertInstanceOf(ThrowOnErrorTransport::class, $throw($default()));
+        $this->assertInternalType('callable', $backoff);
+        $this->assertInstanceOf(
+            ExponentialBackoffTransport::class,
+            $backoff(
+                $default(),
+                $this->createMock(Halt::class),
+                $this->createMock(TimeContinuumInterface::class)
+            )
+        );
+        $this->assertInternalType('callable', $breaker);
+        $this->assertInstanceOf(
+            CircuitBreakerTransport::class,
+            $breaker(
+                $default(),
+                $this->createMock(TimeContinuumInterface::class),
+                $this->createMock(PeriodInterface::class)
+            )
+        );
     }
 }
