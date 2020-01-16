@@ -15,7 +15,7 @@
         "issues": "http://github.com/Innmind/HttpTransport/issues"
     },
     "require": {
-        "php": "~7.2",
+        "php": "~7.4",
         "innmind/http": "~3.11",
         "guzzlehttp/guzzle": "^6.2",
         "psr/log": "^1.0",

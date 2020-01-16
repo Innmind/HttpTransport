@@ -24,14 +24,14 @@ function bootstrap(): array
         'default' => static function(ClientInterface $client = null): Transport {
             return new DefaultTransport(
                 $client ?? new Client,
-                new Psr7Translator(Factories::default())
+                new Psr7Translator(Factories::default()),
             );
         },
         'logger' => static function(LoggerInterface $logger): callable {
             return static function(Transport $transport) use ($logger): Transport {
                 return new LoggerTransport(
                     $transport,
-                    $logger
+                    $logger,
                 );
             };
         },

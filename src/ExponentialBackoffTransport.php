@@ -18,10 +18,10 @@ use Innmind\Immutable\Sequence;
 
 final class ExponentialBackoffTransport implements Transport
 {
-    private $fulfill;
-    private $halt;
-    private $clock;
-    private $retries;
+    private Transport $fulfill;
+    private Halt $halt;
+    private TimeContinuumInterface $clock;
+    private Sequence $retries;
 
     public function __construct(
         Transport $fulfill,
@@ -49,7 +49,7 @@ final class ExponentialBackoffTransport implements Transport
             new Millisecond((int) (\exp(1) * 100)),
             new Millisecond((int) (\exp(2) * 100)),
             new Millisecond((int) (\exp(3) * 100)),
-            new Millisecond((int) (\exp(4) * 100))
+            new Millisecond((int) (\exp(4) * 100)),
         );
     }
 

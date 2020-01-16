@@ -22,11 +22,11 @@ use Innmind\Immutable\Map;
 
 final class CircuitBreakerTransport implements Transport
 {
-    private $fulfill;
-    private $clock;
-    private $delayBeforeRetry;
-    private $closedCircuits;
-    private $defaultResponse;
+    private Transport $fulfill;
+    private TimeContinuumInterface $clock;
+    private PeriodInterface $delayBeforeRetry;
+    private Map $closedCircuits;
+    private ?Response $defaultResponse;
 
     public function __construct(
         Transport $fulfill,
@@ -58,7 +58,7 @@ final class CircuitBreakerTransport implements Transport
     {
         $this->closedCircuits = $this->closedCircuits->put(
             $this->hash($url),
-            $this->clock->now()
+            $this->clock->now(),
         );
     }
 
@@ -84,9 +84,9 @@ final class CircuitBreakerTransport implements Transport
             Headers::of(
                 new Header(
                     'X-Circuit-Closed',
-                    new Value('true')
-                )
-            )
+                    new Value('true'),
+                ),
+            ),
         );
     }
 

@@ -18,8 +18,8 @@ use GuzzleHttp\{
 
 final class DefaultTransport implements Transport
 {
-    private $client;
-    private $translator;
+    private ClientInterface $client;
+    private Psr7Translator $translator;
 
     public function __construct(
         ClientInterface $client,
@@ -59,7 +59,7 @@ final class DefaultTransport implements Transport
             $response = $this->client->request(
                 (string) $request->method(),
                 (string) $request->url(),
-                $options
+                $options,
             );
         } catch (GuzzleConnectException $e) {
             throw new ConnectionFailed($request, $e);

@@ -15,7 +15,7 @@ use Innmind\Http\Message\{
 
 final class ThrowOnErrorTransport implements Transport
 {
-    private $fulfill;
+    private Transport $fulfill;
 
     public function __construct(Transport $fulfill)
     {

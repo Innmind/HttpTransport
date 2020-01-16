@@ -13,8 +13,8 @@ use Ramsey\Uuid\Uuid;
 
 final class LoggerTransport implements Transport
 {
-    private $fulfill;
-    private $logger;
+    private Transport $fulfill;
+    private LoggerInterface $logger;
 
     public function __construct(
         Transport $fulfill,
@@ -34,7 +34,7 @@ final class LoggerTransport implements Transport
                 'headers' => $this->normalize($request->headers()),
                 'body' => (string) $request->body(),
                 'reference' => $reference = (string) Uuid::uuid4(),
-            ]
+            ],
         );
 
         $response = ($this->fulfill)($request);
@@ -47,7 +47,7 @@ final class LoggerTransport implements Transport
                 'headers' => $this->normalize($response->headers()),
                 'body' => (string) $body,
                 'reference' => $reference,
-            ]
+            ],
         );
         $body->rewind();
 
