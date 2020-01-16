@@ -12,7 +12,7 @@ use Innmind\HttpTransport\{
 use Innmind\Http\Message\{
     Request,
     Response,
-    StatusCode\StatusCode,
+    StatusCode,
 };
 use PHPUnit\Framework\TestCase;
 
@@ -21,7 +21,7 @@ class ThrowOnErrorTransportTest extends TestCase
     private $fulfill;
     private $inner;
 
-    public function setUp()
+    public function setUp(): void
     {
         $this->fulfill = new ThrowOnErrorTransport(
             $this->inner = $this->createMock(Transport::class)

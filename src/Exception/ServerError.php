@@ -10,8 +10,8 @@ use Innmind\Http\Message\{
 
 final class ServerError extends RuntimeException
 {
-    private $request;
-    private $response;
+    private Request $request;
+    private Response $response;
 
     public function __construct(
         Request $request,

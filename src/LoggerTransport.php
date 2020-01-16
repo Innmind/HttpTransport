@@ -7,14 +7,17 @@ use Innmind\Http\{
     Message\Request,
     Message\Response,
     Headers,
+    Header,
+    Header\Value,
 };
+use function Innmind\Immutable\join;
 use Psr\Log\LoggerInterface;
 use Ramsey\Uuid\Uuid;
 
 final class LoggerTransport implements Transport
 {
-    private $fulfill;
-    private $logger;
+    private Transport $fulfill;
+    private LoggerInterface $logger;
 
     public function __construct(
         Transport $fulfill,
@@ -29,12 +32,12 @@ final class LoggerTransport implements Transport
         $this->logger->debug(
             'Http request about to be sent',
             [
-                'method' => (string) $request->method(),
-                'url' => (string) $request->url(),
+                'method' => $request->method()->toString(),
+                'url' => $request->url()->toString(),
                 'headers' => $this->normalize($request->headers()),
-                'body' => (string) $request->body(),
-                'reference' => $reference = (string) Uuid::uuid4(),
-            ]
+                'body' => $request->body()->toString(),
+                'reference' => $reference = Uuid::uuid4()->toString(),
+            ],
         );
 
         $response = ($this->fulfill)($request);
@@ -45,9 +48,9 @@ final class LoggerTransport implements Transport
             [
                 'statusCode' => $response->statusCode()->value(),
                 'headers' => $this->normalize($response->headers()),
-                'body' => (string) $body,
+                'body' => $body->toString(),
                 'reference' => $reference,
-            ]
+            ],
         );
         $body->rewind();
 
@@ -56,12 +59,17 @@ final class LoggerTransport implements Transport
 
     private function normalize(Headers $headers): array
     {
-        $normalized = [];
+        return $headers->reduce(
+            [],
+            static function(array $headers, Header $header): array {
+                $values = $header->values()->mapTo(
+                    'string',
+                    fn(Value $value): string => $value->toString(),
+                );
+                $headers[$header->name()] = join(', ', $values)->toString();
 
-        foreach ($headers as $name => $header) {
-            $normalized[$name] = (string) $header->values()->join(', ');
-        }
-
-        return $normalized;
+                return $headers;
+            }
+        );
     }
 }

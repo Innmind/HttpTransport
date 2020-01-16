@@ -13,8 +13,8 @@ use Innmind\HttpTransport\{
 use function Innmind\HttpTransport\bootstrap;
 use Innmind\TimeWarp\Halt;
 use Innmind\TimeContinuum\{
-    TimeContinuumInterface,
-    PeriodInterface,
+    Clock,
+    Period,
 };
 use GuzzleHttp\ClientInterface;
 use Psr\Log\LoggerInterface;
@@ -35,26 +35,26 @@ class BootstrapTest extends TestCase
         $this->assertInstanceOf(DefaultTransport::class, $default(
             $this->createMock(ClientInterface::class)
         ));
-        $this->assertInternalType('callable', $log);
+        $this->assertIsCallable($log);
         $this->assertInstanceOf(LoggerTransport::class, $log($default()));
-        $this->assertInternalType('callable', $throw);
+        $this->assertIsCallable($throw);
         $this->assertInstanceOf(ThrowOnErrorTransport::class, $throw($default()));
-        $this->assertInternalType('callable', $backoff);
+        $this->assertIsCallable($backoff);
         $this->assertInstanceOf(
             ExponentialBackoffTransport::class,
             $backoff(
                 $default(),
                 $this->createMock(Halt::class),
-                $this->createMock(TimeContinuumInterface::class)
+                $this->createMock(Clock::class)
             )
         );
-        $this->assertInternalType('callable', $breaker);
+        $this->assertIsCallable($breaker);
         $this->assertInstanceOf(
             CircuitBreakerTransport::class,
             $breaker(
                 $default(),
-                $this->createMock(TimeContinuumInterface::class),
-                $this->createMock(PeriodInterface::class)
+                $this->createMock(Clock::class),
+                $this->createMock(Period::class)
             )
         );
     }

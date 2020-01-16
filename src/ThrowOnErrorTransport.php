@@ -10,12 +10,12 @@ use Innmind\HttpTransport\Exception\{
 use Innmind\Http\Message\{
     Request,
     Response,
-    StatusCode\StatusCode,
+    StatusCode,
 };
 
 final class ThrowOnErrorTransport implements Transport
 {
-    private $fulfill;
+    private Transport $fulfill;
 
     public function __construct(Transport $fulfill)
     {
@@ -30,11 +30,11 @@ final class ThrowOnErrorTransport implements Transport
     {
         $response = ($this->fulfill)($request);
 
-        if (StatusCode::isClientError($response->statusCode())) {
+        if ($response->statusCode()->isClientError()) {
             throw new ClientError($request, $response);
         }
 
-        if (StatusCode::isServerError($response->statusCode())) {
+        if ($response->statusCode()->isServerError()) {
             throw new ServerError($request, $response);
         }
 

@@ -7,7 +7,7 @@ use Innmind\Http\Message\Request;
 
 final class ConnectionFailed extends RuntimeException
 {
-    private $request;
+    private Request $request;
 
     public function __construct(
         Request $request,
@@ -16,8 +16,8 @@ final class ConnectionFailed extends RuntimeException
         $this->request = $request;
         parent::__construct(
             $e->getMessage(),
-            $e->getCode(),
-            $e
+            (int) $e->getCode(),
+            $e,
         );
     }
 
