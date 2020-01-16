@@ -30,7 +30,7 @@ $response = $fulfill(
 
 ## Log the request
 
-You can easily log all your request like so:
+You can easily log all your requests like so:
 
 ```php
 use Psr\Log\LoggerInterface;
@@ -45,7 +45,7 @@ $fulfill = $log(
 $fulfill(/* your request */);
 ```
 
-Here a message is logged before the request is sent and another one once its sent.
+Here a message is logged before the request is sent and another one once it's sent.
 
 ## Exponential Backoff
 
