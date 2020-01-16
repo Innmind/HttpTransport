@@ -21,7 +21,7 @@ class ThrowOnErrorTransportTest extends TestCase
     private $fulfill;
     private $inner;
 
-    public function setUp()
+    public function setUp(): void
     {
         $this->fulfill = new ThrowOnErrorTransport(
             $this->inner = $this->createMock(Transport::class)

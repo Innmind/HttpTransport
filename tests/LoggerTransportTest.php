@@ -28,7 +28,7 @@ class LoggerTransportTest extends TestCase
     private $inner;
     private $logger;
 
-    public function setUp()
+    public function setUp(): void
     {
         $this->fulfill = new LoggerTransport(
             $this->inner = $this->createMock(Transport::class),
