@@ -12,7 +12,7 @@ use Innmind\HttpTransport\{
 use Innmind\Http\Message\{
     Request,
     Response,
-    StatusCode\StatusCode,
+    StatusCode,
 };
 use PHPUnit\Framework\TestCase;
 

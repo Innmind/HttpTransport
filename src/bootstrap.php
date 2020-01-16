@@ -9,8 +9,8 @@ use Innmind\Http\{
 };
 use Innmind\TimeWarp\Halt;
 use Innmind\TimeContinuum\{
-    TimeContinuumInterface,
-    PeriodInterface,
+    Clock,
+    Period,
 };
 use GuzzleHttp\{
     ClientInterface,
@@ -38,10 +38,10 @@ function bootstrap(): array
         'throw_on_error' => static function(Transport $transport): Transport {
             return new ThrowOnErrorTransport($transport);
         },
-        'exponential_backoff' => static function(Transport $transport, Halt $halt, TimeContinuumInterface $clock): Transport {
+        'exponential_backoff' => static function(Transport $transport, Halt $halt, Clock $clock): Transport {
             return ExponentialBackoffTransport::of($transport, $halt, $clock);
         },
-        'circuit_breaker' => static function(Transport $transport, TimeContinuumInterface $clock, PeriodInterface $delayBeforeRetry): Transport {
+        'circuit_breaker' => static function(Transport $transport, Clock $clock, Period $delayBeforeRetry): Transport {
             return new CircuitBreakerTransport($transport, $clock, $delayBeforeRetry);
         },
     ];

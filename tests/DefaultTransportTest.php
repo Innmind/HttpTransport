@@ -14,15 +14,14 @@ use Innmind\Http\{
     Factory\HeaderFactory,
     Message\Response,
     Message\Request\Request,
-    Message\Method\Method,
-    ProtocolVersion\ProtocolVersion,
-    Headers\Headers,
+    Message\Method,
+    ProtocolVersion,
+    Headers,
     Header,
     Header\ContentType,
     Header\ContentTypeValue,
 };
-use Innmind\Filesystem\Stream\StringStream;
-use Innmind\Immutable\Map;
+use Innmind\Stream\Readable\Stream;
 use GuzzleHttp\{
     ClientInterface,
     Exception\ConnectException,
@@ -67,11 +66,11 @@ class DefaultTransportTest extends TestCase
 
         $response = ($fulfill)(
             new Request(
-                Url::fromString('http://example.com'),
+                Url::of('http://example.com'),
                 new Method('GET'),
                 new ProtocolVersion(1, 1),
-                new Headers(new Map('string', Header::class)),
-                new StringStream('')
+                new Headers,
+                Stream::ofContent(''),
             )
         );
 
@@ -104,11 +103,11 @@ class DefaultTransportTest extends TestCase
         try {
             ($fulfill)(
                 $request = new Request(
-                    Url::fromString('http://example.com'),
+                    Url::of('http://example.com'),
                     new Method('GET'),
                     new ProtocolVersion(1, 1),
-                    new Headers(new Map('string', Header::class)),
-                    new StringStream('')
+                    new Headers,
+                    Stream::ofContent('')
                 )
             );
             $this->fail('it should throw');
@@ -148,11 +147,11 @@ class DefaultTransportTest extends TestCase
 
         $response = ($fulfill)(
             new Request(
-                Url::fromString('http://example.com'),
+                Url::of('http://example.com'),
                 new Method('POST'),
                 new ProtocolVersion(1, 1),
-                new Headers(new Map('string', Header::class)),
-                new StringStream('')
+                new Headers,
+                Stream::ofContent(''),
             )
         );
 
@@ -192,22 +191,18 @@ class DefaultTransportTest extends TestCase
 
         $response = ($fulfill)(
             new Request(
-                Url::fromString('http://example.com'),
+                Url::of('http://example.com'),
                 new Method('GET'),
                 new ProtocolVersion(1, 1),
                 new Headers(
-                    (new Map('string', Header::class))
-                        ->put(
-                            'Content-Type',
-                            new ContentType(
-                                new ContentTypeValue(
-                                    'application',
-                                    'json'
-                                )
-                            )
-                        )
+                    new ContentType(
+                        new ContentTypeValue(
+                            'application',
+                            'json',
+                        ),
+                    ),
                 ),
-                new StringStream('')
+                Stream::ofContent(''),
             )
         );
 
@@ -247,11 +242,11 @@ class DefaultTransportTest extends TestCase
 
         $response = ($fulfill)(
             new Request(
-                Url::fromString('http://example.com'),
+                Url::of('http://example.com'),
                 new Method('GET'),
                 new ProtocolVersion(1, 1),
-                new Headers(new Map('string', Header::class)),
-                new StringStream('content')
+                new Headers,
+                Stream::ofContent('content'),
             )
         );
 
@@ -292,22 +287,18 @@ class DefaultTransportTest extends TestCase
 
         $response = ($fulfill)(
             new Request(
-                Url::fromString('http://example.com'),
+                Url::of('http://example.com'),
                 new Method('POST'),
                 new ProtocolVersion(1, 1),
                 new Headers(
-                    (new Map('string', Header::class))
-                        ->put(
-                            'Content-Type',
-                            new ContentType(
-                                new ContentTypeValue(
-                                    'application',
-                                    'json'
-                                )
-                            )
-                        )
+                    new ContentType(
+                        new ContentTypeValue(
+                            'application',
+                            'json',
+                        ),
+                    ),
                 ),
-                new StringStream('content')
+                Stream::ofContent('content'),
             )
         );
 
@@ -347,9 +338,9 @@ class DefaultTransportTest extends TestCase
 
         $response = ($fulfill)(
             new Request(
-                Url::fromString('http://example.com'),
+                Url::of('http://example.com'),
                 new Method('GET'),
-                new ProtocolVersion(1, 1)
+                new ProtocolVersion(1, 1),
             )
         );
 

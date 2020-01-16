@@ -10,13 +10,15 @@ use Innmind\HttpTransport\{
 use Innmind\Http\{
     Message\Request,
     Message\Response,
-    Message\StatusCode\StatusCode,
+    Message\StatusCode,
+    Message\Method,
+    ProtocolVersion,
 };
 use Innmind\Url\Url;
 use Innmind\TimeContinuum\{
-    TimeContinuumInterface,
-    PeriodInterface,
-    PointInTimeInterface,
+    Clock,
+    Period,
+    PointInTime,
 };
 use PHPUnit\Framework\TestCase;
 
@@ -28,8 +30,8 @@ class CircuitBreakerTransportTest extends TestCase
             Transport::class,
             new CircuitBreakerTransport(
                 $this->createMock(Transport::class),
-                $this->createMock(TimeContinuumInterface::class),
-                $this->createMock(PeriodInterface::class)
+                $this->createMock(Clock::class),
+                $this->createMock(Period::class)
             )
         );
     }
@@ -38,10 +40,14 @@ class CircuitBreakerTransportTest extends TestCase
     {
         $fulfill = new CircuitBreakerTransport(
             $inner = $this->createMock(Transport::class),
-            $this->createMock(TimeContinuumInterface::class),
-            $this->createMock(PeriodInterface::class)
+            $this->createMock(Clock::class),
+            $this->createMock(Period::class)
         );
-        $request = $this->createMock(Request::class);
+        $request = new Request\Request(
+            Url::of('http://example.com'),
+            Method::get(),
+            new ProtocolVersion(1, 1),
+        );
         $inner
             ->expects($this->exactly(2))
             ->method('__invoke')
@@ -60,10 +66,14 @@ class CircuitBreakerTransportTest extends TestCase
     {
         $fulfill = new CircuitBreakerTransport(
             $inner = $this->createMock(Transport::class),
-            $this->createMock(TimeContinuumInterface::class),
-            $this->createMock(PeriodInterface::class)
+            $this->createMock(Clock::class),
+            $this->createMock(Period::class)
         );
-        $request = $this->createMock(Request::class);
+        $request = new Request\Request(
+            Url::of('http://example.com'),
+            Method::get(),
+            new ProtocolVersion(1, 1),
+        );
         $inner
             ->expects($this->exactly(2))
             ->method('__invoke')
@@ -82,10 +92,14 @@ class CircuitBreakerTransportTest extends TestCase
     {
         $fulfill = new CircuitBreakerTransport(
             $inner = $this->createMock(Transport::class),
-            $this->createMock(TimeContinuumInterface::class),
-            $this->createMock(PeriodInterface::class)
+            $this->createMock(Clock::class),
+            $this->createMock(Period::class)
         );
-        $request = $this->createMock(Request::class);
+        $request = new Request\Request(
+            Url::of('http://example.com'),
+            Method::get(),
+            new ProtocolVersion(1, 1),
+        );
         $inner
             ->expects($this->exactly(2))
             ->method('__invoke')
@@ -104,10 +118,14 @@ class CircuitBreakerTransportTest extends TestCase
     {
         $fulfill = new CircuitBreakerTransport(
             $inner = $this->createMock(Transport::class),
-            $clock = $this->createMock(TimeContinuumInterface::class),
-            $delay = $this->createMock(PeriodInterface::class)
+            $clock = $this->createMock(Clock::class),
+            $delay = $this->createMock(Period::class)
         );
-        $request = $this->createMock(Request::class);
+        $request = new Request\Request(
+            Url::of('http://example.com'),
+            Method::get(),
+            new ProtocolVersion(1, 1),
+        );
         $inner
             ->expects($this->once())
             ->method('__invoke')
@@ -120,16 +138,16 @@ class CircuitBreakerTransportTest extends TestCase
         $clock
             ->expects($this->at(0))
             ->method('now')
-            ->willReturn($closingTime = $this->createMock(PointInTimeInterface::class));
+            ->willReturn($closingTime = $this->createMock(PointInTime::class));
         $clock
             ->expects($this->at(1))
             ->method('now')
-            ->willReturn($secondCallTime = $this->createMock(PointInTimeInterface::class));
+            ->willReturn($secondCallTime = $this->createMock(PointInTime::class));
         $closingTime
             ->expects($this->once())
             ->method('goForward')
             ->with($delay)
-            ->willReturn($reopeningTime = $this->createMock(PointInTimeInterface::class));
+            ->willReturn($reopeningTime = $this->createMock(PointInTime::class));
         $reopeningTime
             ->expects($this->once())
             ->method('aheadOf')
@@ -146,19 +164,19 @@ class CircuitBreakerTransportTest extends TestCase
     {
         $fulfill = new CircuitBreakerTransport(
             $inner = $this->createMock(Transport::class),
-            $this->createMock(TimeContinuumInterface::class),
-            $this->createMock(PeriodInterface::class)
+            $this->createMock(Clock::class),
+            $this->createMock(Period::class)
         );
         $request1 = $this->createMock(Request::class);
         $request2 = $this->createMock(Request::class);
         $request1
             ->expects($this->any())
             ->method('url')
-            ->willReturn(Url::fromString('http://error.example.com/'));
+            ->willReturn(Url::of('http://error.example.com/'));
         $request2
             ->expects($this->any())
             ->method('url')
-            ->willReturn(Url::fromString('http://example.com/'));
+            ->willReturn(Url::of('http://example.com/'));
         $inner
             ->expects($this->at(0))
             ->method('__invoke')
@@ -186,10 +204,14 @@ class CircuitBreakerTransportTest extends TestCase
     {
         $fulfill = new CircuitBreakerTransport(
             $inner = $this->createMock(Transport::class),
-            $clock = $this->createMock(TimeContinuumInterface::class),
-            $delay = $this->createMock(PeriodInterface::class)
+            $clock = $this->createMock(Clock::class),
+            $delay = $this->createMock(Period::class)
         );
-        $request = $this->createMock(Request::class);
+        $request = new Request\Request(
+            Url::of('http://example.com'),
+            Method::get(),
+            new ProtocolVersion(1, 1),
+        );
         $inner
             ->expects($this->at(0))
             ->method('__invoke')
@@ -211,16 +233,16 @@ class CircuitBreakerTransportTest extends TestCase
         $clock
             ->expects($this->at(0))
             ->method('now')
-            ->willReturn($closingTime = $this->createMock(PointInTimeInterface::class));
+            ->willReturn($closingTime = $this->createMock(PointInTime::class));
         $clock
             ->expects($this->at(1))
             ->method('now')
-            ->willReturn($secondCallTime = $this->createMock(PointInTimeInterface::class));
+            ->willReturn($secondCallTime = $this->createMock(PointInTime::class));
         $closingTime
             ->expects($this->once())
             ->method('goForward')
             ->with($delay)
-            ->willReturn($reopeningTime = $this->createMock(PointInTimeInterface::class));
+            ->willReturn($reopeningTime = $this->createMock(PointInTime::class));
         $reopeningTime
             ->expects($this->once())
             ->method('aheadOf')

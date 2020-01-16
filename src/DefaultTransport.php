@@ -8,8 +8,10 @@ use Innmind\Http\{
     Message\Request,
     Message\Response,
     Translator\Response\Psr7Translator,
+    Header,
     Header\Value,
 };
+use function Innmind\Immutable\unwrap;
 use GuzzleHttp\{
     ClientInterface,
     Exception\ConnectException as GuzzleConnectException,
@@ -19,46 +21,45 @@ use GuzzleHttp\{
 final class DefaultTransport implements Transport
 {
     private ClientInterface $client;
-    private Psr7Translator $translator;
+    private Psr7Translator $translate;
 
     public function __construct(
         ClientInterface $client,
-        Psr7Translator $translator
+        Psr7Translator $translate
     ) {
         $this->client = $client;
-        $this->translator = $translator;
+        $this->translate = $translate;
     }
 
     public function __invoke(Request $request): Response
     {
         $options = [];
-        $headers = [];
 
-        foreach ($request->headers() as $header) {
-            $headers[$header->name()] = $header
-                ->values()
-                ->reduce(
-                    [],
-                    function(array $raw, Value $value): array {
-                        $raw[] = (string) $value;
-
-                        return $raw;
-                    }
+        $headers = $request->headers()->reduce(
+            [],
+            static function(array $headers, Header $header): array {
+                $values = $header->values()->mapTo(
+                    'string',
+                    fn(Value $value): string => $value->toString(),
                 );
-        }
+                $headers[$header->name()] = unwrap($values);
 
-        if (count($headers) > 0) {
+                return $headers;
+            }
+        );
+
+        if (\count($headers) > 0) {
             $options['headers'] = $headers;
         }
 
         if ($request->body()->size()->toInt() > 0) {
-            $options['body'] = (string) $request->body();
+            $options['body'] = $request->body()->toString();
         }
 
         try {
             $response = $this->client->request(
-                (string) $request->method(),
-                (string) $request->url(),
+                $request->method()->toString(),
+                $request->url()->toString(),
                 $options,
             );
         } catch (GuzzleConnectException $e) {
@@ -67,6 +68,6 @@ final class DefaultTransport implements Transport
             $response = $e->getResponse();
         }
 
-        return $this->translator->translate($response);
+        return ($this->translate)($response);
     }
 }

@@ -13,8 +13,8 @@ use Innmind\HttpTransport\{
 use function Innmind\HttpTransport\bootstrap;
 use Innmind\TimeWarp\Halt;
 use Innmind\TimeContinuum\{
-    TimeContinuumInterface,
-    PeriodInterface,
+    Clock,
+    Period,
 };
 use GuzzleHttp\ClientInterface;
 use Psr\Log\LoggerInterface;
@@ -45,7 +45,7 @@ class BootstrapTest extends TestCase
             $backoff(
                 $default(),
                 $this->createMock(Halt::class),
-                $this->createMock(TimeContinuumInterface::class)
+                $this->createMock(Clock::class)
             )
         );
         $this->assertIsCallable($breaker);
@@ -53,8 +53,8 @@ class BootstrapTest extends TestCase
             CircuitBreakerTransport::class,
             $breaker(
                 $default(),
-                $this->createMock(TimeContinuumInterface::class),
-                $this->createMock(PeriodInterface::class)
+                $this->createMock(Clock::class),
+                $this->createMock(Period::class)
             )
         );
     }

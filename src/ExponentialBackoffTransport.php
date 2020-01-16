@@ -6,12 +6,12 @@ namespace Innmind\HttpTransport;
 use Innmind\Http\Message\{
     Request,
     Response,
-    StatusCode\StatusCode,
+    StatusCode,
 };
 use Innmind\TimeContinuum\{
-    TimeContinuumInterface,
-    PeriodInterface,
-    Period\Earth\Millisecond,
+    Clock,
+    Period,
+    Earth\Period\Millisecond,
 };
 use Innmind\TimeWarp\Halt;
 use Innmind\Immutable\Sequence;
@@ -20,26 +20,26 @@ final class ExponentialBackoffTransport implements Transport
 {
     private Transport $fulfill;
     private Halt $halt;
-    private TimeContinuumInterface $clock;
+    private Clock $clock;
     private Sequence $retries;
 
     public function __construct(
         Transport $fulfill,
         Halt $halt,
-        TimeContinuumInterface $clock,
-        PeriodInterface $retry,
-        PeriodInterface ...$retries
+        Clock $clock,
+        Period $retry,
+        Period ...$retries
     ) {
         $this->fulfill = $fulfill;
         $this->halt = $halt;
         $this->clock = $clock;
-        $this->retries = Sequence::of($retry, ...$retries);
+        $this->retries = Sequence::of(Period::class, $retry, ...$retries);
     }
 
     public static function of(
         Transport $fulfill,
         Halt $halt,
-        TimeContinuumInterface $clock
+        Clock $clock
     ): self {
         return new self(
             $fulfill,
@@ -73,7 +73,7 @@ final class ExponentialBackoffTransport implements Transport
 
     private function shouldRetry(Response $response, Sequence $retries): bool
     {
-        if (!StatusCode::isServerError($response->statusCode())) {
+        if (!$response->statusCode()->isServerError()) {
             return false;
         }
 

@@ -6,37 +6,37 @@ namespace Innmind\HttpTransport;
 use Innmind\Http\{
     Message\Request,
     Message\Response,
-    Message\StatusCode\StatusCode,
-    ProtocolVersion\ProtocolVersion,
-    Headers\Headers,
+    Message\StatusCode,
+    ProtocolVersion,
+    Headers,
     Header\Header,
     Header\Value\Value,
 };
-use Innmind\Url\UrlInterface;
+use Innmind\Url\Url;
 use Innmind\TimeContinuum\{
-    TimeContinuumInterface,
-    PeriodInterface,
-    PointInTimeInterface,
+    Clock,
+    Period,
+    PointInTime,
 };
 use Innmind\Immutable\Map;
 
 final class CircuitBreakerTransport implements Transport
 {
     private Transport $fulfill;
-    private TimeContinuumInterface $clock;
-    private PeriodInterface $delayBeforeRetry;
+    private Clock $clock;
+    private Period $delayBeforeRetry;
     private Map $closedCircuits;
     private ?Response $defaultResponse;
 
     public function __construct(
         Transport $fulfill,
-        TimeContinuumInterface $clock,
-        PeriodInterface $delayBeforeRetry
+        Clock $clock,
+        Period $delayBeforeRetry
     ) {
         $this->fulfill = $fulfill;
         $this->clock = $clock;
         $this->delayBeforeRetry = $delayBeforeRetry;
-        $this->closedCircuits = Map::of('string', PointInTimeInterface::class);
+        $this->closedCircuits = Map::of('string', PointInTime::class);
     }
 
     public function __invoke(Request $request): Response
@@ -47,22 +47,22 @@ final class CircuitBreakerTransport implements Transport
 
         $response = ($this->fulfill)($request);
 
-        if (StatusCode::isServerError($response->statusCode())) {
+        if ($response->statusCode()->isServerError()) {
             $this->close($request->url());
         }
 
         return $response;
     }
 
-    private function close(UrlInterface $url): void
+    private function close(Url $url): void
     {
-        $this->closedCircuits = $this->closedCircuits->put(
+        $this->closedCircuits = ($this->closedCircuits)(
             $this->hash($url),
             $this->clock->now(),
         );
     }
 
-    private function closed(UrlInterface $url): bool
+    private function closed(Url $url): bool
     {
         if (!$this->closedCircuits->contains($this->hash($url))) {
             return false;
@@ -90,8 +90,8 @@ final class CircuitBreakerTransport implements Transport
         );
     }
 
-    private function hash(UrlInterface $url): string
+    private function hash(Url $url): string
     {
-        return (string) $url->authority()->host();
+        return $url->authority()->host()->toString();
     }
 }

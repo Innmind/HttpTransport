@@ -10,15 +10,14 @@ use Innmind\HttpTransport\{
 use Innmind\Http\{
     Message\Request,
     Message\Response,
-    Message\StatusCode\StatusCode,
-    Message\Method\Method,
-    Headers\Headers,
+    Message\StatusCode,
+    Message\Method,
+    Headers,
     Header,
     Header\Value\Value,
 };
 use Innmind\Url\Url;
-use Innmind\Filesystem\Stream\StringStream;
-use Innmind\Immutable\Map;
+use Innmind\Stream\Readable\Stream;
 use Psr\Log\LoggerInterface;
 use PHPUnit\Framework\TestCase;
 
@@ -54,33 +53,26 @@ class LoggerTransportTest extends TestCase
         $request
             ->expects($this->once())
             ->method('url')
-            ->willReturn(Url::fromString('http://example.com'));
+            ->willReturn(Url::of('http://example.com'));
         $request
             ->expects($this->once())
             ->method('body')
-            ->willReturn(new StringStream('foo'));
+            ->willReturn(Stream::ofContent('foo'));
         $request
             ->expects($this->once())
             ->method('headers')
             ->willReturn(
                 new Headers(
-                    (new Map('string', Header::class))
-                        ->put(
-                            'foo',
-                            new Header\Header(
-                                'foo',
-                                new Value('bar'),
-                                new Value('baz')
-                            )
-                        )
-                        ->put(
-                            'foobar',
-                            new Header\Header(
-                                'foobar',
-                                new Value('whatever')
-                            )
-                        )
-                )
+                    new Header\Header(
+                        'foo',
+                        new Value('bar'),
+                        new Value('baz'),
+                    ),
+                    new Header\Header(
+                        'foobar',
+                        new Value('whatever'),
+                    ),
+                ),
             );
         $reference = null;
         $this
@@ -100,21 +92,17 @@ class LoggerTransportTest extends TestCase
             ->method('headers')
             ->willReturn(
                 new Headers(
-                    (new Map('string', Header::class))
-                        ->put(
-                            'x-debug',
-                            new Header\Header(
-                                'x-debug',
-                                new Value('yay'),
-                                new Value('nay')
-                            )
-                        )
-                )
+                    new Header\Header(
+                        'x-debug',
+                        new Value('yay'),
+                        new Value('nay'),
+                    ),
+                ),
             );
         $expected
             ->expects($this->once())
             ->method('body')
-            ->willReturn($body = new StringStream('idk'));
+            ->willReturn($body = Stream::ofContent('idk'));
         $this
             ->logger
             ->expects($this->at(0))
@@ -148,6 +136,6 @@ class LoggerTransportTest extends TestCase
         $response = ($this->fulfill)($request);
 
         $this->assertSame($expected, $response);
-        $this->assertSame('idk', (string) $body->read());
+        $this->assertSame('idk', $body->read()->toString());
     }
 }
