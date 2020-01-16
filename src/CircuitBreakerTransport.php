@@ -25,8 +25,9 @@ final class CircuitBreakerTransport implements Transport
     private Transport $fulfill;
     private Clock $clock;
     private Period $delayBeforeRetry;
+    /** @var Map<string , PointInTime> */
     private Map $closedCircuits;
-    private ?Response $defaultResponse;
+    private ?Response $defaultResponse = null;
 
     public function __construct(
         Transport $fulfill,
@@ -36,6 +37,7 @@ final class CircuitBreakerTransport implements Transport
         $this->fulfill = $fulfill;
         $this->clock = $clock;
         $this->delayBeforeRetry = $delayBeforeRetry;
+        /** @var Map<string , PointInTime> */
         $this->closedCircuits = Map::of('string', PointInTime::class);
     }
 

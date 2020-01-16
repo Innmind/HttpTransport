@@ -16,7 +16,7 @@ final class ConnectionFailed extends RuntimeException
         $this->request = $request;
         parent::__construct(
             $e->getMessage(),
-            $e->getCode(),
+            (int) $e->getCode(),
             $e,
         );
     }

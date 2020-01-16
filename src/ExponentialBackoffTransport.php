@@ -21,6 +21,7 @@ final class ExponentialBackoffTransport implements Transport
     private Transport $fulfill;
     private Halt $halt;
     private Clock $clock;
+    /** @var Sequence<Period> */
     private Sequence $retries;
 
     public function __construct(
@@ -33,6 +34,7 @@ final class ExponentialBackoffTransport implements Transport
         $this->fulfill = $fulfill;
         $this->halt = $halt;
         $this->clock = $clock;
+        /** @var Sequence<Period> */
         $this->retries = Sequence::of(Period::class, $retry, ...$retries);
     }
 
