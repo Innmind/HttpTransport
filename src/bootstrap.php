@@ -21,7 +21,7 @@ use Psr\Log\LoggerInterface;
 /**
  * @return array{
  *   default: callable(?ClientInterface): Transport,
- *   logger: callable(LoggerInterface): Transport,
+ *   logger: callable(LoggerInterface): (callable(Transport): Transport),
  *   throw_on_error: callable(Transport): Transport,
  *   exponential_backoff: callable(Transport, Halt, Clock): Transport,
  *   circuit_breaker: callable(Transport, Clock, Period): Transport
@@ -32,7 +32,7 @@ function bootstrap(): array
     /**
      * @var array{
      *   default: callable(?ClientInterface): Transport,
-     *   logger: callable(LoggerInterface): Transport,
+     *   logger: callable(LoggerInterface): (callable(Transport): Transport),
      *   throw_on_error: callable(Transport): Transport,
      *   exponential_backoff: callable(Transport, Halt, Clock): Transport,
      *   circuit_breaker: callable(Transport, Clock, Period): Transport
