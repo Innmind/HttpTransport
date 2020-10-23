@@ -31,7 +31,7 @@ jobs:
           restore-keys: ${{ runner.os }}-composer-
       - name: Install Dependencies
         if: ${{ matrix.dependencies == 'lowest' }}
-        run: composer install --prefer-lowest --no-progress
+        run: composer update --prefer-lowest --no-progress
       - name: Install Dependencies
         if: ${{ matrix.dependencies == 'highest' }}
         run: composer install --no-progress
@@ -66,7 +66,7 @@ jobs:
           restore-keys: ${{ runner.os }}-composer-
       - name: Install Dependencies
         if: ${{ matrix.dependencies == 'lowest' }}
-        run: composer install --prefer-lowest --no-progress
+        run: composer update --prefer-lowest --no-progress
       - name: Install Dependencies
         if: ${{ matrix.dependencies == 'highest' }}
         run: composer install --no-progress
