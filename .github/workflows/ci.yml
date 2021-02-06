@@ -8,9 +8,9 @@ jobs:
     strategy:
       matrix:
         os: [ubuntu-latest, macOS-latest]
-        php-version: ['7.4']
+        php-version: ['7.4', '8.0']
         dependencies: ['lowest', 'highest']
-    name: 'PHPUnit - PHP/${{ matrix.php-version }} - OS/${{ matrix.os }}'
+    name: 'PHPUnit'
     steps:
       - name: Checkout
         uses: actions/checkout@v2
@@ -44,9 +44,9 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        php-version: ['7.4']
+        php-version: ['7.4', '8.0']
         dependencies: ['lowest', 'highest']
-    name: 'Psalm - PHP/${{ matrix.php-version }}'
+    name: 'Psalm'
     steps:
       - name: Checkout
         uses: actions/checkout@v2
@@ -71,4 +71,31 @@ jobs:
         if: ${{ matrix.dependencies == 'highest' }}
         run: composer install --no-progress
       - name: Psalm
-        run: vendor/bin/psalm
+        run: vendor/bin/psalm --shepherd
+  cs:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        php-version: ['7.4']
+    name: 'CS'
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php-version }}
+          extensions: mbstring, intl
+      - name: Get Composer Cache Directory
+        id: composer-cache
+        run: echo "::set-output name=dir::$(composer config cache-files-dir)"
+      - name: Cache dependencies
+        uses: actions/cache@v2
+        with:
+          path: ${{ steps.composer-cache.outputs.dir }}
+          key: ${{ runner.os }}-${{ matrix.php-version }}-composer-${{ hashFiles('**/composer.json') }}
+          restore-keys: ${{ runner.os }}-${{ matrix.php-version }}-composer-
+      - name: Install Dependencies
+        run: composer install --no-progress
+      - name: CS
+        run: vendor/bin/php-cs-fixer fix --diff --dry-run --diff-format udiff

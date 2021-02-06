@@ -64,7 +64,7 @@ final class LoggerTransport implements Transport
             static function(array $headers, Header $header): array {
                 $values = $header->values()->mapTo(
                     'string',
-                    fn(Value $value): string => $value->toString(),
+                    static fn(Value $value): string => $value->toString(),
                 );
                 $headers[$header->name()] = join(', ', $values)->toString();
 

@@ -1,9 +1,8 @@
 # HttpTransport
 
-| `develop` |
-|-----------|
-| [![codecov](https://codecov.io/gh/Innmind/HttpTransport/branch/develop/graph/badge.svg)](https://codecov.io/gh/Innmind/HttpTransport) |
-| [![Build Status](https://github.com/Innmind/HttpTransport/workflows/CI/badge.svg)](https://github.com/Innmind/HttpTransport/actions?query=workflow%3ACI) |
+[![Build Status](https://github.com/innmind/httptransport/workflows/CI/badge.svg?branch=master)](https://github.com/innmind/httptransport/actions?query=workflow%3ACI)
+[![codecov](https://codecov.io/gh/innmind/httptransport/branch/develop/graph/badge.svg)](https://codecov.io/gh/innmind/httptransport)
+[![Type Coverage](https://shepherd.dev/github/innmind/httptransport/coverage.svg)](https://shepherd.dev/github/innmind/httptransport)
 
 This library allows you to send [http](https://packagist.org/packages/innmind/http) request.
 

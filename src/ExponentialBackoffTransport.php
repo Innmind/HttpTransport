@@ -38,23 +38,6 @@ final class ExponentialBackoffTransport implements Transport
         $this->retries = Sequence::of(Period::class, $retry, ...$retries);
     }
 
-    public static function of(
-        Transport $fulfill,
-        Halt $halt,
-        Clock $clock
-    ): self {
-        return new self(
-            $fulfill,
-            $halt,
-            $clock,
-            new Millisecond((int) (\exp(0) * 100)),
-            new Millisecond((int) (\exp(1) * 100)),
-            new Millisecond((int) (\exp(2) * 100)),
-            new Millisecond((int) (\exp(3) * 100)),
-            new Millisecond((int) (\exp(4) * 100)),
-        );
-    }
-
     public function __invoke(Request $request): Response
     {
         $retries = $this->retries;
@@ -71,6 +54,23 @@ final class ExponentialBackoffTransport implements Transport
         }
 
         return $response;
+    }
+
+    public static function of(
+        Transport $fulfill,
+        Halt $halt,
+        Clock $clock
+    ): self {
+        return new self(
+            $fulfill,
+            $halt,
+            $clock,
+            new Millisecond((int) (\exp(0) * 100)),
+            new Millisecond((int) (\exp(1) * 100)),
+            new Millisecond((int) (\exp(2) * 100)),
+            new Millisecond((int) (\exp(3) * 100)),
+            new Millisecond((int) (\exp(4) * 100)),
+        );
     }
 
     private function shouldRetry(Response $response, Sequence $retries): bool

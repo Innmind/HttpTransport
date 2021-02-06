@@ -161,20 +161,18 @@ class ExponentialBackoffTransportTest extends TestCase
         );
         $request = $this->createMock(Request::class);
         $inner
-            ->expects($this->at(0))
+            ->expects($this->exactly(2))
             ->method('__invoke')
             ->with($request)
-            ->willReturn($response = $this->createMock(Response::class));
-        $response
+            ->will($this->onConsecutiveCalls(
+                $response1 = $this->createMock(Response::class),
+                $response2 = $this->createMock(Response::class),
+            ));
+        $response1
             ->expects($this->any())
             ->method('statusCode')
             ->willReturn(new StatusCode(500));
-        $inner
-            ->expects($this->at(1))
-            ->method('__invoke')
-            ->with($request)
-            ->willReturn($response = $this->createMock(Response::class));
-        $response
+        $response2
             ->expects($this->any())
             ->method('statusCode')
             ->willReturn(new StatusCode(200));
@@ -183,7 +181,7 @@ class ExponentialBackoffTransportTest extends TestCase
             ->method('__invoke')
             ->with($clock, $period1);
 
-        $this->assertSame($response, $fulfill($request));
+        $this->assertSame($response2, $fulfill($request));
     }
 
     public function testByDefaultRetriesFiveTimesByUsingAPowerOfE()
