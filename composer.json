@@ -22,7 +22,7 @@
         "ramsey/uuid": "~3.5|~4.0",
         "innmind/time-warp": "~2.0",
         "innmind/time-continuum": "~2.0",
-        "innmind/immutable": "~3.1",
+        "innmind/immutable": "~3.3",
         "innmind/url": "^3.5.1"
     },
     "autoload": {
