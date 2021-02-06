@@ -105,32 +105,30 @@ class LoggerTransportTest extends TestCase
             ->willReturn($body = Stream::ofContent('idk'));
         $this
             ->logger
-            ->expects($this->at(0))
+            ->expects($this->exactly(2))
             ->method('debug')
-            ->with(
-                'Http request about to be sent',
-                $this->callback(function(array $data) use (&$reference): bool {
-                    $reference = $data['reference'];
+            ->withConsecutive(
+                [
+                    'Http request about to be sent',
+                    $this->callback(function(array $data) use (&$reference): bool {
+                        $reference = $data['reference'];
 
-                    return $data['method'] === 'POST' &&
-                        $data['url'] === 'http://example.com/' &&
-                        $data['headers'] === ['foo' => 'bar, baz', 'foobar' => 'whatever'] &&
-                        $data['body'] === 'foo' &&
-                        !empty($data['reference']);
-                })
-            );
-        $this
-            ->logger
-            ->expects($this->at(1))
-            ->method('debug')
-            ->with(
-                'Http request sent',
-                $this->callback(function(array $data) use (&$reference): bool {
-                    return $data['statusCode'] === 200 &&
-                        $data['headers'] === ['x-debug' => 'yay, nay'] &&
-                        $data['body'] === 'idk' &&
-                        $data['reference'] === $reference;
-                })
+                        return $data['method'] === 'POST' &&
+                            $data['url'] === 'http://example.com/' &&
+                            $data['headers'] === ['foo' => 'bar, baz', 'foobar' => 'whatever'] &&
+                            $data['body'] === 'foo' &&
+                            !empty($data['reference']);
+                    })
+                ],
+                [
+                    'Http request sent',
+                    $this->callback(function(array $data) use (&$reference): bool {
+                        return $data['statusCode'] === 200 &&
+                            $data['headers'] === ['x-debug' => 'yay, nay'] &&
+                            $data['body'] === 'idk' &&
+                            $data['reference'] === $reference;
+                    })
+                ],
             );
 
         $response = ($this->fulfill)($request);

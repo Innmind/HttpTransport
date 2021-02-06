@@ -136,13 +136,12 @@ class CircuitBreakerTransportTest extends TestCase
             ->method('statusCode')
             ->willReturn(new StatusCode(500));
         $clock
-            ->expects($this->at(0))
+            ->expects($this->exactly(2))
             ->method('now')
-            ->willReturn($closingTime = $this->createMock(PointInTime::class));
-        $clock
-            ->expects($this->at(1))
-            ->method('now')
-            ->willReturn($secondCallTime = $this->createMock(PointInTime::class));
+            ->will($this->onConsecutiveCalls(
+                $closingTime = $this->createMock(PointInTime::class),
+                $secondCallTime = $this->createMock(PointInTime::class)
+            ));
         $closingTime
             ->expects($this->once())
             ->method('goForward')
@@ -178,19 +177,17 @@ class CircuitBreakerTransportTest extends TestCase
             ->method('url')
             ->willReturn(Url::of('http://example.com/'));
         $inner
-            ->expects($this->at(0))
+            ->expects($this->exactly(2))
             ->method('__invoke')
-            ->with($request1)
-            ->willReturn($response1 = $this->createMock(Response::class));
+            ->withConsecutive([$request1], [$request2])
+            ->will($this->onConsecutiveCalls(
+                $response1 = $this->createMock(Response::class),
+                $response2 = $this->createMock(Response::class)
+            ));
         $response1
             ->expects($this->any())
             ->method('statusCode')
             ->willReturn(new StatusCode(500));
-        $inner
-            ->expects($this->at(1))
-            ->method('__invoke')
-            ->with($request2)
-            ->willReturn($response2 = $this->createMock(Response::class));
         $response2
             ->expects($this->any())
             ->method('statusCode')
@@ -213,31 +210,28 @@ class CircuitBreakerTransportTest extends TestCase
             new ProtocolVersion(1, 1),
         );
         $inner
-            ->expects($this->at(0))
+            ->expects($this->exactly(2))
             ->method('__invoke')
             ->with($request)
-            ->willReturn($response1 = $this->createMock(Response::class));
+            ->will($this->onConsecutiveCalls(
+                $response1 = $this->createMock(Response::class),
+                $response2 = $this->createMock(Response::class)
+            ));
         $response1
             ->expects($this->any())
             ->method('statusCode')
             ->willReturn(new StatusCode(500));
-        $inner
-            ->expects($this->at(1))
-            ->method('__invoke')
-            ->with($request)
-            ->willReturn($response2 = $this->createMock(Response::class));
         $response2
             ->expects($this->any())
             ->method('statusCode')
             ->willReturn(new StatusCode(200));
         $clock
-            ->expects($this->at(0))
+            ->expects($this->exactly(2))
             ->method('now')
-            ->willReturn($closingTime = $this->createMock(PointInTime::class));
-        $clock
-            ->expects($this->at(1))
-            ->method('now')
-            ->willReturn($secondCallTime = $this->createMock(PointInTime::class));
+            ->will($this->onConsecutiveCalls(
+                $closingTime = $this->createMock(PointInTime::class),
+                $secondCallTime = $this->createMock(PointInTime::class),
+            ));
         $closingTime
             ->expects($this->once())
             ->method('goForward')
