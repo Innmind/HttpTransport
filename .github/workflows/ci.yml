@@ -71,7 +71,7 @@ jobs:
         if: ${{ matrix.dependencies == 'highest' }}
         run: composer install --no-progress
       - name: Psalm
-        run: vendor/bin/psalm
+        run: vendor/bin/psalm --shepherd
   cs:
     runs-on: ubuntu-latest
     strategy:
