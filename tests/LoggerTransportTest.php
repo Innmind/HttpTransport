@@ -110,7 +110,7 @@ class LoggerTransportTest extends TestCase
             ->withConsecutive(
                 [
                     'Http request about to be sent',
-                    $this->callback(function(array $data) use (&$reference): bool {
+                    $this->callback(static function(array $data) use (&$reference): bool {
                         $reference = $data['reference'];
 
                         return $data['method'] === 'POST' &&
@@ -118,16 +118,16 @@ class LoggerTransportTest extends TestCase
                             $data['headers'] === ['foo' => 'bar, baz', 'foobar' => 'whatever'] &&
                             $data['body'] === 'foo' &&
                             !empty($data['reference']);
-                    })
+                    }),
                 ],
                 [
                     'Http request sent',
-                    $this->callback(function(array $data) use (&$reference): bool {
+                    $this->callback(static function(array $data) use (&$reference): bool {
                         return $data['statusCode'] === 200 &&
                             $data['headers'] === ['x-debug' => 'yay, nay'] &&
                             $data['body'] === 'idk' &&
                             $data['reference'] === $reference;
-                    })
+                    }),
                 ],
             );
 
