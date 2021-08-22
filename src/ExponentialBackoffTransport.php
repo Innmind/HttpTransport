@@ -34,7 +34,6 @@ final class ExponentialBackoffTransport implements Transport
         $this->fulfill = $fulfill;
         $this->halt = $halt;
         $this->clock = $clock;
-        /** @var Sequence<Period> */
         $this->retries = Sequence::of(Period::class, $retry, ...$retries);
     }
 

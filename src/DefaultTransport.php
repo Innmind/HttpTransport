@@ -17,7 +17,6 @@ use GuzzleHttp\{
     Exception\ConnectException as GuzzleConnectException,
     Exception\BadResponseException,
 };
-use Psr\Http\Message\ResponseInterface;
 
 final class DefaultTransport implements Transport
 {
@@ -66,7 +65,6 @@ final class DefaultTransport implements Transport
         } catch (GuzzleConnectException $e) {
             throw new ConnectionFailed($request, $e);
         } catch (BadResponseException $e) {
-            /** @var ResponseInterface $response */
             $response = $e->getResponse();
         }
 
