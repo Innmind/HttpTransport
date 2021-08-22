@@ -52,7 +52,6 @@ final class LoggerTransport implements Transport
                 'reference' => $reference,
             ],
         );
-        $body->rewind();
 
         return $response;
     }
@@ -62,9 +61,8 @@ final class LoggerTransport implements Transport
         return $headers->reduce(
             [],
             static function(array $headers, Header $header): array {
-                $values = $header->values()->mapTo(
-                    'string',
-                    static fn(Value $value): string => $value->toString(),
+                $values = $header->values()->map(
+                    static fn($value) => $value->toString(),
                 );
                 $headers[$header->name()] = join(', ', $values)->toString();
 

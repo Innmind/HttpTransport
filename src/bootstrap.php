@@ -4,7 +4,7 @@ declare(strict_types = 1);
 namespace Innmind\HttpTransport;
 
 use Innmind\Http\{
-    Translator\Response\Psr7Translator,
+    Translator\Response\FromPsr7,
     Factory\Header\Factories,
 };
 use Innmind\TimeWarp\Halt;
@@ -27,22 +27,22 @@ use Psr\Log\LoggerInterface;
  *   circuit_breaker: callable(Transport, Clock, Period): Transport
  * }
  */
-function bootstrap(): array
+function bootstrap(Clock $clock): array
 {
     /**
      * @var array{
      *   default: callable(?ClientInterface): Transport,
      *   logger: callable(LoggerInterface): (callable(Transport): Transport),
      *   throw_on_error: callable(Transport): Transport,
-     *   exponential_backoff: callable(Transport, Halt, Clock): Transport,
+     *   exponential_backoff: callable(Transport, Halt): Transport,
      *   circuit_breaker: callable(Transport, Clock, Period): Transport
      * }
      */
     return [
-        'default' => static function(ClientInterface $client = null): Transport {
+        'default' => static function(ClientInterface $client = null) use ($clock): Transport {
             return new DefaultTransport(
                 $client ?? new Client,
-                new Psr7Translator(Factories::default()),
+                new FromPsr7(Factories::default($clock)),
             );
         },
         'logger' => static function(LoggerInterface $logger): callable {
@@ -56,8 +56,8 @@ function bootstrap(): array
         'throw_on_error' => static function(Transport $transport): Transport {
             return new ThrowOnErrorTransport($transport);
         },
-        'exponential_backoff' => static function(Transport $transport, Halt $halt, Clock $clock): Transport {
-            return ExponentialBackoffTransport::of($transport, $halt, $clock);
+        'exponential_backoff' => static function(Transport $transport, Halt $halt): Transport {
+            return ExponentialBackoffTransport::of($transport, $halt);
         },
         'circuit_breaker' => static function(Transport $transport, Clock $clock, Period $delayBeforeRetry): Transport {
             return new CircuitBreakerTransport($transport, $clock, $delayBeforeRetry);

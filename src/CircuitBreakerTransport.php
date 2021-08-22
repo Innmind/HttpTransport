@@ -38,7 +38,7 @@ final class CircuitBreakerTransport implements Transport
         $this->clock = $clock;
         $this->delayBeforeRetry = $delayBeforeRetry;
         /** @var Map<string , PointInTime> */
-        $this->closedCircuits = Map::of('string', PointInTime::class);
+        $this->closedCircuits = Map::of();
     }
 
     public function __invoke(Request $request): Response
@@ -49,7 +49,7 @@ final class CircuitBreakerTransport implements Transport
 
         $response = ($this->fulfill)($request);
 
-        if ($response->statusCode()->isServerError()) {
+        if ($response->statusCode()->serverError()) {
             $this->close($request->url());
         }
 
@@ -66,15 +66,15 @@ final class CircuitBreakerTransport implements Transport
 
     private function closed(Url $url): bool
     {
-        if (!$this->closedCircuits->contains($this->hash($url))) {
-            return false;
-        }
-
         return $this
             ->closedCircuits
             ->get($this->hash($url))
-            ->goForward($this->delayBeforeRetry)
-            ->aheadOf($this->clock->now());
+            ->map(fn($lastCall) => $lastCall->goForward($this->delayBeforeRetry))
+            ->map(fn($reopenAt) => $reopenAt->aheadOf($this->clock->now()))
+            ->match(
+                static fn($closed) => $closed,
+                static fn() => false,
+            );
     }
 
     private function defaultResponse(): Response

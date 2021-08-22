@@ -9,7 +9,6 @@ use Innmind\Http\Message\{
     StatusCode,
 };
 use Innmind\TimeContinuum\{
-    Clock,
     Period,
     Earth\Period\Millisecond,
 };
@@ -20,21 +19,18 @@ final class ExponentialBackoffTransport implements Transport
 {
     private Transport $fulfill;
     private Halt $halt;
-    private Clock $clock;
     /** @var Sequence<Period> */
     private Sequence $retries;
 
     public function __construct(
         Transport $fulfill,
         Halt $halt,
-        Clock $clock,
         Period $retry,
         Period ...$retries
     ) {
         $this->fulfill = $fulfill;
         $this->halt = $halt;
-        $this->clock = $clock;
-        $this->retries = Sequence::of(Period::class, $retry, ...$retries);
+        $this->retries = Sequence::of($retry, ...$retries);
     }
 
     public function __invoke(Request $request): Response
@@ -48,7 +44,10 @@ final class ExponentialBackoffTransport implements Transport
                 break;
             }
 
-            ($this->halt)($this->clock, $retries->first());
+            $_ = $retries->first()->match(
+                fn($period) => ($this->halt)($period),
+                static fn() => null,
+            );
             $retries = $retries->drop(1);
         }
 
@@ -58,12 +57,10 @@ final class ExponentialBackoffTransport implements Transport
     public static function of(
         Transport $fulfill,
         Halt $halt,
-        Clock $clock
     ): self {
         return new self(
             $fulfill,
             $halt,
-            $clock,
             new Millisecond((int) (\exp(0) * 100)),
             new Millisecond((int) (\exp(1) * 100)),
             new Millisecond((int) (\exp(2) * 100)),
@@ -74,7 +71,7 @@ final class ExponentialBackoffTransport implements Transport
 
     private function shouldRetry(Response $response, Sequence $retries): bool
     {
-        if (!$response->statusCode()->isServerError()) {
+        if (!$response->statusCode()->serverError()) {
             return false;
         }
 

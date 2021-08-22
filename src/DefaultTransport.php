@@ -7,11 +7,10 @@ use Innmind\HttpTransport\Exception\ConnectionFailed;
 use Innmind\Http\{
     Message\Request,
     Message\Response,
-    Translator\Response\Psr7Translator,
+    Translator\Response\FromPsr7,
     Header,
     Header\Value,
 };
-use function Innmind\Immutable\unwrap;
 use GuzzleHttp\{
     ClientInterface,
     Exception\ConnectException as GuzzleConnectException,
@@ -21,11 +20,11 @@ use GuzzleHttp\{
 final class DefaultTransport implements Transport
 {
     private ClientInterface $client;
-    private Psr7Translator $translate;
+    private FromPsr7 $translate;
 
     public function __construct(
         ClientInterface $client,
-        Psr7Translator $translate
+        FromPsr7 $translate
     ) {
         $this->client = $client;
         $this->translate = $translate;
@@ -38,11 +37,10 @@ final class DefaultTransport implements Transport
         $headers = $request->headers()->reduce(
             [],
             static function(array $headers, Header $header): array {
-                $values = $header->values()->mapTo(
-                    'string',
-                    static fn(Value $value): string => $value->toString(),
-                );
-                $headers[$header->name()] = unwrap($values);
+                $headers[$header->name()] = $header
+                    ->values()
+                    ->map(static fn($value) => $value->toString())
+                    ->toList();
 
                 return $headers;
             }
@@ -52,8 +50,10 @@ final class DefaultTransport implements Transport
             $options['headers'] = $headers;
         }
 
-        if ($request->body()->size()->toInt() > 0) {
-            $options['body'] = $request->body()->toString();
+        $body = $request->body()->toString();
+
+        if ($body !== '') {
+            $options['body'] = $body;
         }
 
         try {

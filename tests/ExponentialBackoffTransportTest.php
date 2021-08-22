@@ -16,10 +16,7 @@ use Innmind\TimeWarp\{
     Halt,
     PeriodToMilliseconds,
 };
-use Innmind\TimeContinuum\{
-    Clock,
-    Period,
-};
+use Innmind\TimeContinuum\Period;
 use PHPUnit\Framework\TestCase;
 
 class ExponentialBackoffTransportTest extends TestCase
@@ -31,8 +28,7 @@ class ExponentialBackoffTransportTest extends TestCase
             new ExponentialBackoffTransport(
                 $this->createMock(Transport::class),
                 $this->createMock(Halt::class),
-                $this->createMock(Clock::class),
-                $this->createMock(Period::class)
+                $this->createMock(Period::class),
             )
         );
     }
@@ -42,8 +38,7 @@ class ExponentialBackoffTransportTest extends TestCase
         $fulfill = new ExponentialBackoffTransport(
             $inner = $this->createMock(Transport::class),
             $halt = $this->createMock(Halt::class),
-            $this->createMock(Clock::class),
-            $this->createMock(Period::class)
+            $this->createMock(Period::class),
         );
         $request = $this->createMock(Request::class);
         $inner
@@ -67,8 +62,7 @@ class ExponentialBackoffTransportTest extends TestCase
         $fulfill = new ExponentialBackoffTransport(
             $inner = $this->createMock(Transport::class),
             $halt = $this->createMock(Halt::class),
-            $this->createMock(Clock::class),
-            $this->createMock(Period::class)
+            $this->createMock(Period::class),
         );
         $request = $this->createMock(Request::class);
         $inner
@@ -92,8 +86,7 @@ class ExponentialBackoffTransportTest extends TestCase
         $fulfill = new ExponentialBackoffTransport(
             $inner = $this->createMock(Transport::class),
             $halt = $this->createMock(Halt::class),
-            $this->createMock(Clock::class),
-            $this->createMock(Period::class)
+            $this->createMock(Period::class),
         );
         $request = $this->createMock(Request::class);
         $inner
@@ -117,7 +110,6 @@ class ExponentialBackoffTransportTest extends TestCase
         $fulfill = new ExponentialBackoffTransport(
             $inner = $this->createMock(Transport::class),
             $halt = $this->createMock(Halt::class),
-            $clock = $this->createMock(Clock::class),
             $period1 = $this->createMock(Period::class),
             $period2 = $this->createMock(Period::class),
             $period3 = $this->createMock(Period::class)
@@ -136,12 +128,12 @@ class ExponentialBackoffTransportTest extends TestCase
             ->expects($this->exactly(6))
             ->method('__invoke')
             ->withConsecutive(
-                [$clock, $period1],
-                [$clock, $period2],
-                [$clock, $period3],
-                [$clock, $period1],
-                [$clock, $period2],
-                [$clock, $period3]
+                [$period1],
+                [$period2],
+                [$period3],
+                [$period1],
+                [$period2],
+                [$period3],
             );
 
         $this->assertSame($response, $fulfill($request));
@@ -154,7 +146,6 @@ class ExponentialBackoffTransportTest extends TestCase
         $fulfill = new ExponentialBackoffTransport(
             $inner = $this->createMock(Transport::class),
             $halt = $this->createMock(Halt::class),
-            $clock = $this->createMock(Clock::class),
             $period1 = $this->createMock(Period::class),
             $period2 = $this->createMock(Period::class),
             $period3 = $this->createMock(Period::class)
@@ -179,7 +170,7 @@ class ExponentialBackoffTransportTest extends TestCase
         $halt
             ->expects($this->once())
             ->method('__invoke')
-            ->with($clock, $period1);
+            ->with($period1);
 
         $this->assertSame($response2, $fulfill($request));
     }
@@ -189,7 +180,6 @@ class ExponentialBackoffTransportTest extends TestCase
         $fulfill = ExponentialBackoffTransport::of(
             $inner = $this->createMock(Transport::class),
             $halt = $this->createMock(Halt::class),
-            $clock = $this->createMock(Clock::class)
         );
         $request = $this->createMock(Request::class);
         $inner
@@ -206,31 +196,26 @@ class ExponentialBackoffTransportTest extends TestCase
             ->method('__invoke')
             ->withConsecutive(
                 [
-                    $clock,
                     $this->callback(static function($period): bool {
                         return (new PeriodToMilliseconds)($period) === 100;
                     }),
                 ],
                 [
-                    $clock,
                     $this->callback(static function($period): bool {
                         return (new PeriodToMilliseconds)($period) === 271;
                     }),
                 ],
                 [
-                    $clock,
                     $this->callback(static function($period): bool {
                         return (new PeriodToMilliseconds)($period) === 738;
                     }),
                 ],
                 [
-                    $clock,
                     $this->callback(static function($period): bool {
                         return (new PeriodToMilliseconds)($period) === 2008;
                     }),
                 ],
                 [
-                    $clock,
                     $this->callback(static function($period): bool {
                         return (new PeriodToMilliseconds)($period) === 5459;
                     }),

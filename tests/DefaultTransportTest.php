@@ -10,7 +10,7 @@ use Innmind\HttpTransport\{
 };
 use Innmind\Url\Url;
 use Innmind\Http\{
-    Translator\Response\Psr7Translator,
+    Translator\Response\FromPsr7,
     Factory\HeaderFactory,
     Message\Response,
     Message\Request\Request,
@@ -21,7 +21,7 @@ use Innmind\Http\{
     Header\ContentType,
     Header\ContentTypeValue,
 };
-use Innmind\Stream\Readable\Stream;
+use Innmind\Filesystem\File\Content\Lines;
 use GuzzleHttp\{
     ClientInterface,
     Exception\ConnectException,
@@ -30,6 +30,7 @@ use GuzzleHttp\{
 use Psr\Http\Message\{
     ResponseInterface as Psr7ResponseInterface,
     RequestInterface as Psr7RequestInterface,
+    StreamInterface,
 };
 use PHPUnit\Framework\TestCase;
 
@@ -39,7 +40,7 @@ class DefaultTransportTest extends TestCase
     {
         $fulfill = new DefaultTransport(
             $client = $this->createMock(ClientInterface::class),
-            new Psr7Translator(
+            new FromPsr7(
                 $this->createMock(HeaderFactory::class)
             )
         );
@@ -63,14 +64,17 @@ class DefaultTransportTest extends TestCase
         $response
             ->method('getHeaders')
             ->willReturn([]);
+        $response
+            ->method('getBody')
+            ->willReturn($this->createMock(StreamInterface::class));
 
         $response = ($fulfill)(
             new Request(
                 Url::of('http://example.com'),
-                new Method('GET'),
+                Method::of('GET'),
                 new ProtocolVersion(1, 1),
                 new Headers,
-                Stream::ofContent(''),
+                Lines::ofContent(''),
             )
         );
 
@@ -82,7 +86,7 @@ class DefaultTransportTest extends TestCase
     {
         $fulfill = new DefaultTransport(
             $client = $this->createMock(ClientInterface::class),
-            new Psr7Translator(
+            new FromPsr7(
                 $this->createMock(HeaderFactory::class)
             )
         );
@@ -104,10 +108,10 @@ class DefaultTransportTest extends TestCase
             ($fulfill)(
                 $request = new Request(
                     Url::of('http://example.com'),
-                    new Method('GET'),
+                    Method::of('GET'),
                     new ProtocolVersion(1, 1),
                     new Headers,
-                    Stream::ofContent('')
+                    Lines::ofContent('')
                 )
             );
             $this->fail('it should throw');
@@ -120,7 +124,7 @@ class DefaultTransportTest extends TestCase
     {
         $fulfill = new DefaultTransport(
             $client = $this->createMock(ClientInterface::class),
-            new Psr7Translator(
+            new FromPsr7(
                 $this->createMock(HeaderFactory::class)
             )
         );
@@ -144,14 +148,17 @@ class DefaultTransportTest extends TestCase
         $response
             ->method('getHeaders')
             ->willReturn([]);
+        $response
+            ->method('getBody')
+            ->willReturn($this->createMock(StreamInterface::class));
 
         $response = ($fulfill)(
             new Request(
                 Url::of('http://example.com'),
-                new Method('POST'),
+                Method::of('POST'),
                 new ProtocolVersion(1, 1),
                 new Headers,
-                Stream::ofContent(''),
+                Lines::ofContent(''),
             )
         );
 
@@ -162,7 +169,7 @@ class DefaultTransportTest extends TestCase
     {
         $fulfill = new DefaultTransport(
             $client = $this->createMock(ClientInterface::class),
-            new Psr7Translator(
+            new FromPsr7(
                 $this->createMock(HeaderFactory::class)
             )
         );
@@ -188,11 +195,14 @@ class DefaultTransportTest extends TestCase
         $response
             ->method('getHeaders')
             ->willReturn([]);
+        $response
+            ->method('getBody')
+            ->willReturn($this->createMock(StreamInterface::class));
 
         $response = ($fulfill)(
             new Request(
                 Url::of('http://example.com'),
-                new Method('GET'),
+                Method::of('GET'),
                 new ProtocolVersion(1, 1),
                 new Headers(
                     new ContentType(
@@ -202,7 +212,7 @@ class DefaultTransportTest extends TestCase
                         ),
                     ),
                 ),
-                Stream::ofContent(''),
+                Lines::ofContent(''),
             )
         );
 
@@ -213,7 +223,7 @@ class DefaultTransportTest extends TestCase
     {
         $fulfill = new DefaultTransport(
             $client = $this->createMock(ClientInterface::class),
-            new Psr7Translator(
+            new FromPsr7(
                 $this->createMock(HeaderFactory::class)
             )
         );
@@ -239,14 +249,17 @@ class DefaultTransportTest extends TestCase
         $response
             ->method('getHeaders')
             ->willReturn([]);
+        $response
+            ->method('getBody')
+            ->willReturn($this->createMock(StreamInterface::class));
 
         $response = ($fulfill)(
             new Request(
                 Url::of('http://example.com'),
-                new Method('GET'),
+                Method::of('GET'),
                 new ProtocolVersion(1, 1),
                 new Headers,
-                Stream::ofContent('content'),
+                Lines::ofContent('content'),
             )
         );
 
@@ -257,7 +270,7 @@ class DefaultTransportTest extends TestCase
     {
         $fulfill = new DefaultTransport(
             $client = $this->createMock(ClientInterface::class),
-            new Psr7Translator(
+            new FromPsr7(
                 $this->createMock(HeaderFactory::class)
             )
         );
@@ -284,11 +297,14 @@ class DefaultTransportTest extends TestCase
         $response
             ->method('getHeaders')
             ->willReturn([]);
+        $response
+            ->method('getBody')
+            ->willReturn($this->createMock(StreamInterface::class));
 
         $response = ($fulfill)(
             new Request(
                 Url::of('http://example.com'),
-                new Method('POST'),
+                Method::of('POST'),
                 new ProtocolVersion(1, 1),
                 new Headers(
                     new ContentType(
@@ -298,7 +314,7 @@ class DefaultTransportTest extends TestCase
                         ),
                     ),
                 ),
-                Stream::ofContent('content'),
+                Lines::ofContent('content'),
             )
         );
 
@@ -309,7 +325,7 @@ class DefaultTransportTest extends TestCase
     {
         $fulfill = new DefaultTransport(
             $client = $this->createMock(ClientInterface::class),
-            new Psr7Translator(
+            new FromPsr7(
                 $this->createMock(HeaderFactory::class)
             )
         );
@@ -335,11 +351,14 @@ class DefaultTransportTest extends TestCase
         $response
             ->method('getHeaders')
             ->willReturn([]);
+        $response
+            ->method('getBody')
+            ->willReturn($this->createMock(StreamInterface::class));
 
         $response = ($fulfill)(
             new Request(
                 Url::of('http://example.com'),
-                new Method('GET'),
+                Method::of('GET'),
                 new ProtocolVersion(1, 1),
             )
         );

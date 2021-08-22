@@ -16,15 +16,17 @@
     },
     "require": {
         "php": "~8.0",
-        "innmind/http": "~4.0",
+        "innmind/http": "dev-next",
         "guzzlehttp/guzzle": "~7.0",
         "psr/log": "^1.0",
         "ramsey/uuid": "~4.0",
-        "innmind/time-warp": "~2.0",
-        "innmind/time-continuum": "~2.0",
-        "innmind/immutable": "~3.3",
-        "innmind/url": "^3.5.1"
+        "innmind/time-warp": "dev-next",
+        "innmind/time-continuum": "dev-next",
+        "innmind/immutable": "dev-next",
+        "innmind/url": "dev-next"
     },
+    "minimum-stability": "dev",
+    "prefer-stable": true,
     "autoload": {
         "psr-4": {
             "Innmind\\HttpTransport\\": "src/"

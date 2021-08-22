@@ -17,7 +17,7 @@ use Innmind\Http\{
     Header\Value\Value,
 };
 use Innmind\Url\Url;
-use Innmind\Stream\Readable\Stream;
+use Innmind\Filesystem\File\Content\Lines;
 use Psr\Log\LoggerInterface;
 use PHPUnit\Framework\TestCase;
 
@@ -49,7 +49,7 @@ class LoggerTransportTest extends TestCase
         $request
             ->expects($this->once())
             ->method('method')
-            ->willReturn(new Method('POST'));
+            ->willReturn(Method::of('POST'));
         $request
             ->expects($this->once())
             ->method('url')
@@ -57,7 +57,7 @@ class LoggerTransportTest extends TestCase
         $request
             ->expects($this->once())
             ->method('body')
-            ->willReturn(Stream::ofContent('foo'));
+            ->willReturn(Lines::ofContent('foo'));
         $request
             ->expects($this->once())
             ->method('headers')
@@ -102,7 +102,7 @@ class LoggerTransportTest extends TestCase
         $expected
             ->expects($this->once())
             ->method('body')
-            ->willReturn($body = Stream::ofContent('idk'));
+            ->willReturn($body = Lines::ofContent('idk'));
         $this
             ->logger
             ->expects($this->exactly(2))
@@ -134,6 +134,6 @@ class LoggerTransportTest extends TestCase
         $response = ($this->fulfill)($request);
 
         $this->assertSame($expected, $response);
-        $this->assertSame('idk', $body->read()->toString());
+        $this->assertSame('idk', $body->toString());
     }
 }

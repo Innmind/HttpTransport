@@ -30,11 +30,11 @@ final class ThrowOnErrorTransport implements Transport
     {
         $response = ($this->fulfill)($request);
 
-        if ($response->statusCode()->isClientError()) {
+        if ($response->statusCode()->clientError()) {
             throw new ClientError($request, $response);
         }
 
-        if ($response->statusCode()->isServerError()) {
+        if ($response->statusCode()->serverError()) {
             throw new ServerError($request, $response);
         }
 

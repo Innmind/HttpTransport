@@ -24,7 +24,7 @@ class BootstrapTest extends TestCase
 {
     public function testBootstrap()
     {
-        $transports = bootstrap();
+        $transports = bootstrap($this->createMock(Clock::class));
         $default = $transports['default'];
         $log = $transports['logger']($this->createMock(LoggerInterface::class));
         $throw = $transports['throw_on_error'];
