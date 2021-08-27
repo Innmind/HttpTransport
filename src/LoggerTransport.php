@@ -10,10 +10,14 @@ use Innmind\Http\{
     Header,
     Header\Value,
 };
+use Innmind\Immutable\Either;
 use function Innmind\Immutable\join;
 use Psr\Log\LoggerInterface;
 use Ramsey\Uuid\Uuid;
 
+/**
+ * @psalm-import-type Errors from Transport
+ */
 final class LoggerTransport implements Transport
 {
     private Transport $fulfill;
@@ -27,7 +31,16 @@ final class LoggerTransport implements Transport
         $this->logger = $logger;
     }
 
-    public function __invoke(Request $request): Response
+    public function __invoke(Request $request): Either
+    {
+        $reference = $this->logRequest($request);
+
+        return ($this->fulfill)($request)
+            ->map(fn($success) => $this->logSuccess($success, $reference))
+            ->leftMap(fn($error) => $this->logError($error, $reference));
+    }
+
+    private function logRequest(Request $request): string
     {
         $this->logger->debug(
             'Http request about to be sent',
@@ -40,15 +53,51 @@ final class LoggerTransport implements Transport
             ],
         );
 
-        $response = ($this->fulfill)($request);
-        $body = $response->body();
+        return $reference;
+    }
 
+    private function logSuccess(Success $success, string $reference): Success
+    {
+        $this->logWrapper($success, $reference);
+
+        return $success;
+    }
+
+    /**
+     * @param Errors $error
+     *
+     * @return Errors
+     */
+    private function logError($error, string $reference)
+    {
+        /** @var callable(): Errors */
+        $log = match (true) {
+            $error instanceof Redirection => fn() => $this->logWrapper($error, $reference),
+            $error instanceof ClientError => fn() => $this->logWrapper($error, $reference),
+            $error instanceof ServerError => fn() => $this->logWrapper($error, $reference),
+            default => static fn() => $error, // failed connections are not logged for now
+        };
+
+        return $log();
+    }
+
+    private function logWrapper(
+        Success|Redirection|ClientError|ServerError $wrapper,
+        string $reference,
+    ): Success|Redirection|ClientError|ServerError {
+        $this->logResponse($wrapper->response(), $reference);
+
+        return $wrapper;
+    }
+
+    private function logResponse(Response $response, string $reference): Response
+    {
         $this->logger->debug(
             'Http request sent',
             [
                 'statusCode' => $response->statusCode()->value(),
                 'headers' => $this->normalize($response->headers()),
-                'body' => $body->toString(),
+                'body' => $response->body()->toString(),
                 'reference' => $reference,
             ],
         );

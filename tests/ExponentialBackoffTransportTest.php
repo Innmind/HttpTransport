@@ -6,6 +6,11 @@ namespace Tests\Innmind\HttpTransport;
 use Innmind\HttpTransport\{
     ExponentialBackoffTransport,
     Transport,
+    ServerError,
+    Success,
+    ClientError,
+    Redirection,
+    ConnectionFailed,
 };
 use Innmind\Http\Message\{
     Request,
@@ -17,6 +22,7 @@ use Innmind\TimeWarp\{
     PeriodToMilliseconds,
 };
 use Innmind\TimeContinuum\Period;
+use Innmind\Immutable\Either;
 use PHPUnit\Framework\TestCase;
 
 class ExponentialBackoffTransportTest extends TestCase
@@ -41,20 +47,21 @@ class ExponentialBackoffTransportTest extends TestCase
             $this->createMock(Period::class),
         );
         $request = $this->createMock(Request::class);
-        $inner
-            ->expects($this->once())
-            ->method('__invoke')
-            ->with($request)
-            ->willReturn($response = $this->createMock(Response::class));
+        $response = $this->createMock(Response::class);
         $response
             ->expects($this->any())
             ->method('statusCode')
             ->willReturn(new StatusCode(200));
+        $inner
+            ->expects($this->once())
+            ->method('__invoke')
+            ->with($request)
+            ->willReturn($expected = Either::right(new Success($request, $response)));
         $halt
             ->expects($this->never())
             ->method('__invoke');
 
-        $this->assertSame($response, $fulfill($request));
+        $this->assertEquals($expected, $fulfill($request));
     }
 
     public function testDoesntRetryWhenRedirectionResponseOnFirstCall()
@@ -65,20 +72,21 @@ class ExponentialBackoffTransportTest extends TestCase
             $this->createMock(Period::class),
         );
         $request = $this->createMock(Request::class);
-        $inner
-            ->expects($this->once())
-            ->method('__invoke')
-            ->with($request)
-            ->willReturn($response = $this->createMock(Response::class));
+        $response = $this->createMock(Response::class);
         $response
             ->expects($this->any())
             ->method('statusCode')
             ->willReturn(new StatusCode(301));
+        $inner
+            ->expects($this->once())
+            ->method('__invoke')
+            ->with($request)
+            ->willReturn($expected = Either::left(new Redirection($request, $response)));
         $halt
             ->expects($this->never())
             ->method('__invoke');
 
-        $this->assertSame($response, $fulfill($request));
+        $this->assertEquals($expected, $fulfill($request));
     }
 
     public function testDoesntRetryWhenClientErrorResponseOnFirstCall()
@@ -89,23 +97,61 @@ class ExponentialBackoffTransportTest extends TestCase
             $this->createMock(Period::class),
         );
         $request = $this->createMock(Request::class);
-        $inner
-            ->expects($this->once())
-            ->method('__invoke')
-            ->with($request)
-            ->willReturn($response = $this->createMock(Response::class));
+        $response = $this->createMock(Response::class);
         $response
             ->expects($this->any())
             ->method('statusCode')
             ->willReturn(new StatusCode(404));
+        $inner
+            ->expects($this->once())
+            ->method('__invoke')
+            ->with($request)
+            ->willReturn($expected = Either::left(new ClientError($request, $response)));
         $halt
             ->expects($this->never())
             ->method('__invoke');
 
-        $this->assertSame($response, $fulfill($request));
+        $this->assertEquals($expected, $fulfill($request));
     }
 
-    public function testRetryWhileThereIsStill()
+    public function testRetryWhileThereIsStillAServerError()
+    {
+        $fulfill = new ExponentialBackoffTransport(
+            $inner = $this->createMock(Transport::class),
+            $halt = $this->createMock(Halt::class),
+            $period1 = $this->createMock(Period::class),
+            $period2 = $this->createMock(Period::class),
+            $period3 = $this->createMock(Period::class)
+        );
+        $request = $this->createMock(Request::class);
+        $response = $this->createMock(Response::class);
+        $response
+            ->expects($this->any())
+            ->method('statusCode')
+            ->willReturn(new StatusCode(500));
+        $inner
+            ->expects($this->exactly(8))
+            ->method('__invoke')
+            ->with($request)
+            ->willReturn($expected = Either::left(new ServerError($request, $response)));
+        $halt
+            ->expects($this->exactly(6))
+            ->method('__invoke')
+            ->withConsecutive(
+                [$period1],
+                [$period2],
+                [$period3],
+                [$period1],
+                [$period2],
+                [$period3],
+            );
+
+        $this->assertEquals($expected, $fulfill($request));
+        // to make sure halt periods are kept between requests
+        $this->assertEquals($expected, $fulfill($request));
+    }
+
+    public function testRetryWhileThereIsStillAConnectionFailure()
     {
         $fulfill = new ExponentialBackoffTransport(
             $inner = $this->createMock(Transport::class),
@@ -119,11 +165,7 @@ class ExponentialBackoffTransportTest extends TestCase
             ->expects($this->exactly(8))
             ->method('__invoke')
             ->with($request)
-            ->willReturn($response = $this->createMock(Response::class));
-        $response
-            ->expects($this->any())
-            ->method('statusCode')
-            ->willReturn(new StatusCode(500));
+            ->willReturn($expected = Either::left(new ConnectionFailed($request)));
         $halt
             ->expects($this->exactly(6))
             ->method('__invoke')
@@ -136,9 +178,9 @@ class ExponentialBackoffTransportTest extends TestCase
                 [$period3],
             );
 
-        $this->assertSame($response, $fulfill($request));
+        $this->assertEquals($expected, $fulfill($request));
         // to make sure halt periods are kept between requests
-        $this->assertSame($response, $fulfill($request));
+        $this->assertEquals($expected, $fulfill($request));
     }
 
     public function testStopRetryingWhenNoLongerReceivingAServerError()
@@ -151,14 +193,8 @@ class ExponentialBackoffTransportTest extends TestCase
             $period3 = $this->createMock(Period::class)
         );
         $request = $this->createMock(Request::class);
-        $inner
-            ->expects($this->exactly(2))
-            ->method('__invoke')
-            ->with($request)
-            ->will($this->onConsecutiveCalls(
-                $response1 = $this->createMock(Response::class),
-                $response2 = $this->createMock(Response::class),
-            ));
+        $response1 = $this->createMock(Response::class);
+        $response2 = $this->createMock(Response::class);
         $response1
             ->expects($this->any())
             ->method('statusCode')
@@ -167,12 +203,20 @@ class ExponentialBackoffTransportTest extends TestCase
             ->expects($this->any())
             ->method('statusCode')
             ->willReturn(new StatusCode(200));
+        $inner
+            ->expects($this->exactly(2))
+            ->method('__invoke')
+            ->with($request)
+            ->will($this->onConsecutiveCalls(
+                Either::left(new ServerError($request, $response1)),
+                $expected = Either::right(new Success($request, $response2)),
+            ));
         $halt
             ->expects($this->once())
             ->method('__invoke')
             ->with($period1);
 
-        $this->assertSame($response2, $fulfill($request));
+        $this->assertEquals($expected, $fulfill($request));
     }
 
     public function testByDefaultRetriesFiveTimesByUsingAPowerOfE()
@@ -182,15 +226,16 @@ class ExponentialBackoffTransportTest extends TestCase
             $halt = $this->createMock(Halt::class),
         );
         $request = $this->createMock(Request::class);
-        $inner
-            ->expects($this->exactly(6))
-            ->method('__invoke')
-            ->with($request)
-            ->willReturn($response = $this->createMock(Response::class));
+        $response = $this->createMock(Response::class);
         $response
             ->expects($this->any())
             ->method('statusCode')
             ->willReturn(new StatusCode(500));
+        $inner
+            ->expects($this->exactly(6))
+            ->method('__invoke')
+            ->with($request)
+            ->willReturn($expected = Either::left(new ServerError($request, $response)));
         $halt
             ->expects($this->exactly(5))
             ->method('__invoke')
@@ -222,6 +267,6 @@ class ExponentialBackoffTransportTest extends TestCase
                 ]
             );
 
-        $this->assertSame($response, $fulfill($request));
+        $this->assertEquals($expected, $fulfill($request));
     }
 }

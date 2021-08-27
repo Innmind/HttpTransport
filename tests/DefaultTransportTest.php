@@ -6,7 +6,9 @@ namespace Tests\Innmind\HttpTransport;
 use Innmind\HttpTransport\{
     DefaultTransport,
     Transport,
-    Exception\ConnectionFailed,
+    ClientError,
+    Success,
+    ConnectionFailed,
 };
 use Innmind\Url\Url;
 use Innmind\Http\{
@@ -79,10 +81,13 @@ class DefaultTransportTest extends TestCase
         );
 
         $this->assertInstanceOf(Transport::class, $fulfill);
-        $this->assertInstanceOf(Response::class, $response);
+        $this->assertInstanceOf(Success::class, $response->match(
+            static fn() => null,
+            static fn($success) => $success,
+        ));
     }
 
-    public function testThrowOnConnectException()
+    public function testReturnErrorOnConnectException()
     {
         $fulfill = new DefaultTransport(
             $client = $this->createMock(ClientInterface::class),
@@ -104,20 +109,21 @@ class DefaultTransportTest extends TestCase
                 )
             );
 
-        try {
-            ($fulfill)(
-                $request = new Request(
-                    Url::of('http://example.com'),
-                    Method::of('GET'),
-                    new ProtocolVersion(1, 1),
-                    new Headers,
-                    Lines::ofContent('')
-                )
-            );
-            $this->fail('it should throw');
-        } catch (ConnectionFailed $e) {
-            $this->assertSame($request, $e->request());
-        }
+        $error = ($fulfill)(
+            $request = new Request(
+                Url::of('http://example.com'),
+                Method::of('GET'),
+                new ProtocolVersion(1, 1),
+                new Headers,
+                Lines::ofContent('')
+            )
+        )->match(
+            static fn($error) => $error,
+            static fn() => null,
+        );
+
+        $this->assertInstanceOf(ConnectionFailed::class, $error);
+        $this->assertSame($request, $error->request());
     }
 
     public function testFulfillWithMethod()
@@ -162,7 +168,10 @@ class DefaultTransportTest extends TestCase
             )
         );
 
-        $this->assertInstanceOf(Response::class, $response);
+        $this->assertInstanceOf(Success::class, $response->match(
+            static fn() => null,
+            static fn($success) => $success,
+        ));
     }
 
     public function testFulfillWithHeaders()
@@ -216,7 +225,10 @@ class DefaultTransportTest extends TestCase
             )
         );
 
-        $this->assertInstanceOf(Response::class, $response);
+        $this->assertInstanceOf(Success::class, $response->match(
+            static fn() => null,
+            static fn($success) => $success,
+        ));
     }
 
     public function testFulfillWithPayload()
@@ -263,7 +275,10 @@ class DefaultTransportTest extends TestCase
             )
         );
 
-        $this->assertInstanceOf(Response::class, $response);
+        $this->assertInstanceOf(Success::class, $response->match(
+            static fn() => null,
+            static fn($success) => $success,
+        ));
     }
 
     public function testFulfillCompletelyModifiedRequest()
@@ -318,7 +333,10 @@ class DefaultTransportTest extends TestCase
             )
         );
 
-        $this->assertInstanceOf(Response::class, $response);
+        $this->assertInstanceOf(Success::class, $response->match(
+            static fn() => null,
+            static fn($success) => $success,
+        ));
     }
 
     public function testCatchBadResponse()
@@ -347,7 +365,7 @@ class DefaultTransportTest extends TestCase
             ->willReturn('1.1');
         $response
             ->method('getStatusCode')
-            ->willReturn(200);
+            ->willReturn(400);
         $response
             ->method('getHeaders')
             ->willReturn([]);
@@ -363,7 +381,9 @@ class DefaultTransportTest extends TestCase
             )
         );
 
-        $this->assertInstanceOf(Transport::class, $fulfill);
-        $this->assertInstanceOf(Response::class, $response);
+        $this->assertInstanceOf(ClientError::class, $response->match(
+            static fn($error) => $error,
+            static fn() => null,
+        ));
     }
 }

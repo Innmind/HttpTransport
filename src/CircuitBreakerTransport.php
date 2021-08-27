@@ -18,8 +18,14 @@ use Innmind\TimeContinuum\{
     Period,
     PointInTime,
 };
-use Innmind\Immutable\Map;
+use Innmind\Immutable\{
+    Map,
+    Either,
+};
 
+/**
+ * @psalm-import-type Errors from Transport
+ */
 final class CircuitBreakerTransport implements Transport
 {
     private Transport $fulfill;
@@ -27,7 +33,6 @@ final class CircuitBreakerTransport implements Transport
     private Period $delayBeforeRetry;
     /** @var Map<string , PointInTime> */
     private Map $openedCircuits;
-    private ?Response $defaultResponse = null;
 
     public function __construct(
         Transport $fulfill,
@@ -41,27 +46,29 @@ final class CircuitBreakerTransport implements Transport
         $this->openedCircuits = Map::of();
     }
 
-    public function __invoke(Request $request): Response
+    public function __invoke(Request $request): Either
     {
         if ($this->opened($request->url())) {
-            return $this->defaultResponse();
+            return $this->error($request);
         }
 
-        $response = ($this->fulfill)($request);
-
-        if ($response->statusCode()->serverError()) {
-            $this->open($request->url());
-        }
-
-        return $response;
+        return ($this->fulfill)($request)->leftMap(fn($error) => match (true) {
+            $error instanceof ServerError => $this->open($request, $error),
+            $error instanceof ConnectionFailed => $this->open($request, $error),
+            default => $error,
+        });
     }
 
-    private function open(Url $url): void
-    {
+    private function open(
+        Request $request,
+        ServerError|ConnectionFailed $error,
+    ): ServerError|ConnectionFailed {
         $this->openedCircuits = ($this->openedCircuits)(
-            $this->hash($url),
+            $this->hash($request->url()),
             $this->clock->now(),
         );
+
+        return $error;
     }
 
     private function opened(Url $url): bool
@@ -77,9 +84,13 @@ final class CircuitBreakerTransport implements Transport
             );
     }
 
-    private function defaultResponse(): Response
+    /**
+     * @return Either<Errors, Success>
+     */
+    private function error(Request $request): Either
     {
-        return $this->defaultResponse ?? $this->defaultResponse = new Response\Response(
+        /** @var Either<Errors, Success> */
+        return Either::left(new ServerError($request, new Response\Response(
             $code = StatusCode::of('SERVICE_UNAVAILABLE'),
             $code->associatedReasonPhrase(),
             new ProtocolVersion(2, 0),
@@ -89,7 +100,7 @@ final class CircuitBreakerTransport implements Transport
                     new Value('true'),
                 ),
             ),
-        );
+        )));
     }
 
     private function hash(Url $url): string

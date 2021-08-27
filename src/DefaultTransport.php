@@ -3,7 +3,6 @@ declare(strict_types = 1);
 
 namespace Innmind\HttpTransport;
 
-use Innmind\HttpTransport\Exception\ConnectionFailed;
 use Innmind\Http\{
     Message\Request,
     Message\Response,
@@ -11,12 +10,16 @@ use Innmind\Http\{
     Header,
     Header\Value,
 };
+use Innmind\Immutable\Either;
 use GuzzleHttp\{
     ClientInterface,
     Exception\ConnectException as GuzzleConnectException,
     Exception\BadResponseException,
 };
 
+/**
+ * @psalm-import-type Errors from Transport
+ */
 final class DefaultTransport implements Transport
 {
     private ClientInterface $client;
@@ -30,7 +33,7 @@ final class DefaultTransport implements Transport
         $this->translate = $translate;
     }
 
-    public function __invoke(Request $request): Response
+    public function __invoke(Request $request): Either
     {
         $options = [];
 
@@ -63,11 +66,20 @@ final class DefaultTransport implements Transport
                 $options,
             );
         } catch (GuzzleConnectException $e) {
-            throw new ConnectionFailed($request, $e);
+            /** @var Either<Errors, Success> */
+            return Either::left(new ConnectionFailed($request));
         } catch (BadResponseException $e) {
             $response = $e->getResponse();
         }
 
-        return ($this->translate)($response);
+        $response = ($this->translate)($response);
+
+        /** @var Either<Errors, Success> */
+        return match (true) {
+            $response->statusCode()->serverError() => Either::left(new ServerError($request, $response)),
+            $response->statusCode()->clientError() => Either::left(new ClientError($request, $response)),
+            $response->statusCode()->redirection() => Either::left(new Redirection($request, $response)),
+            $response->statusCode()->successful() => Either::right(new Success($request, $response)),
+        };
     }
 }

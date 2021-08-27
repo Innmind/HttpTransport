@@ -6,6 +6,11 @@ namespace Tests\Innmind\HttpTransport;
 use Innmind\HttpTransport\{
     CircuitBreakerTransport,
     Transport,
+    Success,
+    ServerError,
+    ClientError,
+    Redirection,
+    ConnectionFailed,
 };
 use Innmind\Http\{
     Message\Request,
@@ -20,6 +25,7 @@ use Innmind\TimeContinuum\{
     Period,
     PointInTime,
 };
+use Innmind\Immutable\Either;
 use PHPUnit\Framework\TestCase;
 
 class CircuitBreakerTransportTest extends TestCase
@@ -48,18 +54,19 @@ class CircuitBreakerTransportTest extends TestCase
             Method::get(),
             new ProtocolVersion(1, 1),
         );
-        $inner
-            ->expects($this->exactly(2))
-            ->method('__invoke')
-            ->with($request)
-            ->willReturn($response = $this->createMock(Response::class));
+        $response = $this->createMock(Response::class);
         $response
             ->expects($this->any())
             ->method('statusCode')
             ->willReturn(new StatusCode(200));
+        $inner
+            ->expects($this->exactly(2))
+            ->method('__invoke')
+            ->with($request)
+            ->willReturn($expected = Either::right(new Success($request, $response)));
 
-        $this->assertSame($response, $fulfill($request));
-        $this->assertSame($response, $fulfill($request));
+        $this->assertEquals($expected, $fulfill($request));
+        $this->assertEquals($expected, $fulfill($request));
     }
 
     public function testDoesntOpenCircuitOnRedirectionResponse()
@@ -74,18 +81,19 @@ class CircuitBreakerTransportTest extends TestCase
             Method::get(),
             new ProtocolVersion(1, 1),
         );
-        $inner
-            ->expects($this->exactly(2))
-            ->method('__invoke')
-            ->with($request)
-            ->willReturn($response = $this->createMock(Response::class));
+        $response = $this->createMock(Response::class);
         $response
             ->expects($this->any())
             ->method('statusCode')
             ->willReturn(new StatusCode(301));
+        $inner
+            ->expects($this->exactly(2))
+            ->method('__invoke')
+            ->with($request)
+            ->willReturn($expected = Either::left(new Redirection($request, $response)));
 
-        $this->assertSame($response, $fulfill($request));
-        $this->assertSame($response, $fulfill($request));
+        $this->assertEquals($expected, $fulfill($request));
+        $this->assertEquals($expected, $fulfill($request));
     }
 
     public function testDoesntOpenCircuitOnClientErrorResponse()
@@ -100,21 +108,22 @@ class CircuitBreakerTransportTest extends TestCase
             Method::get(),
             new ProtocolVersion(1, 1),
         );
-        $inner
-            ->expects($this->exactly(2))
-            ->method('__invoke')
-            ->with($request)
-            ->willReturn($response = $this->createMock(Response::class));
+        $response = $this->createMock(Response::class);
         $response
             ->expects($this->any())
             ->method('statusCode')
             ->willReturn(new StatusCode(404));
+        $inner
+            ->expects($this->exactly(2))
+            ->method('__invoke')
+            ->with($request)
+            ->willReturn($expected = Either::left(new ClientError($request, $response)));
 
-        $this->assertSame($response, $fulfill($request));
-        $this->assertSame($response, $fulfill($request));
+        $this->assertEquals($expected, $fulfill($request));
+        $this->assertEquals($expected, $fulfill($request));
     }
 
-    public function testOpenCircuit()
+    public function testOpenCircuitOnServerError()
     {
         $fulfill = new CircuitBreakerTransport(
             $inner = $this->createMock(Transport::class),
@@ -126,15 +135,16 @@ class CircuitBreakerTransportTest extends TestCase
             Method::get(),
             new ProtocolVersion(1, 1),
         );
-        $inner
-            ->expects($this->once())
-            ->method('__invoke')
-            ->with($request)
-            ->willReturn($response = $this->createMock(Response::class));
+        $response = $this->createMock(Response::class);
         $response
             ->expects($this->any())
             ->method('statusCode')
             ->willReturn(new StatusCode(500));
+        $inner
+            ->expects($this->once())
+            ->method('__invoke')
+            ->with($request)
+            ->willReturn($expected = Either::left(new ServerError($request, $response)));
         $clock
             ->expects($this->exactly(2))
             ->method('now')
@@ -153,10 +163,57 @@ class CircuitBreakerTransportTest extends TestCase
             ->with($secondCallTime)
             ->willReturn(true);
 
-        $this->assertSame($response, $fulfill($request));
+        $this->assertEquals($expected, $fulfill($request));
         $defaultResponse = $fulfill($request);
-        $this->assertNotSame($response, $defaultResponse);
-        $this->assertSame(503, $defaultResponse->statusCode()->value());
+        $this->assertNotEquals($expected, $defaultResponse);
+        $this->assertSame(503, $defaultResponse->match(
+            static fn($error) => $error->response()->statusCode()->value(),
+            static fn() => null,
+        ));
+    }
+
+    public function testOpenCircuitOnConnectionFailure()
+    {
+        $fulfill = new CircuitBreakerTransport(
+            $inner = $this->createMock(Transport::class),
+            $clock = $this->createMock(Clock::class),
+            $delay = $this->createMock(Period::class)
+        );
+        $request = new Request\Request(
+            Url::of('http://example.com'),
+            Method::get(),
+            new ProtocolVersion(1, 1),
+        );
+        $inner
+            ->expects($this->once())
+            ->method('__invoke')
+            ->with($request)
+            ->willReturn($expected = Either::left(new ConnectionFailed($request)));
+        $clock
+            ->expects($this->exactly(2))
+            ->method('now')
+            ->will($this->onConsecutiveCalls(
+                $openingTime = $this->createMock(PointInTime::class),
+                $secondCallTime = $this->createMock(PointInTime::class)
+            ));
+        $openingTime
+            ->expects($this->once())
+            ->method('goForward')
+            ->with($delay)
+            ->willReturn($reclosingTime = $this->createMock(PointInTime::class));
+        $reclosingTime
+            ->expects($this->once())
+            ->method('aheadOf')
+            ->with($secondCallTime)
+            ->willReturn(true);
+
+        $this->assertEquals($expected, $fulfill($request));
+        $defaultResponse = $fulfill($request);
+        $this->assertNotEquals($expected, $defaultResponse);
+        $this->assertSame(503, $defaultResponse->match(
+            static fn($error) => $error->response()->statusCode()->value(),
+            static fn() => null,
+        ));
     }
 
     public function testOpenCircuitOnlyForTheDomainThatFailed()
@@ -176,14 +233,8 @@ class CircuitBreakerTransportTest extends TestCase
             ->expects($this->any())
             ->method('url')
             ->willReturn(Url::of('http://example.com/'));
-        $inner
-            ->expects($this->exactly(2))
-            ->method('__invoke')
-            ->withConsecutive([$request1], [$request2])
-            ->will($this->onConsecutiveCalls(
-                $response1 = $this->createMock(Response::class),
-                $response2 = $this->createMock(Response::class)
-            ));
+        $response1 = $this->createMock(Response::class);
+        $response2 = $this->createMock(Response::class);
         $response1
             ->expects($this->any())
             ->method('statusCode')
@@ -192,9 +243,17 @@ class CircuitBreakerTransportTest extends TestCase
             ->expects($this->any())
             ->method('statusCode')
             ->willReturn(new StatusCode(200));
+        $inner
+            ->expects($this->exactly(2))
+            ->method('__invoke')
+            ->withConsecutive([$request1], [$request2])
+            ->will($this->onConsecutiveCalls(
+                $expected1 = Either::left(new ServerError($request1, $response1)),
+                $expected2 = Either::left(new Success($request2, $response2)),
+            ));
 
-        $this->assertSame($response1, $fulfill($request1));
-        $this->assertSame($response2, $fulfill($request2));
+        $this->assertEquals($expected1, $fulfill($request1));
+        $this->assertEquals($expected2, $fulfill($request2));
     }
 
     public function testRecloseTheCircuitAfterTheSpecifiedDelay()
@@ -209,14 +268,8 @@ class CircuitBreakerTransportTest extends TestCase
             Method::get(),
             new ProtocolVersion(1, 1),
         );
-        $inner
-            ->expects($this->exactly(2))
-            ->method('__invoke')
-            ->with($request)
-            ->will($this->onConsecutiveCalls(
-                $response1 = $this->createMock(Response::class),
-                $response2 = $this->createMock(Response::class)
-            ));
+        $response1 = $this->createMock(Response::class);
+        $response2 = $this->createMock(Response::class);
         $response1
             ->expects($this->any())
             ->method('statusCode')
@@ -225,6 +278,14 @@ class CircuitBreakerTransportTest extends TestCase
             ->expects($this->any())
             ->method('statusCode')
             ->willReturn(new StatusCode(200));
+        $inner
+            ->expects($this->exactly(2))
+            ->method('__invoke')
+            ->with($request)
+            ->will($this->onConsecutiveCalls(
+                $expected1 = Either::left(new ServerError($request, $response1)),
+                $expected2 = Either::right(new Success($request, $response2)),
+            ));
         $clock
             ->expects($this->exactly(2))
             ->method('now')
@@ -243,7 +304,7 @@ class CircuitBreakerTransportTest extends TestCase
             ->with($secondCallTime)
             ->willReturn(false);
 
-        $this->assertSame($response1, $fulfill($request));
-        $this->assertSame($response2, $fulfill($request));
+        $this->assertEquals($expected1, $fulfill($request));
+        $this->assertEquals($expected2, $fulfill($request));
     }
 }

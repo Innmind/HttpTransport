@@ -6,6 +6,7 @@ namespace Tests\Innmind\HttpTransport;
 use Innmind\HttpTransport\{
     LoggerTransport,
     Transport,
+    Success,
 };
 use Innmind\Http\{
     Message\Request,
@@ -18,6 +19,7 @@ use Innmind\Http\{
 };
 use Innmind\Url\Url;
 use Innmind\Filesystem\File\Content\Lines;
+use Innmind\Immutable\Either;
 use Psr\Log\LoggerInterface;
 use PHPUnit\Framework\TestCase;
 
@@ -75,19 +77,12 @@ class LoggerTransportTest extends TestCase
                 ),
             );
         $reference = null;
-        $this
-            ->inner
-            ->expects($this->once())
-            ->method('__invoke')
-            ->with($request)
-            ->willReturn(
-                $expected = $this->createMock(Response::class)
-            );
-        $expected
-            ->expects($this->once())
+        $response = $this->createMock(Response::class);
+        $response
+            ->expects($this->any())
             ->method('statusCode')
             ->willReturn(new StatusCode(200));
-        $expected
+        $response
             ->expects($this->once())
             ->method('headers')
             ->willReturn(
@@ -99,10 +94,18 @@ class LoggerTransportTest extends TestCase
                     ),
                 ),
             );
-        $expected
+        $response
             ->expects($this->once())
             ->method('body')
             ->willReturn($body = Lines::ofContent('idk'));
+        $this
+            ->inner
+            ->expects($this->once())
+            ->method('__invoke')
+            ->with($request)
+            ->willReturn(
+                $expected = Either::right(new Success($request, $response)),
+            );
         $this
             ->logger
             ->expects($this->exactly(2))
@@ -133,7 +136,7 @@ class LoggerTransportTest extends TestCase
 
         $response = ($this->fulfill)($request);
 
-        $this->assertSame($expected, $response);
+        $this->assertEquals($expected, $response);
         $this->assertSame('idk', $body->toString());
     }
 }

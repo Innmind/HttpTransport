@@ -13,8 +13,14 @@ use Innmind\TimeContinuum\{
     Earth\Period\Millisecond,
 };
 use Innmind\TimeWarp\Halt;
-use Innmind\Immutable\Sequence;
+use Innmind\Immutable\{
+    Sequence,
+    Either,
+};
 
+/**
+ * @psalm-import-type Errors from Transport
+ */
 final class ExponentialBackoffTransport implements Transport
 {
     private Transport $fulfill;
@@ -33,25 +39,13 @@ final class ExponentialBackoffTransport implements Transport
         $this->retries = Sequence::of($retry, ...$retries);
     }
 
-    public function __invoke(Request $request): Response
+    public function __invoke(Request $request): Either
     {
-        $retries = $this->retries;
-
-        while (true) {
-            $response = ($this->fulfill)($request);
-
-            if (!$this->shouldRetry($response, $retries)) {
-                break;
-            }
-
-            $_ = $retries->first()->match(
-                fn($period) => ($this->halt)($period),
-                static fn() => null,
-            );
-            $retries = $retries->drop(1);
-        }
-
-        return $response;
+        /** @psalm-suppress MixedArgumentTypeCoercion Can't type the templates for Either */
+        return $this->retries->reduce(
+            ($this->fulfill)($request),
+            fn(Either $result, $period) => $this->maybeRetry($result, $request, $period),
+        );
     }
 
     public static function of(
@@ -67,6 +61,42 @@ final class ExponentialBackoffTransport implements Transport
             new Millisecond((int) (\exp(3) * 100)),
             new Millisecond((int) (\exp(4) * 100)),
         );
+    }
+
+    /**
+     * @param Either<Errors, Success> $result
+     *
+     * @return Either<Errors, Success> $result
+     */
+    private function maybeRetry(
+        Either $result,
+        Request $request,
+        Period $period,
+    ): Either {
+        return $result->otherwise(fn($error) => match (true) {
+            $error instanceof ServerError => $this->retry($request, $period),
+            $error instanceof ConnectionFailed => $this->retry($request, $period),
+            default => $this->return($error),
+        });
+    }
+
+    /**
+     * @return Either<Errors, Success>
+     */
+    private function return(Redirection|ClientError $error): Either
+    {
+        /** @var Either<Errors, Success> */
+        return Either::left($error);
+    }
+
+    /**
+     * @return Either<Errors, Success>
+     */
+    private function retry(Request $request, Period $period): Either
+    {
+        ($this->halt)($period);
+
+        return ($this->fulfill)($request);
     }
 
     private function shouldRetry(Response $response, Sequence $retries): bool
