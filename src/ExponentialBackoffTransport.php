@@ -32,7 +32,7 @@ final class ExponentialBackoffTransport implements Transport
         Transport $fulfill,
         Halt $halt,
         Period $retry,
-        Period ...$retries
+        Period ...$retries,
     ) {
         $this->fulfill = $fulfill;
         $this->halt = $halt;
@@ -48,10 +48,8 @@ final class ExponentialBackoffTransport implements Transport
         );
     }
 
-    public static function of(
-        Transport $fulfill,
-        Halt $halt,
-    ): self {
+    public static function of(Transport $fulfill, Halt $halt): self
+    {
         return new self(
             $fulfill,
             $halt,

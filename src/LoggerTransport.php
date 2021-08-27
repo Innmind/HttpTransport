@@ -23,10 +23,8 @@ final class LoggerTransport implements Transport
     private Transport $fulfill;
     private LoggerInterface $logger;
 
-    public function __construct(
-        Transport $fulfill,
-        LoggerInterface $logger
-    ) {
+    public function __construct(Transport $fulfill, LoggerInterface $logger)
+    {
         $this->fulfill = $fulfill;
         $this->logger = $logger;
     }

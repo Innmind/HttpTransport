@@ -25,10 +25,8 @@ final class DefaultTransport implements Transport
     private ClientInterface $client;
     private FromPsr7 $translate;
 
-    public function __construct(
-        ClientInterface $client,
-        FromPsr7 $translate
-    ) {
+    public function __construct(ClientInterface $client, FromPsr7 $translate)
+    {
         $this->client = $client;
         $this->translate = $translate;
     }

@@ -37,7 +37,7 @@ final class CircuitBreakerTransport implements Transport
     public function __construct(
         Transport $fulfill,
         Clock $clock,
-        Period $delayBeforeRetry
+        Period $delayBeforeRetry,
     ) {
         $this->fulfill = $fulfill;
         $this->clock = $clock;
