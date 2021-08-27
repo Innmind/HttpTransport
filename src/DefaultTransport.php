@@ -15,6 +15,7 @@ use GuzzleHttp\{
     ClientInterface,
     Exception\ConnectException as GuzzleConnectException,
     Exception\BadResponseException,
+    Exception\GuzzleException,
 };
 
 /**
@@ -68,6 +69,9 @@ final class DefaultTransport implements Transport
             return Either::left(new ConnectionFailed($request, $e->getMessage()));
         } catch (BadResponseException $e) {
             $response = $e->getResponse();
+        } catch (GuzzleException $e) {
+            /** @var Either<Errors, Success> */
+            return Either::left(new Failure($request, $e->getMessage()));
         }
 
         $response = ($this->translate)($response);

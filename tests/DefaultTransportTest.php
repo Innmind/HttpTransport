@@ -9,6 +9,7 @@ use Innmind\HttpTransport\{
     ClientError,
     Success,
     ConnectionFailed,
+    Failure,
 };
 use Innmind\Url\Url;
 use Innmind\Http\{
@@ -28,6 +29,7 @@ use GuzzleHttp\{
     ClientInterface,
     Exception\ConnectException,
     Exception\BadResponseException,
+    Exception\GuzzleException,
 };
 use Psr\Http\Message\{
     ResponseInterface as Psr7ResponseInterface,
@@ -123,6 +125,45 @@ class DefaultTransportTest extends TestCase
         );
 
         $this->assertInstanceOf(ConnectionFailed::class, $error);
+        $this->assertSame($request, $error->request());
+    }
+
+    public function testReturnErrorOnAnyGuzzleException()
+    {
+        $fulfill = new DefaultTransport(
+            $client = $this->createMock(ClientInterface::class),
+            new FromPsr7(
+                $this->createMock(HeaderFactory::class)
+            )
+        );
+        $client
+            ->expects($this->once())
+            ->method('request')
+            ->with(
+                'GET',
+                'http://example.com/',
+                []
+            )
+            ->will(
+                $this->throwException(
+                    $this->createMock(GuzzleException::class)
+                )
+            );
+
+        $error = ($fulfill)(
+            $request = new Request(
+                Url::of('http://example.com'),
+                Method::of('GET'),
+                new ProtocolVersion(1, 1),
+                new Headers,
+                Lines::ofContent('')
+            )
+        )->match(
+            static fn($error) => $error,
+            static fn() => null,
+        );
+
+        $this->assertInstanceOf(Failure::class, $error);
         $this->assertSame($request, $error->request());
     }
 
