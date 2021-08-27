@@ -22,7 +22,6 @@ use Psr\Log\LoggerInterface;
  * @return array{
  *   default: callable(?ClientInterface): Transport,
  *   logger: callable(LoggerInterface): (callable(Transport): Transport),
- *   throw_on_error: callable(Transport): Transport,
  *   exponential_backoff: callable(Transport, Halt, Clock): Transport,
  *   circuit_breaker: callable(Transport, Clock, Period): Transport
  * }
@@ -33,7 +32,6 @@ function bootstrap(Clock $clock): array
      * @var array{
      *   default: callable(?ClientInterface): Transport,
      *   logger: callable(LoggerInterface): (callable(Transport): Transport),
-     *   throw_on_error: callable(Transport): Transport,
      *   exponential_backoff: callable(Transport, Halt): Transport,
      *   circuit_breaker: callable(Transport, Clock, Period): Transport
      * }
@@ -52,9 +50,6 @@ function bootstrap(Clock $clock): array
                     $logger,
                 );
             };
-        },
-        'throw_on_error' => static function(Transport $transport): Transport {
-            return new ThrowOnErrorTransport($transport);
         },
         'exponential_backoff' => static function(Transport $transport, Halt $halt): Transport {
             return ExponentialBackoffTransport::of($transport, $halt);

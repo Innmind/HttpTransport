@@ -27,7 +27,6 @@ class BootstrapTest extends TestCase
         $transports = bootstrap($this->createMock(Clock::class));
         $default = $transports['default'];
         $log = $transports['logger']($this->createMock(LoggerInterface::class));
-        $throw = $transports['throw_on_error'];
         $backoff = $transports['exponential_backoff'];
         $breaker = $transports['circuit_breaker'];
 
@@ -37,8 +36,6 @@ class BootstrapTest extends TestCase
         ));
         $this->assertIsCallable($log);
         $this->assertInstanceOf(LoggerTransport::class, $log($default()));
-        $this->assertIsCallable($throw);
-        $this->assertInstanceOf(ThrowOnErrorTransport::class, $throw($default()));
         $this->assertIsCallable($backoff);
         $this->assertInstanceOf(
             ExponentialBackoffTransport::class,
