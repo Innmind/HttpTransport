@@ -98,17 +98,4 @@ final class ExponentialBackoffTransport implements Transport
 
         return ($this->fulfill)($request);
     }
-
-    private function shouldRetry(Response $response, Sequence $retries): bool
-    {
-        if (!$response->statusCode()->serverError()) {
-            return false;
-        }
-
-        if ($retries->empty()) {
-            return false;
-        }
-
-        return true;
-    }
 }
