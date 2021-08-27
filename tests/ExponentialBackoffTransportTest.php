@@ -165,7 +165,7 @@ class ExponentialBackoffTransportTest extends TestCase
             ->expects($this->exactly(8))
             ->method('__invoke')
             ->with($request)
-            ->willReturn($expected = Either::left(new ConnectionFailed($request)));
+            ->willReturn($expected = Either::left(new ConnectionFailed($request, '')));
         $halt
             ->expects($this->exactly(6))
             ->method('__invoke')

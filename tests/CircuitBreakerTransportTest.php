@@ -188,7 +188,7 @@ class CircuitBreakerTransportTest extends TestCase
             ->expects($this->once())
             ->method('__invoke')
             ->with($request)
-            ->willReturn($expected = Either::left(new ConnectionFailed($request)));
+            ->willReturn($expected = Either::left(new ConnectionFailed($request, '')));
         $clock
             ->expects($this->exactly(2))
             ->method('now')

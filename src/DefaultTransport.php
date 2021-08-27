@@ -65,7 +65,7 @@ final class DefaultTransport implements Transport
             );
         } catch (GuzzleConnectException $e) {
             /** @var Either<Errors, Success> */
-            return Either::left(new ConnectionFailed($request));
+            return Either::left(new ConnectionFailed($request, $e->getMessage()));
         } catch (BadResponseException $e) {
             $response = $e->getResponse();
         }
