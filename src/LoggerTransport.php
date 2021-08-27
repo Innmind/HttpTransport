@@ -34,7 +34,7 @@ final class LoggerTransport implements Transport
         $reference = $this->logRequest($request);
 
         return ($this->fulfill)($request)
-            ->map(fn($success) => $this->logSuccess($success, $reference))
+            ->map(fn($success) => $this->logWrapper($success, $reference))
             ->leftMap(fn($error) => $this->logError($error, $reference));
     }
 
@@ -52,13 +52,6 @@ final class LoggerTransport implements Transport
         );
 
         return $reference;
-    }
-
-    private function logSuccess(Success $success, string $reference): Success
-    {
-        $this->logWrapper($success, $reference);
-
-        return $success;
     }
 
     /**
@@ -79,10 +72,15 @@ final class LoggerTransport implements Transport
         return $log();
     }
 
-    private function logWrapper(
-        Success|Redirection|ClientError|ServerError $wrapper,
-        string $reference,
-    ): Success|Redirection|ClientError|ServerError {
+    /**
+     * @template W of ServerError|ClientError|Redirection|Success
+     *
+     * @param W $wrapper
+     *
+     * @return W
+     */
+    private function logWrapper($wrapper, string $reference)
+    {
         $this->logResponse($wrapper->response(), $reference);
 
         return $wrapper;
