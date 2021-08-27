@@ -26,7 +26,7 @@ final class CircuitBreakerTransport implements Transport
     private Clock $clock;
     private Period $delayBeforeRetry;
     /** @var Map<string , PointInTime> */
-    private Map $closedCircuits;
+    private Map $openedCircuits;
     private ?Response $defaultResponse = null;
 
     public function __construct(
@@ -38,41 +38,41 @@ final class CircuitBreakerTransport implements Transport
         $this->clock = $clock;
         $this->delayBeforeRetry = $delayBeforeRetry;
         /** @var Map<string , PointInTime> */
-        $this->closedCircuits = Map::of();
+        $this->openedCircuits = Map::of();
     }
 
     public function __invoke(Request $request): Response
     {
-        if ($this->closed($request->url())) {
+        if ($this->opened($request->url())) {
             return $this->defaultResponse();
         }
 
         $response = ($this->fulfill)($request);
 
         if ($response->statusCode()->serverError()) {
-            $this->close($request->url());
+            $this->open($request->url());
         }
 
         return $response;
     }
 
-    private function close(Url $url): void
+    private function open(Url $url): void
     {
-        $this->closedCircuits = ($this->closedCircuits)(
+        $this->openedCircuits = ($this->openedCircuits)(
             $this->hash($url),
             $this->clock->now(),
         );
     }
 
-    private function closed(Url $url): bool
+    private function opened(Url $url): bool
     {
         return $this
-            ->closedCircuits
+            ->openedCircuits
             ->get($this->hash($url))
             ->map(fn($lastCall) => $lastCall->goForward($this->delayBeforeRetry))
-            ->map(fn($reopenAt) => $reopenAt->aheadOf($this->clock->now()))
+            ->map(fn($recloseAt) => $recloseAt->aheadOf($this->clock->now()))
             ->match(
-                static fn($closed) => $closed,
+                static fn($opened) => $opened,
                 static fn() => false,
             );
     }
@@ -85,7 +85,7 @@ final class CircuitBreakerTransport implements Transport
             new ProtocolVersion(2, 0),
             Headers::of(
                 new Header(
-                    'X-Circuit-Closed',
+                    'X-Circuit-Opened',
                     new Value('true'),
                 ),
             ),

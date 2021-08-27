@@ -36,7 +36,7 @@ class CircuitBreakerTransportTest extends TestCase
         );
     }
 
-    public function testDoesntCloseCircuitOnSuccessfulResponse()
+    public function testDoesntOpenCircuitOnSuccessfulResponse()
     {
         $fulfill = new CircuitBreakerTransport(
             $inner = $this->createMock(Transport::class),
@@ -62,7 +62,7 @@ class CircuitBreakerTransportTest extends TestCase
         $this->assertSame($response, $fulfill($request));
     }
 
-    public function testDoesntCloseCircuitOnRedirectionResponse()
+    public function testDoesntOpenCircuitOnRedirectionResponse()
     {
         $fulfill = new CircuitBreakerTransport(
             $inner = $this->createMock(Transport::class),
@@ -88,7 +88,7 @@ class CircuitBreakerTransportTest extends TestCase
         $this->assertSame($response, $fulfill($request));
     }
 
-    public function testDoesntCloseCircuitOnClientErrorResponse()
+    public function testDoesntOpenCircuitOnClientErrorResponse()
     {
         $fulfill = new CircuitBreakerTransport(
             $inner = $this->createMock(Transport::class),
@@ -114,7 +114,7 @@ class CircuitBreakerTransportTest extends TestCase
         $this->assertSame($response, $fulfill($request));
     }
 
-    public function testCloseCircuit()
+    public function testOpenCircuit()
     {
         $fulfill = new CircuitBreakerTransport(
             $inner = $this->createMock(Transport::class),
@@ -139,15 +139,15 @@ class CircuitBreakerTransportTest extends TestCase
             ->expects($this->exactly(2))
             ->method('now')
             ->will($this->onConsecutiveCalls(
-                $closingTime = $this->createMock(PointInTime::class),
+                $openingTime = $this->createMock(PointInTime::class),
                 $secondCallTime = $this->createMock(PointInTime::class)
             ));
-        $closingTime
+        $openingTime
             ->expects($this->once())
             ->method('goForward')
             ->with($delay)
-            ->willReturn($reopeningTime = $this->createMock(PointInTime::class));
-        $reopeningTime
+            ->willReturn($reclosingTime = $this->createMock(PointInTime::class));
+        $reclosingTime
             ->expects($this->once())
             ->method('aheadOf')
             ->with($secondCallTime)
@@ -159,7 +159,7 @@ class CircuitBreakerTransportTest extends TestCase
         $this->assertSame(503, $defaultResponse->statusCode()->value());
     }
 
-    public function testCloseCircuitOnlyForTheDomainThatFailed()
+    public function testOpenCircuitOnlyForTheDomainThatFailed()
     {
         $fulfill = new CircuitBreakerTransport(
             $inner = $this->createMock(Transport::class),
@@ -197,7 +197,7 @@ class CircuitBreakerTransportTest extends TestCase
         $this->assertSame($response2, $fulfill($request2));
     }
 
-    public function testReopenTheCircuitAfterTheSpecifiedDelay()
+    public function testRecloseTheCircuitAfterTheSpecifiedDelay()
     {
         $fulfill = new CircuitBreakerTransport(
             $inner = $this->createMock(Transport::class),
@@ -229,15 +229,15 @@ class CircuitBreakerTransportTest extends TestCase
             ->expects($this->exactly(2))
             ->method('now')
             ->will($this->onConsecutiveCalls(
-                $closingTime = $this->createMock(PointInTime::class),
+                $openingTime = $this->createMock(PointInTime::class),
                 $secondCallTime = $this->createMock(PointInTime::class),
             ));
-        $closingTime
+        $openingTime
             ->expects($this->once())
             ->method('goForward')
             ->with($delay)
-            ->willReturn($reopeningTime = $this->createMock(PointInTime::class));
-        $reopeningTime
+            ->willReturn($reclosingTime = $this->createMock(PointInTime::class));
+        $reclosingTime
             ->expects($this->once())
             ->method('aheadOf')
             ->with($secondCallTime)
