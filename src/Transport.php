@@ -10,7 +10,7 @@ use Innmind\Http\Message\{
 use Innmind\Immutable\Either;
 
 /**
- * @psalm-type Errors = Failure|ConnectionFailed|Redirection|ClientError|ServerError
+ * @psalm-type Errors = Failure|ConnectionFailed|MalformedResponse|Information|Redirection|ClientError|ServerError
  */
 interface Transport
 {
