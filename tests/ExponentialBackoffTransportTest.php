@@ -11,6 +11,9 @@ use Innmind\HttpTransport\{
     ClientError,
     Redirection,
     ConnectionFailed,
+    Information,
+    MalformedResponse,
+    Failure,
 };
 use Innmind\Http\Message\{
     Request,
@@ -35,7 +38,29 @@ class ExponentialBackoffTransportTest extends TestCase
         );
     }
 
-    // todo test information
+    public function testDoesntRetryWhenInformationResponseOnFirstCall()
+    {
+        $fulfill = ExponentialBackoffTransport::of(
+            $inner = $this->createMock(Transport::class),
+            $halt = $this->createMock(Halt::class),
+        );
+        $request = $this->createMock(Request::class);
+        $response = $this->createMock(Response::class);
+        $response
+            ->expects($this->any())
+            ->method('statusCode')
+            ->willReturn(StatusCode::continue);
+        $inner
+            ->expects($this->once())
+            ->method('__invoke')
+            ->with($request)
+            ->willReturn($expected = Either::left(new Information($request, $response)));
+        $halt
+            ->expects($this->never())
+            ->method('__invoke');
+
+        $this->assertEquals($expected, $fulfill($request));
+    }
 
     public function testDoesntRetryWhenSuccessfulResponseOnFirstCall()
     {
@@ -102,6 +127,44 @@ class ExponentialBackoffTransportTest extends TestCase
             ->method('__invoke')
             ->with($request)
             ->willReturn($expected = Either::left(new ClientError($request, $response)));
+        $halt
+            ->expects($this->never())
+            ->method('__invoke');
+
+        $this->assertEquals($expected, $fulfill($request));
+    }
+
+    public function testDoesntRetryWhenMalformedResponseOnFirstCall()
+    {
+        $fulfill = ExponentialBackoffTransport::of(
+            $inner = $this->createMock(Transport::class),
+            $halt = $this->createMock(Halt::class),
+        );
+        $request = $this->createMock(Request::class);
+        $inner
+            ->expects($this->once())
+            ->method('__invoke')
+            ->with($request)
+            ->willReturn($expected = Either::left(new MalformedResponse($request)));
+        $halt
+            ->expects($this->never())
+            ->method('__invoke');
+
+        $this->assertEquals($expected, $fulfill($request));
+    }
+
+    public function testDoesntRetryWhenFailureOnFirstCall()
+    {
+        $fulfill = ExponentialBackoffTransport::of(
+            $inner = $this->createMock(Transport::class),
+            $halt = $this->createMock(Halt::class),
+        );
+        $request = $this->createMock(Request::class);
+        $inner
+            ->expects($this->once())
+            ->method('__invoke')
+            ->with($request)
+            ->willReturn($expected = Either::left(new Failure($request, 'whatever')));
         $halt
             ->expects($this->never())
             ->method('__invoke');
