@@ -33,7 +33,7 @@ class LoggerTransportTest extends TestCase
     {
         $this->fulfill = new LoggerTransport(
             $this->inner = $this->createMock(Transport::class),
-            $this->logger = $this->createMock(LoggerInterface::class)
+            $this->logger = $this->createMock(LoggerInterface::class),
         );
     }
 
@@ -41,7 +41,7 @@ class LoggerTransportTest extends TestCase
     {
         $this->assertInstanceOf(
             Transport::class,
-            $this->fulfill
+            $this->fulfill,
         );
     }
 

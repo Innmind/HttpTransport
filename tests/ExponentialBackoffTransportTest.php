@@ -35,7 +35,7 @@ class ExponentialBackoffTransportTest extends TestCase
                 $this->createMock(Transport::class),
                 $this->createMock(Halt::class),
                 $this->createMock(Period::class),
-            )
+            ),
         );
     }
 
@@ -121,7 +121,7 @@ class ExponentialBackoffTransportTest extends TestCase
             $halt = $this->createMock(Halt::class),
             $period1 = $this->createMock(Period::class),
             $period2 = $this->createMock(Period::class),
-            $period3 = $this->createMock(Period::class)
+            $period3 = $this->createMock(Period::class),
         );
         $request = $this->createMock(Request::class);
         $response = $this->createMock(Response::class);
@@ -158,7 +158,7 @@ class ExponentialBackoffTransportTest extends TestCase
             $halt = $this->createMock(Halt::class),
             $period1 = $this->createMock(Period::class),
             $period2 = $this->createMock(Period::class),
-            $period3 = $this->createMock(Period::class)
+            $period3 = $this->createMock(Period::class),
         );
         $request = $this->createMock(Request::class);
         $inner
@@ -190,7 +190,7 @@ class ExponentialBackoffTransportTest extends TestCase
             $halt = $this->createMock(Halt::class),
             $period1 = $this->createMock(Period::class),
             $period2 = $this->createMock(Period::class),
-            $period3 = $this->createMock(Period::class)
+            $period3 = $this->createMock(Period::class),
         );
         $request = $this->createMock(Request::class);
         $response1 = $this->createMock(Response::class);
@@ -264,7 +264,7 @@ class ExponentialBackoffTransportTest extends TestCase
                     $this->callback(static function($period): bool {
                         return (new PeriodToMilliseconds)($period) === 5459;
                     }),
-                ]
+                ],
             );
 
         $this->assertEquals($expected, $fulfill($request));

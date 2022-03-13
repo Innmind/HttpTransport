@@ -37,8 +37,8 @@ class CircuitBreakerTransportTest extends TestCase
             new CircuitBreakerTransport(
                 $this->createMock(Transport::class),
                 $this->createMock(Clock::class),
-                $this->createMock(Period::class)
-            )
+                $this->createMock(Period::class),
+            ),
         );
     }
 
@@ -47,7 +47,7 @@ class CircuitBreakerTransportTest extends TestCase
         $fulfill = new CircuitBreakerTransport(
             $inner = $this->createMock(Transport::class),
             $this->createMock(Clock::class),
-            $this->createMock(Period::class)
+            $this->createMock(Period::class),
         );
         $request = new Request\Request(
             Url::of('http://example.com'),
@@ -74,7 +74,7 @@ class CircuitBreakerTransportTest extends TestCase
         $fulfill = new CircuitBreakerTransport(
             $inner = $this->createMock(Transport::class),
             $this->createMock(Clock::class),
-            $this->createMock(Period::class)
+            $this->createMock(Period::class),
         );
         $request = new Request\Request(
             Url::of('http://example.com'),
@@ -101,7 +101,7 @@ class CircuitBreakerTransportTest extends TestCase
         $fulfill = new CircuitBreakerTransport(
             $inner = $this->createMock(Transport::class),
             $this->createMock(Clock::class),
-            $this->createMock(Period::class)
+            $this->createMock(Period::class),
         );
         $request = new Request\Request(
             Url::of('http://example.com'),
@@ -128,7 +128,7 @@ class CircuitBreakerTransportTest extends TestCase
         $fulfill = new CircuitBreakerTransport(
             $inner = $this->createMock(Transport::class),
             $clock = $this->createMock(Clock::class),
-            $delay = $this->createMock(Period::class)
+            $delay = $this->createMock(Period::class),
         );
         $request = new Request\Request(
             Url::of('http://example.com'),
@@ -150,7 +150,7 @@ class CircuitBreakerTransportTest extends TestCase
             ->method('now')
             ->will($this->onConsecutiveCalls(
                 $openingTime = $this->createMock(PointInTime::class),
-                $secondCallTime = $this->createMock(PointInTime::class)
+                $secondCallTime = $this->createMock(PointInTime::class),
             ));
         $openingTime
             ->expects($this->once())
@@ -177,7 +177,7 @@ class CircuitBreakerTransportTest extends TestCase
         $fulfill = new CircuitBreakerTransport(
             $inner = $this->createMock(Transport::class),
             $clock = $this->createMock(Clock::class),
-            $delay = $this->createMock(Period::class)
+            $delay = $this->createMock(Period::class),
         );
         $request = new Request\Request(
             Url::of('http://example.com'),
@@ -194,7 +194,7 @@ class CircuitBreakerTransportTest extends TestCase
             ->method('now')
             ->will($this->onConsecutiveCalls(
                 $openingTime = $this->createMock(PointInTime::class),
-                $secondCallTime = $this->createMock(PointInTime::class)
+                $secondCallTime = $this->createMock(PointInTime::class),
             ));
         $openingTime
             ->expects($this->once())
@@ -221,7 +221,7 @@ class CircuitBreakerTransportTest extends TestCase
         $fulfill = new CircuitBreakerTransport(
             $inner = $this->createMock(Transport::class),
             $this->createMock(Clock::class),
-            $this->createMock(Period::class)
+            $this->createMock(Period::class),
         );
         $request1 = $this->createMock(Request::class);
         $request2 = $this->createMock(Request::class);
@@ -261,7 +261,7 @@ class CircuitBreakerTransportTest extends TestCase
         $fulfill = new CircuitBreakerTransport(
             $inner = $this->createMock(Transport::class),
             $clock = $this->createMock(Clock::class),
-            $delay = $this->createMock(Period::class)
+            $delay = $this->createMock(Period::class),
         );
         $request = new Request\Request(
             Url::of('http://example.com'),

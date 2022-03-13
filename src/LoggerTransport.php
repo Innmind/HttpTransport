@@ -112,7 +112,7 @@ final class LoggerTransport implements Transport
                 $headers[$header->name()] = join(', ', $values)->toString();
 
                 return $headers;
-            }
+            },
         );
     }
 }
