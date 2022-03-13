@@ -102,7 +102,6 @@ final class Curl implements Transport
             ProtocolVersion::v11 => \CURL_HTTP_VERSION_1_1,
             ProtocolVersion::v20 => \CURL_HTTP_VERSION_2_0,
         });
-        // set CURLOPT_PORT or the port in the url is enough ?
         \curl_setopt($handle, \CURLOPT_PROTOCOLS, \CURLPROTO_HTTP | \CURLPROTO_HTTPS);
         \curl_setopt($handle, \CURLOPT_TCP_KEEPALIVE, 1);
         // set CURLOPT_TIMEOUT ?
