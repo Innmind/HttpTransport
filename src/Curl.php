@@ -108,10 +108,16 @@ final class Curl implements Transport
             return Either::left(new Failure($request, $reason));
         }
 
+        $configured = true;
+
         foreach ($options as [$option, $value]) {
-            // todo verify the option is correctly set, otherwise close the
-            // handle and return Failure
-            \curl_setopt($handle, $option, $value);
+            if ($configured) {
+                $configured = \curl_setopt($handle, $option, $value);
+            }
+        }
+
+        if (!$configured) {
+            return Either::left(new Failure($request, 'Failed to configure the curl handle'));
         }
 
         return Either::right([$handle, $inFile]);
