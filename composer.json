@@ -29,8 +29,7 @@
     "autoload": {
         "psr-4": {
             "Innmind\\HttpTransport\\": "src/"
-        },
-        "files": ["src/bootstrap.php"]
+        }
     },
     "autoload-dev": {
         "psr-4": {
