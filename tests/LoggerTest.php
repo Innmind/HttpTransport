@@ -18,7 +18,6 @@ use Innmind\Http\{
     Header\Value\Value,
 };
 use Innmind\Url\Url;
-use Innmind\Filesystem\File\Content\Lines;
 use Innmind\Immutable\Either;
 use Psr\Log\LoggerInterface;
 use PHPUnit\Framework\TestCase;
@@ -58,10 +57,6 @@ class LoggerTest extends TestCase
             ->willReturn(Url::of('http://example.com'));
         $request
             ->expects($this->once())
-            ->method('body')
-            ->willReturn(Lines::ofContent('foo'));
-        $request
-            ->expects($this->once())
             ->method('headers')
             ->willReturn(
                 Headers::of(
@@ -94,10 +89,6 @@ class LoggerTest extends TestCase
                     ),
                 ),
             );
-        $response
-            ->expects($this->once())
-            ->method('body')
-            ->willReturn($body = Lines::ofContent('idk'));
         $this
             ->inner
             ->expects($this->once())
@@ -135,6 +126,5 @@ class LoggerTest extends TestCase
         $response = ($this->fulfill)($request);
 
         $this->assertEquals($expected, $response);
-        $this->assertSame('idk', $body->toString());
     }
 }
