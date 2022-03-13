@@ -34,7 +34,7 @@ final class CircuitBreakerTransport implements Transport
     /** @var Map<string , PointInTime> */
     private Map $openedCircuits;
 
-    public function __construct(
+    private function __construct(
         Transport $fulfill,
         Clock $clock,
         Period $delayBeforeRetry,
@@ -57,6 +57,14 @@ final class CircuitBreakerTransport implements Transport
             $error instanceof ConnectionFailed => $this->open($request, $error),
             default => $error,
         });
+    }
+
+    public static function of(
+        Transport $fulfill,
+        Clock $clock,
+        Period $delayBeforeRetry,
+    ): self {
+        return new self($fulfill, $clock, $delayBeforeRetry);
     }
 
     private function open(

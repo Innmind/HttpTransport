@@ -34,7 +34,7 @@ class CircuitBreakerTransportTest extends TestCase
     {
         $this->assertInstanceOf(
             Transport::class,
-            new CircuitBreakerTransport(
+            CircuitBreakerTransport::of(
                 $this->createMock(Transport::class),
                 $this->createMock(Clock::class),
                 $this->createMock(Period::class),
@@ -44,7 +44,7 @@ class CircuitBreakerTransportTest extends TestCase
 
     public function testDoesntOpenCircuitOnSuccessfulResponse()
     {
-        $fulfill = new CircuitBreakerTransport(
+        $fulfill = CircuitBreakerTransport::of(
             $inner = $this->createMock(Transport::class),
             $this->createMock(Clock::class),
             $this->createMock(Period::class),
@@ -71,7 +71,7 @@ class CircuitBreakerTransportTest extends TestCase
 
     public function testDoesntOpenCircuitOnRedirectionResponse()
     {
-        $fulfill = new CircuitBreakerTransport(
+        $fulfill = CircuitBreakerTransport::of(
             $inner = $this->createMock(Transport::class),
             $this->createMock(Clock::class),
             $this->createMock(Period::class),
@@ -98,7 +98,7 @@ class CircuitBreakerTransportTest extends TestCase
 
     public function testDoesntOpenCircuitOnClientErrorResponse()
     {
-        $fulfill = new CircuitBreakerTransport(
+        $fulfill = CircuitBreakerTransport::of(
             $inner = $this->createMock(Transport::class),
             $this->createMock(Clock::class),
             $this->createMock(Period::class),
@@ -125,7 +125,7 @@ class CircuitBreakerTransportTest extends TestCase
 
     public function testOpenCircuitOnServerError()
     {
-        $fulfill = new CircuitBreakerTransport(
+        $fulfill = CircuitBreakerTransport::of(
             $inner = $this->createMock(Transport::class),
             $clock = $this->createMock(Clock::class),
             $delay = $this->createMock(Period::class),
@@ -174,7 +174,7 @@ class CircuitBreakerTransportTest extends TestCase
 
     public function testOpenCircuitOnConnectionFailure()
     {
-        $fulfill = new CircuitBreakerTransport(
+        $fulfill = CircuitBreakerTransport::of(
             $inner = $this->createMock(Transport::class),
             $clock = $this->createMock(Clock::class),
             $delay = $this->createMock(Period::class),
@@ -218,7 +218,7 @@ class CircuitBreakerTransportTest extends TestCase
 
     public function testOpenCircuitOnlyForTheDomainThatFailed()
     {
-        $fulfill = new CircuitBreakerTransport(
+        $fulfill = CircuitBreakerTransport::of(
             $inner = $this->createMock(Transport::class),
             $this->createMock(Clock::class),
             $this->createMock(Period::class),
@@ -258,7 +258,7 @@ class CircuitBreakerTransportTest extends TestCase
 
     public function testRecloseTheCircuitAfterTheSpecifiedDelay()
     {
-        $fulfill = new CircuitBreakerTransport(
+        $fulfill = CircuitBreakerTransport::of(
             $inner = $this->createMock(Transport::class),
             $clock = $this->createMock(Clock::class),
             $delay = $this->createMock(Period::class),
