@@ -17,11 +17,8 @@ use Innmind\Http\Message\{
     Response,
     StatusCode,
 };
-use Innmind\TimeWarp\{
-    Halt,
-    PeriodToMilliseconds,
-};
-use Innmind\TimeContinuum\Period;
+use Innmind\TimeWarp\Halt;
+use Innmind\TimeContinuum\Earth\Period\Millisecond;
 use Innmind\Immutable\Either;
 use PHPUnit\Framework\TestCase;
 
@@ -31,20 +28,20 @@ class ExponentialBackoffTransportTest extends TestCase
     {
         $this->assertInstanceOf(
             Transport::class,
-            new ExponentialBackoffTransport(
+            ExponentialBackoffTransport::of(
                 $this->createMock(Transport::class),
                 $this->createMock(Halt::class),
-                $this->createMock(Period::class),
             ),
         );
     }
 
+    // todo test information
+
     public function testDoesntRetryWhenSuccessfulResponseOnFirstCall()
     {
-        $fulfill = new ExponentialBackoffTransport(
+        $fulfill = ExponentialBackoffTransport::of(
             $inner = $this->createMock(Transport::class),
             $halt = $this->createMock(Halt::class),
-            $this->createMock(Period::class),
         );
         $request = $this->createMock(Request::class);
         $response = $this->createMock(Response::class);
@@ -66,10 +63,9 @@ class ExponentialBackoffTransportTest extends TestCase
 
     public function testDoesntRetryWhenRedirectionResponseOnFirstCall()
     {
-        $fulfill = new ExponentialBackoffTransport(
+        $fulfill = ExponentialBackoffTransport::of(
             $inner = $this->createMock(Transport::class),
             $halt = $this->createMock(Halt::class),
-            $this->createMock(Period::class),
         );
         $request = $this->createMock(Request::class);
         $response = $this->createMock(Response::class);
@@ -91,10 +87,9 @@ class ExponentialBackoffTransportTest extends TestCase
 
     public function testDoesntRetryWhenClientErrorResponseOnFirstCall()
     {
-        $fulfill = new ExponentialBackoffTransport(
+        $fulfill = ExponentialBackoffTransport::of(
             $inner = $this->createMock(Transport::class),
             $halt = $this->createMock(Halt::class),
-            $this->createMock(Period::class),
         );
         $request = $this->createMock(Request::class);
         $response = $this->createMock(Response::class);
@@ -116,12 +111,9 @@ class ExponentialBackoffTransportTest extends TestCase
 
     public function testRetryWhileThereIsStillAServerError()
     {
-        $fulfill = new ExponentialBackoffTransport(
+        $fulfill = ExponentialBackoffTransport::of(
             $inner = $this->createMock(Transport::class),
             $halt = $this->createMock(Halt::class),
-            $period1 = $this->createMock(Period::class),
-            $period2 = $this->createMock(Period::class),
-            $period3 = $this->createMock(Period::class),
         );
         $request = $this->createMock(Request::class);
         $response = $this->createMock(Response::class);
@@ -130,20 +122,24 @@ class ExponentialBackoffTransportTest extends TestCase
             ->method('statusCode')
             ->willReturn(StatusCode::internalServerError);
         $inner
-            ->expects($this->exactly(8))
+            ->expects($this->exactly(12))
             ->method('__invoke')
             ->with($request)
             ->willReturn($expected = Either::left(new ServerError($request, $response)));
         $halt
-            ->expects($this->exactly(6))
+            ->expects($this->exactly(10))
             ->method('__invoke')
             ->withConsecutive(
-                [$period1],
-                [$period2],
-                [$period3],
-                [$period1],
-                [$period2],
-                [$period3],
+                [new Millisecond(100)],
+                [new Millisecond(271)],
+                [new Millisecond(738)],
+                [new Millisecond(2008)],
+                [new Millisecond(5459)],
+                [new Millisecond(100)],
+                [new Millisecond(271)],
+                [new Millisecond(738)],
+                [new Millisecond(2008)],
+                [new Millisecond(5459)],
             );
 
         $this->assertEquals($expected, $fulfill($request));
@@ -153,29 +149,30 @@ class ExponentialBackoffTransportTest extends TestCase
 
     public function testRetryWhileThereIsStillAConnectionFailure()
     {
-        $fulfill = new ExponentialBackoffTransport(
+        $fulfill = ExponentialBackoffTransport::of(
             $inner = $this->createMock(Transport::class),
             $halt = $this->createMock(Halt::class),
-            $period1 = $this->createMock(Period::class),
-            $period2 = $this->createMock(Period::class),
-            $period3 = $this->createMock(Period::class),
         );
         $request = $this->createMock(Request::class);
         $inner
-            ->expects($this->exactly(8))
+            ->expects($this->exactly(12))
             ->method('__invoke')
             ->with($request)
             ->willReturn($expected = Either::left(new ConnectionFailed($request, '')));
         $halt
-            ->expects($this->exactly(6))
+            ->expects($this->exactly(10))
             ->method('__invoke')
             ->withConsecutive(
-                [$period1],
-                [$period2],
-                [$period3],
-                [$period1],
-                [$period2],
-                [$period3],
+                [new Millisecond(100)],
+                [new Millisecond(271)],
+                [new Millisecond(738)],
+                [new Millisecond(2008)],
+                [new Millisecond(5459)],
+                [new Millisecond(100)],
+                [new Millisecond(271)],
+                [new Millisecond(738)],
+                [new Millisecond(2008)],
+                [new Millisecond(5459)],
             );
 
         $this->assertEquals($expected, $fulfill($request));
@@ -185,12 +182,9 @@ class ExponentialBackoffTransportTest extends TestCase
 
     public function testStopRetryingWhenNoLongerReceivingAServerError()
     {
-        $fulfill = new ExponentialBackoffTransport(
+        $fulfill = ExponentialBackoffTransport::of(
             $inner = $this->createMock(Transport::class),
             $halt = $this->createMock(Halt::class),
-            $period1 = $this->createMock(Period::class),
-            $period2 = $this->createMock(Period::class),
-            $period3 = $this->createMock(Period::class),
         );
         $request = $this->createMock(Request::class);
         $response1 = $this->createMock(Response::class);
@@ -214,7 +208,7 @@ class ExponentialBackoffTransportTest extends TestCase
         $halt
             ->expects($this->once())
             ->method('__invoke')
-            ->with($period1);
+            ->with(new Millisecond(100));
 
         $this->assertEquals($expected, $fulfill($request));
     }
@@ -240,31 +234,11 @@ class ExponentialBackoffTransportTest extends TestCase
             ->expects($this->exactly(5))
             ->method('__invoke')
             ->withConsecutive(
-                [
-                    $this->callback(static function($period): bool {
-                        return (new PeriodToMilliseconds)($period) === 100;
-                    }),
-                ],
-                [
-                    $this->callback(static function($period): bool {
-                        return (new PeriodToMilliseconds)($period) === 271;
-                    }),
-                ],
-                [
-                    $this->callback(static function($period): bool {
-                        return (new PeriodToMilliseconds)($period) === 738;
-                    }),
-                ],
-                [
-                    $this->callback(static function($period): bool {
-                        return (new PeriodToMilliseconds)($period) === 2008;
-                    }),
-                ],
-                [
-                    $this->callback(static function($period): bool {
-                        return (new PeriodToMilliseconds)($period) === 5459;
-                    }),
-                ],
+                [new Millisecond(100)],
+                [new Millisecond(271)],
+                [new Millisecond(738)],
+                [new Millisecond(2008)],
+                [new Millisecond(5459)],
             );
 
         $this->assertEquals($expected, $fulfill($request));

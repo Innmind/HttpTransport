@@ -28,7 +28,7 @@ final class ExponentialBackoffTransport implements Transport
     /** @var Sequence<Period> */
     private Sequence $retries;
 
-    public function __construct(
+    private function __construct(
         Transport $fulfill,
         Halt $halt,
         Period $retry,
