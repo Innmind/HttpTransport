@@ -4,8 +4,9 @@ declare(strict_types = 1);
 namespace Tests\Innmind\HttpTransport;
 
 use Innmind\HttpTransport\{
-    LoggerTransport,
+    Logger,
     Transport,
+    Success,
 };
 use Innmind\Http\{
     Message\Request,
@@ -17,11 +18,11 @@ use Innmind\Http\{
     Header\Value\Value,
 };
 use Innmind\Url\Url;
-use Innmind\Stream\Readable\Stream;
+use Innmind\Immutable\Either;
 use Psr\Log\LoggerInterface;
 use PHPUnit\Framework\TestCase;
 
-class LoggerTransportTest extends TestCase
+class LoggerTest extends TestCase
 {
     private $fulfill;
     private $inner;
@@ -29,9 +30,9 @@ class LoggerTransportTest extends TestCase
 
     public function setUp(): void
     {
-        $this->fulfill = new LoggerTransport(
+        $this->fulfill = Logger::psr(
             $this->inner = $this->createMock(Transport::class),
-            $this->logger = $this->createMock(LoggerInterface::class)
+            $this->logger = $this->createMock(LoggerInterface::class),
         );
     }
 
@@ -39,7 +40,7 @@ class LoggerTransportTest extends TestCase
     {
         $this->assertInstanceOf(
             Transport::class,
-            $this->fulfill
+            $this->fulfill,
         );
     }
 
@@ -49,20 +50,16 @@ class LoggerTransportTest extends TestCase
         $request
             ->expects($this->once())
             ->method('method')
-            ->willReturn(new Method('POST'));
+            ->willReturn(Method::of('POST'));
         $request
             ->expects($this->once())
             ->method('url')
             ->willReturn(Url::of('http://example.com'));
         $request
             ->expects($this->once())
-            ->method('body')
-            ->willReturn(Stream::ofContent('foo'));
-        $request
-            ->expects($this->once())
             ->method('headers')
             ->willReturn(
-                new Headers(
+                Headers::of(
                     new Header\Header(
                         'foo',
                         new Value('bar'),
@@ -75,23 +72,16 @@ class LoggerTransportTest extends TestCase
                 ),
             );
         $reference = null;
-        $this
-            ->inner
-            ->expects($this->once())
-            ->method('__invoke')
-            ->with($request)
-            ->willReturn(
-                $expected = $this->createMock(Response::class)
-            );
-        $expected
-            ->expects($this->once())
+        $response = $this->createMock(Response::class);
+        $response
+            ->expects($this->any())
             ->method('statusCode')
-            ->willReturn(new StatusCode(200));
-        $expected
+            ->willReturn(StatusCode::ok);
+        $response
             ->expects($this->once())
             ->method('headers')
             ->willReturn(
-                new Headers(
+                Headers::of(
                     new Header\Header(
                         'x-debug',
                         new Value('yay'),
@@ -99,10 +89,14 @@ class LoggerTransportTest extends TestCase
                     ),
                 ),
             );
-        $expected
+        $this
+            ->inner
             ->expects($this->once())
-            ->method('body')
-            ->willReturn($body = Stream::ofContent('idk'));
+            ->method('__invoke')
+            ->with($request)
+            ->willReturn(
+                $expected = Either::right(new Success($request, $response)),
+            );
         $this
             ->logger
             ->expects($this->exactly(2))
@@ -116,7 +110,6 @@ class LoggerTransportTest extends TestCase
                         return $data['method'] === 'POST' &&
                             $data['url'] === 'http://example.com/' &&
                             $data['headers'] === ['foo' => 'bar, baz', 'foobar' => 'whatever'] &&
-                            $data['body'] === 'foo' &&
                             !empty($data['reference']);
                     }),
                 ],
@@ -125,7 +118,6 @@ class LoggerTransportTest extends TestCase
                     $this->callback(static function(array $data) use (&$reference): bool {
                         return $data['statusCode'] === 200 &&
                             $data['headers'] === ['x-debug' => 'yay, nay'] &&
-                            $data['body'] === 'idk' &&
                             $data['reference'] === $reference;
                     }),
                 ],
@@ -133,7 +125,6 @@ class LoggerTransportTest extends TestCase
 
         $response = ($this->fulfill)($request);
 
-        $this->assertSame($expected, $response);
-        $this->assertSame('idk', $body->read()->toString());
+        $this->assertEquals($expected, $response);
     }
 }

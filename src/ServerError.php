@@ -1,22 +1,24 @@
 <?php
 declare(strict_types = 1);
 
-namespace Innmind\HttpTransport\Exception;
+namespace Innmind\HttpTransport;
 
 use Innmind\Http\Message\{
     Request,
     Response,
 };
 
-final class ServerError extends RuntimeException
+final class ServerError
 {
     private Request $request;
     private Response $response;
 
-    public function __construct(
-        Request $request,
-        Response $response
-    ) {
+    public function __construct(Request $request, Response $response)
+    {
+        if (!$response->statusCode()->serverError()) {
+            throw new \LogicException($response->statusCode()->toString());
+        }
+
         $this->request = $request;
         $this->response = $response;
     }
