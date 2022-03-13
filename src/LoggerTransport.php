@@ -25,7 +25,7 @@ final class LoggerTransport implements Transport
     private Transport $fulfill;
     private LoggerInterface $logger;
 
-    public function __construct(Transport $fulfill, LoggerInterface $logger)
+    private function __construct(Transport $fulfill, LoggerInterface $logger)
     {
         $this->fulfill = $fulfill;
         $this->logger = $logger;
@@ -38,6 +38,11 @@ final class LoggerTransport implements Transport
         return ($this->fulfill)($request)
             ->map(fn($success) => $this->logWrapper($success, $reference))
             ->leftMap(fn($error) => $this->logError($error, $reference));
+    }
+
+    public static function psr(Transport $fulfill, LoggerInterface $logger): self
+    {
+        return new self($fulfill, $logger);
     }
 
     private function logRequest(Request $request): string
