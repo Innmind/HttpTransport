@@ -53,7 +53,6 @@ final class Logger implements Transport
                 'method' => $request->method()->toString(),
                 'url' => $request->url()->toString(),
                 'headers' => $this->normalize($request->headers()),
-                'body' => $request->body()->toString(),
                 'reference' => $reference = Uuid::uuid4()->toString(),
             ],
         );
@@ -101,7 +100,6 @@ final class Logger implements Transport
             [
                 'statusCode' => $response->statusCode()->toInt(),
                 'headers' => $this->normalize($response->headers()),
-                'body' => $response->body()->toString(),
                 'reference' => $reference,
             ],
         );

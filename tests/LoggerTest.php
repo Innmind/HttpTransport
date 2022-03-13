@@ -119,7 +119,6 @@ class LoggerTest extends TestCase
                         return $data['method'] === 'POST' &&
                             $data['url'] === 'http://example.com/' &&
                             $data['headers'] === ['foo' => 'bar, baz', 'foobar' => 'whatever'] &&
-                            $data['body'] === 'foo' &&
                             !empty($data['reference']);
                     }),
                 ],
@@ -128,7 +127,6 @@ class LoggerTest extends TestCase
                     $this->callback(static function(array $data) use (&$reference): bool {
                         return $data['statusCode'] === 200 &&
                             $data['headers'] === ['x-debug' => 'yay, nay'] &&
-                            $data['body'] === 'idk' &&
                             $data['reference'] === $reference;
                     }),
                 ],
