@@ -20,7 +20,10 @@ use Innmind\Filesystem\{
     Adapter\Chunk,
 };
 use Innmind\Url\Authority\UserInformation\User;
-use Innmind\Stream\Readable;
+use Innmind\Stream\{
+    Readable,
+    Writable,
+};
 use Innmind\Immutable\{
     Either,
     Maybe,
@@ -49,11 +52,11 @@ final class Curl implements Transport
     public function __invoke(Request $request): Either
     {
         $handle = $this->init($request);
-        $handle = $this->configure($handle, $request);
 
         try {
             return $this
-                ->exec($handle, $request)
+                ->configure($handle, $request)
+                ->flatMap(fn($handle) => $this->exec($handle[0], $request, $handle[1]))
                 ->flatMap(static fn($response) => match ($response->statusCode()->range()) {
                     StatusCode\Range::informational => Either::left(new Information($request, $response)),
                     StatusCode\Range::successful => Either::right(new Success($request, $response)),
@@ -86,7 +89,10 @@ final class Curl implements Transport
         );
     }
 
-    private function configure(\CurlHandle $handle, Request $request): \CurlHandle
+    /**
+     * @return Either<Failure, array{0: \CurlHandle, 1: Writable}>
+     */
+    private function configure(\CurlHandle $handle, Request $request): Either
     {
         // never keep state hidden from the caller
         \curl_setopt($handle, \CURLOPT_COOKIESESSION, true);
@@ -118,9 +124,7 @@ final class Curl implements Transport
             \curl_setopt($handle, \CURLOPT_USERPWD, $password->format($user));
         }
 
-        $handle = $this->specifyBody($handle, $request->body());
-
-        return $handle;
+        return $this->specifyBody($handle, $request);
     }
 
     private function specifyHeaders(\CurlHandle $handle, Headers $headers): \CurlHandle
@@ -184,10 +188,14 @@ final class Curl implements Transport
             ->toString();
     }
 
-    private function specifyBody(\CurlHandle $handle, Content $content): \CurlHandle
+    /**
+     * @return Either<Failure, array{0: \CurlHandle, 1: Writable}>
+     */
+    private function specifyBody(\CurlHandle $handle, Request $request): Either
     {
         /** @var list<array{0: int, 1: bool|int}> */
-        $options = $content
+        $options = $request
+            ->body()
             ->size()
             ->filter(static fn($size) => $size->toInt() > 0)
             ->match(
@@ -202,51 +210,37 @@ final class Curl implements Transport
             \curl_setopt($handle, $option, $value);
         }
 
-        $chunks = ($this->chunk)($content)
+        $inFile = Writable\Stream::of(\fopen('php://temp', 'r+'));
+
+        return ($this->chunk)($request->body())
             ->map(static fn($chunk) => $chunk->toEncoding('ASCII'))
-            ->filter(static fn($chunk) => !$chunk->empty());
-        [$chunk, $chunks] = $chunks->match(
-            static fn($chunk, $chunks) => [$chunk, $chunks],
-            static fn() => [Str::of(''), Sequence::of()],
-        );
+            ->reduce(
+                Either::right($inFile),
+                static fn($either, $chunk) => $either->flatMap(
+                    static fn($inFile) => $inFile->write($chunk),
+                ),
+            )
+            ->flatMap(static fn($inFile) => $inFile->rewind())
+            ->map(static function($inFile) use ($handle) {
+                \curl_setopt($handle, \CURLOPT_INFILE, $inFile->resource());
 
-        // todo rewrite everything with a php://temp stream as the ::match()
-        // strategy keeps everything in memory
-        \curl_setopt(
-            $handle,
-            \CURLOPT_READFUNCTION,
-            static function($_, $__, int $length) use (&$chunk, &$chunks, $content) {
-                if ($chunk->empty() && $chunks->empty()) {
-                    // no more data to write, the empty string will instruct
-                    // curl to stop
-                    return '';
-                }
-
-                $toWrite = $chunk->take($length);
-                $chunk = $chunk->drop($length);
-
-                if ($chunk->empty()) {
-                    [$chunk, $chunks] = $chunks->match(
-                        static fn($chunk, $chunks) => [$chunk, $chunks],
-                        static fn() => [Str::of(''), Sequence::of()],
-                    );
-                }
-
-                return $toWrite->toString();
-            },
-        );
-
-        return $handle;
+                return [$handle, $inFile];
+            })
+            ->leftMap(static fn($error) => new Failure(
+                $request,
+                $e::class,
+            ));
     }
 
     /**
      * @return Either<Failure|ConnectionFailed|MalformedResponse, Response>
      */
-    private function exec(\CurlHandle $handle, Request $request): Either
+    private function exec(\CurlHandle $handle, Request $request, Writable $inFile): Either
     {
         $status = '';
         $headers = [];
         // todo find a way to close these streams when the body is no longer used
+        // but beware of process forks where the stream in used only on one side
         $body = \fopen('php://temp', 'r+');
 
         if (!\is_resource($body)) {
@@ -271,6 +265,15 @@ final class Curl implements Transport
 
         if (\curl_exec($handle) === false) {
             return Either::left(new Failure($request, 'Curl failed to execute the request'));
+        }
+
+        $error = $inFile->close()->match(
+            static fn() => null,
+            static fn($error) => $error,
+        );
+
+        if ($error) {
+            return Either::left(new Failure($request, $error::class));
         }
 
         return match (\curl_errno($handle)) {

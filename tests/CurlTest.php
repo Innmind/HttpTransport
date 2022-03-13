@@ -257,11 +257,15 @@ class CurlTest extends TestCase
             Content\AtPath::of(Path::of(__DIR__.'/../data/screenshot.png')),
         ))->match(
             static fn($success) => $success,
-            static fn($e) => dump($e),
+            static fn() => null,
         );
 
         $this->assertInstanceOf(Success::class, $success);
-        $this->assertLessThan(2, \memory_get_peak_usage() - $memory);
+        // The file is a bit more than 2Mo, so if everything was kept in memory
+        // the peak memory would be above 4Mo so we check that it is less than
+        // 3Mo. It can't be less than 2Mo because the streams used have a memory
+        // buffer of 2Mo before writing to disk
+        $this->assertLessThan(3_698_688, \memory_get_peak_usage() - $memory);
     }
 
     // Don't know how to test MalformedResponse, ConnectionFailed, Information and ServerError
