@@ -23,6 +23,8 @@ use Innmind\Url\Authority\UserInformation\User;
 use Innmind\Stream\{
     Readable,
     Writable,
+    FailedToWriteToStream,
+    DataPartiallyWritten,
 };
 use Innmind\Immutable\{
     Either,
@@ -61,13 +63,7 @@ final class Curl implements Transport
                     \curl_close($handle[0]);
                 }
             })
-            ->flatMap(static fn($response) => match ($response->statusCode()->range()) {
-                StatusCode\Range::informational => Either::left(new Information($request, $response)),
-                StatusCode\Range::successful => Either::right(new Success($request, $response)),
-                StatusCode\Range::redirection => Either::left(new Redirection($request, $response)),
-                StatusCode\Range::clientError => Either::left(new ClientError($request, $response)),
-                StatusCode\Range::serverError => Either::left(new ServerError($request, $response)),
-            });
+            ->flatMap(fn($response) => $this->dispatch($request, $response));
     }
 
     /**
@@ -110,6 +106,7 @@ final class Curl implements Transport
 
         $configured = true;
 
+        /** @var mixed $value */
         foreach ($options as [$option, $value]) {
             if ($configured) {
                 $configured = \curl_setopt($handle, $option, $value);
@@ -206,7 +203,7 @@ final class Curl implements Transport
         /** @var list<string> */
         $rawHeaders = $headers->reduce(
             [],
-            static fn($headers, $header) => match ($header->name()) {
+            static fn(array $headers, $header) => match ($header->name()) {
                 'Cookie' => $headers, // configured above
                 'Accept-Encoding' => $headers, // configured above
                 'Referer' => $headers, // configured above
@@ -271,24 +268,31 @@ final class Curl implements Transport
             );
 
         $inFile = Writable\Stream::of(\fopen('php://temp', 'r+'));
+        /** @var Either<FailedToWriteToStream|DataPartiallyWritten, Writable\Stream> */
+        $carry = Either::right($inFile);
 
-        return ($this->chunk)($request->body())
+        /** @psalm-suppress MixedArgumentTypeCoercion Due to the reduce */
+        $written = ($this->chunk)($request->body())
             ->map(static fn($chunk) => $chunk->toEncoding('ASCII'))
             ->reduce(
-                Either::right($inFile),
-                static fn($either, $chunk) => $either->flatMap(
-                    static fn($inFile) => $inFile->write($chunk),
+                $carry,
+                static fn(Either $either, $chunk): Either => $either->flatMap(
+                    static fn(Writable $inFile) => $inFile->write($chunk),
                 ),
-            )
+            );
+
+        /** @var Either<Failure, array{0: list<array{0: int, 1: mixed}>, 1: Writable}> */
+        return $written
             ->flatMap(static fn($inFile) => $inFile->rewind())
             ->map(static function($inFile) use ($options) {
+                /** @psalm-suppress UndefinedInterfaceMethod */
                 $options[] = [\CURLOPT_INFILE, $inFile->resource()];
 
                 return [$options, $inFile];
             })
             ->leftMap(static fn($error) => new Failure(
                 $request,
-                $e::class,
+                $error::class,
             ));
     }
 
@@ -298,32 +302,44 @@ final class Curl implements Transport
     private function exec(Request $request, \CurlHandle $handle, Writable $inFile): Either
     {
         $status = '';
+        /** @var list<string> */
         $headers = [];
         // todo find a way to close these streams when the body is no longer used
         // but beware of process forks where the stream in used only on one side
         $body = \fopen('php://temp', 'r+');
 
         if (!\is_resource($body)) {
+            /** @var Either<Failure|ConnectionFailed|MalformedResponse, Response> */
             return Either::left(new Failure($request, 'Failed to write response body'));
         }
 
-        \curl_setopt($handle, \CURLOPT_HEADERFUNCTION, static function($_, string $header) use (&$status, &$headers): int {
-            if (Str::of($header)->trim()->toLower()->startsWith('http/')) {
-                $status = $header;
-            } else {
-                $headers[] = $header;
-            }
+        \curl_setopt(
+            $handle,
+            \CURLOPT_HEADERFUNCTION,
+            static function(\CurlHandle $_, string $header) use (&$status, &$headers): int {
+                if (Str::of($header)->trim()->toLower()->startsWith('http/')) {
+                    $status = $header;
+                } else {
+                    /** @psalm-suppress MixedArrayAssignment Doesn't like the reference */
+                    $headers[] = $header;
+                }
 
-            return Str::of($header)->toEncoding('ASCII')->length();
-        });
-        \curl_setopt($handle, \CURLOPT_WRITEFUNCTION, static function($_, string $chunk) use ($body): int {
-            $written = \fwrite($body, $chunk);
+                return Str::of($header)->toEncoding('ASCII')->length();
+            },
+        );
+        \curl_setopt(
+            $handle,
+            \CURLOPT_WRITEFUNCTION,
+            static function(\CurlHandle $_, string $chunk) use ($body): int {
+                $written = \fwrite($body, $chunk);
 
-            // return -1 when failed to write to make curl stop
-            return \is_int($written) ? $written : -1;
-        });
+                // return -1 when failed to write to make curl stop
+                return \is_int($written) ? $written : -1;
+            },
+        );
 
         if (\curl_exec($handle) === false) {
+            /** @var Either<Failure|ConnectionFailed|MalformedResponse, Response> */
             return Either::left(new Failure($request, 'Curl failed to execute the request'));
         }
 
@@ -333,9 +349,14 @@ final class Curl implements Transport
         );
 
         if ($error) {
+            /** @var Either<Failure|ConnectionFailed|MalformedResponse, Response> */
             return Either::left(new Failure($request, $error::class));
         }
 
+        /**
+         * @psalm-suppress MixedArgument Due to the reference on $status and $headers above
+         * @var Either<Failure|ConnectionFailed|MalformedResponse, Response>
+         */
         return match (\curl_errno($handle)) {
             \CURLE_OK => $this->buildResponse(
                 $request,
@@ -355,6 +376,8 @@ final class Curl implements Transport
     }
 
     /**
+     * @param list<string> $headers
+     *
      * @return Either<MalformedResponse, Response>
      */
     private function buildResponse(
@@ -379,6 +402,7 @@ final class Curl implements Transport
             ->get('status')
             ->map(static fn($status) => $status->toString())
             ->flatMap(static fn($status) => StatusCode::maybe((int) $status));
+        /** @psalm-suppress NamedArgumentNotAllowed */
         $headers = Sequence::of(...$headers)
             ->map(static fn($header) => Str::of($header))
             ->map(static fn($header) => $header->rightTrim("\r\n"))
@@ -392,6 +416,7 @@ final class Curl implements Transport
                 static fn() => Maybe::just(Headers::of()),
             );
 
+        /** @var Either<MalformedResponse, Response> */
         return Maybe::all($statusCode, $protocolVersion, $headers)
             ->map(static fn(StatusCode $status, ProtocolVersion $protocol, Headers $headers) => new Response\Response(
                 $status,
@@ -406,7 +431,7 @@ final class Curl implements Transport
     }
 
     /**
-     * @param Map<string, Str> $info
+     * @param Map<int|string, Str> $info
      *
      * @return Maybe<Header>
      */
@@ -415,5 +440,20 @@ final class Curl implements Transport
         return Maybe::all($info->get('name'), $info->get('value'))->map(
             fn(Str $name, Str $value) => ($this->headerFactory)($name, $value),
         );
+    }
+
+    /**
+     * @return Either<Information|Redirection|ClientError|ServerError, Success>
+     */
+    private function dispatch(Request $request, Response $response): Either
+    {
+        /** @var Either<Information|Redirection|ClientError|ServerError, Success> */
+        return match ($response->statusCode()->range()) {
+            StatusCode\Range::informational => Either::left(new Information($request, $response)),
+            StatusCode\Range::successful => Either::right(new Success($request, $response)),
+            StatusCode\Range::redirection => Either::left(new Redirection($request, $response)),
+            StatusCode\Range::clientError => Either::left(new ClientError($request, $response)),
+            StatusCode\Range::serverError => Either::left(new ServerError($request, $response)),
+        };
     }
 }
