@@ -51,22 +51,23 @@ final class Curl implements Transport
 
     public function __invoke(Request $request): Either
     {
-        $handle = $this->init($request);
-
-        try {
-            return $this
-                ->configure($handle, $request)
-                ->flatMap(fn($handle) => $this->exec($handle[0], $request, $handle[1]))
-                ->flatMap(static fn($response) => match ($response->statusCode()->range()) {
-                    StatusCode\Range::informational => Either::left(new Information($request, $response)),
-                    StatusCode\Range::successful => Either::right(new Success($request, $response)),
-                    StatusCode\Range::redirection => Either::left(new Redirection($request, $response)),
-                    StatusCode\Range::clientError => Either::left(new ClientError($request, $response)),
-                    StatusCode\Range::serverError => Either::left(new ServerError($request, $response)),
-                });
-        } finally {
-            \curl_close($handle);
-        }
+        return $this
+            ->options($request)
+            ->flatMap(fn($handle) => $this->init($request, $handle[0], $handle[1]))
+            ->flatMap(function($handle) use ($request) {
+                try {
+                    return $this->exec($request, $handle[0], $handle[1]);
+                } finally {
+                    \curl_close($handle[0]);
+                }
+            })
+            ->flatMap(static fn($response) => match ($response->statusCode()->range()) {
+                StatusCode\Range::informational => Either::left(new Information($request, $response)),
+                StatusCode\Range::successful => Either::right(new Success($request, $response)),
+                StatusCode\Range::redirection => Either::left(new Redirection($request, $response)),
+                StatusCode\Range::clientError => Either::left(new ClientError($request, $response)),
+                StatusCode\Range::serverError => Either::left(new ServerError($request, $response)),
+            });
     }
 
     /**
@@ -77,9 +78,17 @@ final class Curl implements Transport
         return new self($clock, $chunk);
     }
 
-    private function init(Request $request): \CurlHandle
-    {
-        return \curl_init(
+    /**
+     * @param list<array{0: int, 1: mixed}> $options
+     *
+     * @return Either<Failure, array{0: \CurlHandle, 1: Writable}>
+     */
+    private function init(
+        Request $request,
+        array $options,
+        Writable $inFile,
+    ): Either {
+        $handle = \curl_init(
             $request
                 ->url()
                 ->withAuthority(
@@ -87,59 +96,105 @@ final class Curl implements Transport
                 )
                 ->toString(),
         );
+
+        if ($handle === false) {
+            $reason = $inFile
+                ->close()
+                ->match(
+                    static fn() => 'Failed to start a new curl handle',
+                    static fn($error) => $error::class,
+                );
+
+            return Either::left(new Failure($request, $reason));
+        }
+
+        foreach ($options as [$option, $value]) {
+            // todo verify the option is correctly set, otherwise close the
+            // handle and return Failure
+            \curl_setopt($handle, $option, $value);
+        }
+
+        return Either::right([$handle, $inFile]);
     }
 
     /**
-     * @return Either<Failure, array{0: \CurlHandle, 1: Writable}>
+     * @return Either<Failure, array{0: list<array{0: int, 1: mixed}>, 1: Writable}>
      */
-    private function configure(\CurlHandle $handle, Request $request): Either
+    private function options(Request $request): Either
     {
-        // never keep state hidden from the caller
-        \curl_setopt($handle, \CURLOPT_COOKIESESSION, true);
-        \curl_setopt($handle, \CURLOPT_DISALLOW_USERNAME_IN_URL, true);
-        \curl_setopt($handle, \CURLOPT_FAILONERROR, false);
-        // following redirections must be an explicit behaviours added by the caller
-        // @see FollowRedirects class
-        \curl_setopt($handle, \CURLOPT_FOLLOWLOCATION, false);
-        \curl_setopt($handle, \CURLOPT_HEADER, false);
-        \curl_setopt($handle, \CURLOPT_RETURNTRANSFER, false);
-        \curl_setopt($handle, \CURLOPT_HTTP_VERSION, match ($request->protocolVersion()) {
-            ProtocolVersion::v10 => \CURL_HTTP_VERSION_1_0,
-            ProtocolVersion::v11 => \CURL_HTTP_VERSION_1_1,
-            ProtocolVersion::v20 => \CURL_HTTP_VERSION_2_0,
-        });
-        \curl_setopt($handle, \CURLOPT_PROTOCOLS, \CURLPROTO_HTTP | \CURLPROTO_HTTPS);
-        \curl_setopt($handle, \CURLOPT_TCP_KEEPALIVE, 1);
-        // set CURLOPT_TIMEOUT ?
-        match ($request->method()) {
-            Method::head => \curl_setopt($handle, \CURLOPT_NOBODY, true),
-            Method::get => \curl_setopt($handle, \CURLOPT_HTTPGET, true),
-            default => \curl_setopt($handle, \CURLOPT_CUSTOMREQUEST, $request->method()->toString()),
+        /** @var list<array{0: int, 1: mixed}> */
+        $options = [
+            // never keep state hidden from the caller
+            [\CURLOPT_COOKIESESSION, true],
+            [\CURLOPT_DISALLOW_USERNAME_IN_URL, true],
+            [\CURLOPT_FAILONERROR, false],
+            // following redirections must be an explicit behaviours added by
+            // the caller
+            // @see FollowRedirects class
+            [\CURLOPT_FOLLOWLOCATION, false],
+            [\CURLOPT_HEADER, false],
+            [\CURLOPT_RETURNTRANSFER, false],
+            [\CURLOPT_HTTP_VERSION, match ($request->protocolVersion()) {
+                ProtocolVersion::v10 => \CURL_HTTP_VERSION_1_0,
+                ProtocolVersion::v11 => \CURL_HTTP_VERSION_1_1,
+                ProtocolVersion::v20 => \CURL_HTTP_VERSION_2_0,
+            }],
+            [\CURLOPT_PROTOCOLS, \CURLPROTO_HTTP | \CURLPROTO_HTTPS],
+            [\CURLOPT_TCP_KEEPALIVE, 1],
+            // set CURLOPT_TIMEOUT ?
+        ];
+
+        $header = match ($request->method()) {
+            Method::head => [\CURLOPT_NOBODY, true],
+            Method::get => [\CURLOPT_HTTPGET, true],
+            default => [\CURLOPT_CUSTOMREQUEST, $request->method()->toString()],
         };
-        $handle = $this->specifyHeaders($handle, $request->headers());
+        $options[] = $header;
+
+        $options = \array_merge(
+            $options,
+            $this->headersOptions($request->headers()),
+        );
         $user = $request->url()->authority()->userInformation()->user();
         $password = $request->url()->authority()->userInformation()->password();
 
         if (!$user->equals(User::none())) {
-            \curl_setopt($handle, \CURLOPT_USERPWD, $password->format($user));
+            $options[] = [\CURLOPT_USERPWD, $password->format($user)];
         }
 
-        return $this->specifyBody($handle, $request);
+        return $this
+            ->bodyOptions($request)
+            ->map(static fn($info) => [
+                \array_merge(
+                    $options,
+                    $info[0],
+                ),
+                $info[1],
+            ]);
     }
 
-    private function specifyHeaders(\CurlHandle $handle, Headers $headers): \CurlHandle
+    /**
+     * @return list<array{0: int, 1: mixed}>
+     */
+    private function headersOptions(Headers $headers): array
     {
-        $handle = $headers->get('cookie')->match(
-            fn($header) => $this->specifyCookie($handle, $header),
-            static fn() => $handle,
+        $options = $headers->get('cookie')->match(
+            fn($header) => $this->cookieOption($header),
+            static fn() => [],
         );
-        $handle = $headers->get('accept-encoding')->match(
-            fn($header) => $this->specifyAcceptEncoding($handle, $header),
-            static fn() => $handle,
+        $options = $headers->get('accept-encoding')->match(
+            fn($header) => \array_merge(
+                $options,
+                $this->acceptEncodingOption($header),
+            ),
+            static fn() => $options,
         );
-        $handle = $headers->get('referer')->match(
-            fn($header) => $this->specifyReferer($handle, $header),
-            static fn() => $handle,
+        $options = $headers->get('referer')->match(
+            fn($header) => \array_merge(
+                $options,
+                $this->refererOption($header),
+            ),
+            static fn() => $options,
         );
 
         /** @var list<string> */
@@ -153,30 +208,33 @@ final class Curl implements Transport
             },
         );
 
-        \curl_setopt($handle, \CURLOPT_HTTPHEADER, $rawHeaders);
+        $options[] = [\CURLOPT_HTTPHEADER, $rawHeaders];
 
-        return $handle;
+        return $options;
     }
 
-    private function specifyCookie(\CurlHandle $handle, Header $cookie): \CurlHandle
+    /**
+     * @return list<array{0: int, 1: mixed}>
+     */
+    private function cookieOption(Header $cookie): array
     {
-        \curl_setopt($handle, \CURLOPT_COOKIE, $this->values($cookie));
-
-        return $handle;
+        return [[\CURLOPT_COOKIE, $this->values($cookie)]];
     }
 
-    private function specifyAcceptEncoding(\CurlHandle $handle, Header $encoding): \CurlHandle
+    /**
+     * @return list<array{0: int, 1: mixed}>
+     */
+    private function acceptEncodingOption(Header $encoding): array
     {
-        \curl_setopt($handle, \CURLOPT_ENCODING, $this->values($encoding));
-
-        return $handle;
+        return [[\CURLOPT_ENCODING, $this->values($encoding)]];
     }
 
-    private function specifyReferer(\CurlHandle $handle, Header $referer): \CurlHandle
+    /**
+     * @return list<array{0: int, 1: mixed}>
+     */
+    private function refererOption(Header $referer): array
     {
-        \curl_setopt($handle, \CURLOPT_REFERER, $this->values($referer));
-
-        return $handle;
+        return [[\CURLOPT_REFERER, $this->values($referer)]];
     }
 
     private function values(Header $header): string
@@ -189,9 +247,9 @@ final class Curl implements Transport
     }
 
     /**
-     * @return Either<Failure, array{0: \CurlHandle, 1: Writable}>
+     * @return Either<Failure, array{0: list<array{0: int, 1: mixed}>, 1: Writable}>
      */
-    private function specifyBody(\CurlHandle $handle, Request $request): Either
+    private function bodyOptions(Request $request): Either
     {
         /** @var list<array{0: int, 1: bool|int}> */
         $options = $request
@@ -206,10 +264,6 @@ final class Curl implements Transport
                 static fn() => [],
             );
 
-        foreach ($options as [$option, $value]) {
-            \curl_setopt($handle, $option, $value);
-        }
-
         $inFile = Writable\Stream::of(\fopen('php://temp', 'r+'));
 
         return ($this->chunk)($request->body())
@@ -221,10 +275,10 @@ final class Curl implements Transport
                 ),
             )
             ->flatMap(static fn($inFile) => $inFile->rewind())
-            ->map(static function($inFile) use ($handle) {
-                \curl_setopt($handle, \CURLOPT_INFILE, $inFile->resource());
+            ->map(static function($inFile) use ($options) {
+                $options[] = [\CURLOPT_INFILE, $inFile->resource()];
 
-                return [$handle, $inFile];
+                return [$options, $inFile];
             })
             ->leftMap(static fn($error) => new Failure(
                 $request,
@@ -235,7 +289,7 @@ final class Curl implements Transport
     /**
      * @return Either<Failure|ConnectionFailed|MalformedResponse, Response>
      */
-    private function exec(\CurlHandle $handle, Request $request, Writable $inFile): Either
+    private function exec(Request $request, \CurlHandle $handle, Writable $inFile): Either
     {
         $status = '';
         $headers = [];
