@@ -56,13 +56,7 @@ final class Curl implements Transport
         return $this
             ->options($request)
             ->flatMap(fn($handle) => $this->init($request, $handle[0], $handle[1]))
-            ->flatMap(function($handle) use ($request) {
-                try {
-                    return $this->exec($request, $handle[0], $handle[1]);
-                } finally {
-                    \curl_close($handle[0]);
-                }
-            })
+            ->flatMap(fn($handle) => $this->send($request, $handle[0], $handle[1]))
             ->flatMap(fn($response) => $this->dispatch($request, $response));
     }
 
@@ -294,6 +288,18 @@ final class Curl implements Transport
                 $request,
                 $error::class,
             ));
+    }
+
+    /**
+     * @return Either<Failure|ConnectionFailed|MalformedResponse, Response>
+     */
+    private function send(Request $request, \CurlHandle $handle, Writable $inFile): Either
+    {
+        try {
+            return $this->exec($request, $handle, $inFile);
+        } finally {
+            \curl_close($handle);
+        }
     }
 
     /**
