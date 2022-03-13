@@ -6,6 +6,8 @@
 
 This library allows you to send [http](https://packagist.org/packages/innmind/http) request.
 
+**Important**: to use this library correctly you must use [`vimeo/psalm`](https://packagist.org/packages/vimeo/psalm).
+
 ## Installation
 
 ```sh
