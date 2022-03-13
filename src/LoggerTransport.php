@@ -65,6 +65,7 @@ final class LoggerTransport implements Transport
     {
         /** @var callable(): Errors */
         $log = match (true) {
+            $error instanceof Information => fn() => $this->logWrapper($error, $reference),
             $error instanceof Redirection => fn() => $this->logWrapper($error, $reference),
             $error instanceof ClientError => fn() => $this->logWrapper($error, $reference),
             $error instanceof ServerError => fn() => $this->logWrapper($error, $reference),
@@ -75,7 +76,7 @@ final class LoggerTransport implements Transport
     }
 
     /**
-     * @template W of ServerError|ClientError|Redirection|Success
+     * @template W of ServerError|ClientError|Redirection|Success|Information
      *
      * @param W $wrapper
      *
