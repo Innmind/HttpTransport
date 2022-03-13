@@ -26,7 +26,7 @@ use Innmind\Immutable\{
 /**
  * @psalm-import-type Errors from Transport
  */
-final class CircuitBreakerTransport implements Transport
+final class CircuitBreaker implements Transport
 {
     private Transport $fulfill;
     private Clock $clock;

@@ -20,7 +20,7 @@ use Ramsey\Uuid\Uuid;
 /**
  * @psalm-import-type Errors from Transport
  */
-final class LoggerTransport implements Transport
+final class Logger implements Transport
 {
     private Transport $fulfill;
     private LoggerInterface $logger;

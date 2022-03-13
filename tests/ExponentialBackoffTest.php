@@ -4,7 +4,7 @@ declare(strict_types = 1);
 namespace Tests\Innmind\HttpTransport;
 
 use Innmind\HttpTransport\{
-    ExponentialBackoffTransport,
+    ExponentialBackoff,
     Transport,
     ServerError,
     Success,
@@ -25,13 +25,13 @@ use Innmind\TimeContinuum\Earth\Period\Millisecond;
 use Innmind\Immutable\Either;
 use PHPUnit\Framework\TestCase;
 
-class ExponentialBackoffTransportTest extends TestCase
+class ExponentialBackoffTest extends TestCase
 {
     public function testInterface()
     {
         $this->assertInstanceOf(
             Transport::class,
-            ExponentialBackoffTransport::of(
+            ExponentialBackoff::of(
                 $this->createMock(Transport::class),
                 $this->createMock(Halt::class),
             ),
@@ -40,7 +40,7 @@ class ExponentialBackoffTransportTest extends TestCase
 
     public function testDoesntRetryWhenInformationResponseOnFirstCall()
     {
-        $fulfill = ExponentialBackoffTransport::of(
+        $fulfill = ExponentialBackoff::of(
             $inner = $this->createMock(Transport::class),
             $halt = $this->createMock(Halt::class),
         );
@@ -64,7 +64,7 @@ class ExponentialBackoffTransportTest extends TestCase
 
     public function testDoesntRetryWhenSuccessfulResponseOnFirstCall()
     {
-        $fulfill = ExponentialBackoffTransport::of(
+        $fulfill = ExponentialBackoff::of(
             $inner = $this->createMock(Transport::class),
             $halt = $this->createMock(Halt::class),
         );
@@ -88,7 +88,7 @@ class ExponentialBackoffTransportTest extends TestCase
 
     public function testDoesntRetryWhenRedirectionResponseOnFirstCall()
     {
-        $fulfill = ExponentialBackoffTransport::of(
+        $fulfill = ExponentialBackoff::of(
             $inner = $this->createMock(Transport::class),
             $halt = $this->createMock(Halt::class),
         );
@@ -112,7 +112,7 @@ class ExponentialBackoffTransportTest extends TestCase
 
     public function testDoesntRetryWhenClientErrorResponseOnFirstCall()
     {
-        $fulfill = ExponentialBackoffTransport::of(
+        $fulfill = ExponentialBackoff::of(
             $inner = $this->createMock(Transport::class),
             $halt = $this->createMock(Halt::class),
         );
@@ -136,7 +136,7 @@ class ExponentialBackoffTransportTest extends TestCase
 
     public function testDoesntRetryWhenMalformedResponseOnFirstCall()
     {
-        $fulfill = ExponentialBackoffTransport::of(
+        $fulfill = ExponentialBackoff::of(
             $inner = $this->createMock(Transport::class),
             $halt = $this->createMock(Halt::class),
         );
@@ -155,7 +155,7 @@ class ExponentialBackoffTransportTest extends TestCase
 
     public function testDoesntRetryWhenFailureOnFirstCall()
     {
-        $fulfill = ExponentialBackoffTransport::of(
+        $fulfill = ExponentialBackoff::of(
             $inner = $this->createMock(Transport::class),
             $halt = $this->createMock(Halt::class),
         );
@@ -174,7 +174,7 @@ class ExponentialBackoffTransportTest extends TestCase
 
     public function testRetryWhileThereIsStillAServerError()
     {
-        $fulfill = ExponentialBackoffTransport::of(
+        $fulfill = ExponentialBackoff::of(
             $inner = $this->createMock(Transport::class),
             $halt = $this->createMock(Halt::class),
         );
@@ -212,7 +212,7 @@ class ExponentialBackoffTransportTest extends TestCase
 
     public function testRetryWhileThereIsStillAConnectionFailure()
     {
-        $fulfill = ExponentialBackoffTransport::of(
+        $fulfill = ExponentialBackoff::of(
             $inner = $this->createMock(Transport::class),
             $halt = $this->createMock(Halt::class),
         );
@@ -245,7 +245,7 @@ class ExponentialBackoffTransportTest extends TestCase
 
     public function testStopRetryingWhenNoLongerReceivingAServerError()
     {
-        $fulfill = ExponentialBackoffTransport::of(
+        $fulfill = ExponentialBackoff::of(
             $inner = $this->createMock(Transport::class),
             $halt = $this->createMock(Halt::class),
         );
@@ -278,7 +278,7 @@ class ExponentialBackoffTransportTest extends TestCase
 
     public function testByDefaultRetriesFiveTimesByUsingAPowerOfE()
     {
-        $fulfill = ExponentialBackoffTransport::of(
+        $fulfill = ExponentialBackoff::of(
             $inner = $this->createMock(Transport::class),
             $halt = $this->createMock(Halt::class),
         );

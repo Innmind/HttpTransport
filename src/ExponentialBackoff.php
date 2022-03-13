@@ -21,7 +21,7 @@ use Innmind\Immutable\{
 /**
  * @psalm-import-type Errors from Transport
  */
-final class ExponentialBackoffTransport implements Transport
+final class ExponentialBackoff implements Transport
 {
     private Transport $fulfill;
     private Halt $halt;

@@ -4,7 +4,7 @@ declare(strict_types = 1);
 namespace Tests\Innmind\HttpTransport;
 
 use Innmind\HttpTransport\{
-    LoggerTransport,
+    Logger,
     Transport,
     Success,
 };
@@ -23,7 +23,7 @@ use Innmind\Immutable\Either;
 use Psr\Log\LoggerInterface;
 use PHPUnit\Framework\TestCase;
 
-class LoggerTransportTest extends TestCase
+class LoggerTest extends TestCase
 {
     private $fulfill;
     private $inner;
@@ -31,7 +31,7 @@ class LoggerTransportTest extends TestCase
 
     public function setUp(): void
     {
-        $this->fulfill = LoggerTransport::psr(
+        $this->fulfill = Logger::psr(
             $this->inner = $this->createMock(Transport::class),
             $this->logger = $this->createMock(LoggerInterface::class),
         );
