@@ -51,7 +51,7 @@ class ExponentialBackoffTransportTest extends TestCase
         $response
             ->expects($this->any())
             ->method('statusCode')
-            ->willReturn(new StatusCode(200));
+            ->willReturn(StatusCode::ok);
         $inner
             ->expects($this->once())
             ->method('__invoke')
@@ -76,7 +76,7 @@ class ExponentialBackoffTransportTest extends TestCase
         $response
             ->expects($this->any())
             ->method('statusCode')
-            ->willReturn(new StatusCode(301));
+            ->willReturn(StatusCode::movedPermanently);
         $inner
             ->expects($this->once())
             ->method('__invoke')
@@ -101,7 +101,7 @@ class ExponentialBackoffTransportTest extends TestCase
         $response
             ->expects($this->any())
             ->method('statusCode')
-            ->willReturn(new StatusCode(404));
+            ->willReturn(StatusCode::notFound);
         $inner
             ->expects($this->once())
             ->method('__invoke')
@@ -128,7 +128,7 @@ class ExponentialBackoffTransportTest extends TestCase
         $response
             ->expects($this->any())
             ->method('statusCode')
-            ->willReturn(new StatusCode(500));
+            ->willReturn(StatusCode::internalServerError);
         $inner
             ->expects($this->exactly(8))
             ->method('__invoke')
@@ -198,11 +198,11 @@ class ExponentialBackoffTransportTest extends TestCase
         $response1
             ->expects($this->any())
             ->method('statusCode')
-            ->willReturn(new StatusCode(500));
+            ->willReturn(StatusCode::internalServerError);
         $response2
             ->expects($this->any())
             ->method('statusCode')
-            ->willReturn(new StatusCode(200));
+            ->willReturn(StatusCode::ok);
         $inner
             ->expects($this->exactly(2))
             ->method('__invoke')
@@ -230,7 +230,7 @@ class ExponentialBackoffTransportTest extends TestCase
         $response
             ->expects($this->any())
             ->method('statusCode')
-            ->willReturn(new StatusCode(500));
+            ->willReturn(StatusCode::internalServerError);
         $inner
             ->expects($this->exactly(6))
             ->method('__invoke')

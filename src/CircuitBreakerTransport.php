@@ -91,9 +91,8 @@ final class CircuitBreakerTransport implements Transport
     {
         /** @var Either<Errors, Success> */
         return Either::left(new ServerError($request, new Response\Response(
-            $code = StatusCode::of('SERVICE_UNAVAILABLE'),
-            $code->associatedReasonPhrase(),
-            new ProtocolVersion(2, 0),
+            $code = StatusCode::serviceUnavailable,
+            ProtocolVersion::v20,
             Headers::of(
                 new Header(
                     'X-Circuit-Opened',

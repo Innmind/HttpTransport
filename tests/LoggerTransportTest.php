@@ -64,7 +64,7 @@ class LoggerTransportTest extends TestCase
             ->expects($this->once())
             ->method('headers')
             ->willReturn(
-                new Headers(
+                Headers::of(
                     new Header\Header(
                         'foo',
                         new Value('bar'),
@@ -81,12 +81,12 @@ class LoggerTransportTest extends TestCase
         $response
             ->expects($this->any())
             ->method('statusCode')
-            ->willReturn(new StatusCode(200));
+            ->willReturn(StatusCode::ok);
         $response
             ->expects($this->once())
             ->method('headers')
             ->willReturn(
-                new Headers(
+                Headers::of(
                     new Header\Header(
                         'x-debug',
                         new Value('yay'),

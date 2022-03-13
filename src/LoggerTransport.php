@@ -10,8 +10,10 @@ use Innmind\Http\{
     Header,
     Header\Value,
 };
-use Innmind\Immutable\Either;
-use function Innmind\Immutable\join;
+use Innmind\Immutable\{
+    Either,
+    Str,
+};
 use Psr\Log\LoggerInterface;
 use Ramsey\Uuid\Uuid;
 
@@ -91,7 +93,7 @@ final class LoggerTransport implements Transport
         $this->logger->debug(
             'Http request sent',
             [
-                'statusCode' => $response->statusCode()->value(),
+                'statusCode' => $response->statusCode()->toInt(),
                 'headers' => $this->normalize($response->headers()),
                 'body' => $response->body()->toString(),
                 'reference' => $reference,
@@ -109,7 +111,7 @@ final class LoggerTransport implements Transport
                 $values = $header->values()->map(
                     static fn($value) => $value->toString(),
                 );
-                $headers[$header->name()] = join(', ', $values)->toString();
+                $headers[$header->name()] = Str::of(', ')->join($values)->toString();
 
                 return $headers;
             },

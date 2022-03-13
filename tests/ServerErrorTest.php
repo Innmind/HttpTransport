@@ -9,16 +9,15 @@ use Innmind\Http\Message\{
     Response,
     StatusCode,
 };
+use Innmind\Immutable\Sequence;
 use PHPUnit\Framework\TestCase;
 
 class ServerErrorTest extends TestCase
 {
     public function testAcceptServerErrorfulResponses()
     {
-        StatusCode::codes()
-            ->values()
-            ->filter(static fn($code) => $code >= 500 && $code < 600)
-            ->map(static fn($code) => new StatusCode($code))
+        Sequence::of(...StatusCode::cases())
+            ->filter(static fn($code) => $code->range() === StatusCode\Range::serverError)
             ->foreach(function($code) {
                 $request = $this->createMock(Request::class);
                 $response = $this->createMock(Response::class);
@@ -34,10 +33,8 @@ class ServerErrorTest extends TestCase
 
     public function testRejectOtherKindOfResponse()
     {
-        StatusCode::codes()
-            ->values()
-            ->filter(static fn($code) => $code < 500 || $code >= 600)
-            ->map(static fn($code) => new StatusCode($code))
+        Sequence::of(...StatusCode::cases())
+            ->filter(static fn($code) => $code->range() !== StatusCode\Range::serverError)
             ->foreach(function($code) {
                 $request = $this->createMock(Request::class);
                 $response = $this->createMock(Response::class);

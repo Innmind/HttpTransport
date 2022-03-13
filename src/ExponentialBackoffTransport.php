@@ -81,7 +81,7 @@ final class ExponentialBackoffTransport implements Transport
     /**
      * @return Either<Errors, Success>
      */
-    private function return(Redirection|ClientError|Failure $error): Either
+    private function return(Redirection|ClientError|Information|MalformedResponse|Failure $error): Either
     {
         /** @var Either<Errors, Success> */
         return Either::left($error);
