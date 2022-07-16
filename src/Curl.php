@@ -392,15 +392,18 @@ final class Curl implements Transport
         array $headers,
         Readable $body,
     ): Either {
-        $info = Str::of($status)->trim()->capture('~^HTTP/(?<major>\d)\.(?<minor>\d) (?<status>\d{3})~');
+        $info = Str::of($status)->trim()->capture('~^HTTP/(?<major>\d)(\.(?<minor>\d))? (?<status>\d{3})~');
         $major = $info
             ->get('major')
             ->map(static fn($major) => $major->toString())
+            ->filter(\is_numeric(...))
             ->map(static fn($major) => (int) $major);
         $minor = $info
             ->get('minor')
             ->map(static fn($minor) => $minor->toString())
-            ->map(static fn($minor) => (int) $minor);
+            ->filter(\is_numeric(...))
+            ->map(static fn($minor) => (int) $minor)
+            ->otherwise(static fn() => Maybe::just(0));
         $protocolVersion = Maybe::all($major, $minor)->flatMap(
             static fn(int $major, int $minor) => ProtocolVersion::maybe($major, $minor),
         );

@@ -13,6 +13,7 @@ use Innmind\HttpTransport\{
 };
 use Innmind\Http\{
     Message\Request\Request,
+    Message\Response,
     Message\Method,
     ProtocolVersion,
     Header\Date,
@@ -266,6 +267,22 @@ class CurlTest extends TestCase
         // 3Mo. It can't be less than 2Mo because the streams used have a memory
         // buffer of 2Mo before writing to disk
         $this->assertLessThan(3_698_688, \memory_get_peak_usage() - $memory);
+    }
+
+    public function testMinorVersionOfProtocolMayNotBePresent()
+    {
+        // Packagist respond with HTTP/2 instead of HTTP/2.0
+        $success = ($this->curl)(new Request(
+            Url::of('https://packagist.org/search.json?q=innmind/'),
+            Method::get,
+            ProtocolVersion::v20,
+        ))->match(
+            static fn($success) => $success->response(),
+            static fn() => null,
+        );
+
+        $this->assertInstanceOf(Response::class, $success);
+        $this->assertSame(ProtocolVersion::v20, $success->protocolVersion());
     }
 
     // Don't know how to test MalformedResponse, ConnectionFailed, Information and ServerError
