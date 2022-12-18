@@ -17,7 +17,7 @@ use Innmind\Http\{
 use Innmind\TimeContinuum\Clock;
 use Innmind\Filesystem\{
     File\Content,
-    Adapter\Chunk,
+    Chunk,
 };
 use Innmind\Url\Authority\UserInformation\User;
 use Innmind\Stream\{

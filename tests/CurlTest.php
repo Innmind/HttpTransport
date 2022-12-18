@@ -152,7 +152,7 @@ class CurlTest extends TestCase
             ProtocolVersion::v11,
         ))->match(
             static fn($success) => $success,
-            static fn() => null,
+            static fn($error) => $error,
         );
 
         $this->assertInstanceOf(Success::class, $success);
@@ -204,7 +204,7 @@ class CurlTest extends TestCase
             ProtocolVersion::v11,
         ))->match(
             static fn($success) => $success,
-            static fn() => null,
+            static fn($error) => $error,
         );
 
         $this->assertInstanceOf(Success::class, $success);
@@ -229,7 +229,7 @@ class CurlTest extends TestCase
                     Content\Lines::ofContent($body),
                 ))->match(
                     static fn($success) => $success,
-                    static fn() => null,
+                    static fn($error) => $error,
                 );
 
                 $this->assertInstanceOf(Success::class, $success);
@@ -258,7 +258,7 @@ class CurlTest extends TestCase
             Content\AtPath::of(Path::of(__DIR__.'/../data/screenshot.png')),
         ))->match(
             static fn($success) => $success,
-            static fn() => null,
+            static fn($error) => $error,
         );
 
         $this->assertInstanceOf(Success::class, $success);
@@ -278,7 +278,7 @@ class CurlTest extends TestCase
             ProtocolVersion::v20,
         ))->match(
             static fn($success) => $success->response(),
-            static fn() => null,
+            static fn($error) => $error,
         );
 
         $this->assertInstanceOf(Response::class, $success);
