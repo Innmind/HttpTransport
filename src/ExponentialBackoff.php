@@ -12,7 +12,6 @@ use Innmind\TimeContinuum\{
     Period,
     Earth\Period\Millisecond,
 };
-use Innmind\TimeWarp\Halt;
 use Innmind\Immutable\{
     Sequence,
     Either,
@@ -24,13 +23,17 @@ use Innmind\Immutable\{
 final class ExponentialBackoff implements Transport
 {
     private Transport $fulfill;
-    private Halt $halt;
+    /** @var callable(Period): void */
+    private $halt;
     /** @var Sequence<Period> */
     private Sequence $retries;
 
+    /**
+     * @param callable(Period): void $halt
+     */
     private function __construct(
         Transport $fulfill,
-        Halt $halt,
+        callable $halt,
         Period $retry,
         Period ...$retries,
     ) {
@@ -48,7 +51,10 @@ final class ExponentialBackoff implements Transport
         );
     }
 
-    public static function of(Transport $fulfill, Halt $halt): self
+    /**
+     * @param callable(Period): void $halt
+     */
+    public static function of(Transport $fulfill, callable $halt): self
     {
         return new self(
             $fulfill,
