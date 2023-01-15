@@ -1,5 +1,11 @@
 # Changelog
 
+## 6.2.1 - 2023-01-15
+
+### Fixed
+
+- Header names containing a number or a dot now longer result in a `MalformedResponse`
+
 ## 6.2.0 - 2023-01-01
 
 ### Changed

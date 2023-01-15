@@ -10,6 +10,7 @@ use Innmind\HttpTransport\{
     Redirection,
     ClientError,
     Failure,
+    ServerError,
 };
 use Innmind\Http\{
     Message\Request\Request,
@@ -232,7 +233,20 @@ class CurlTest extends TestCase
                     static fn($error) => $error,
                 );
 
-                $this->assertInstanceOf(Success::class, $success);
+                // we allow server errors as we don't control the stability of
+                // the server
+                $this->assertThat(
+                    $success,
+                    $this->logicalOr(
+                        $this->isInstanceOf(Success::class),
+                        $this->isInstanceOf(ServerError::class),
+                    ),
+                );
+
+                if ($success instanceof ServerError) {
+                    return;
+                }
+
                 $response = \json_decode(
                     $success->response()->body()->toString(),
                     true,
@@ -261,7 +275,14 @@ class CurlTest extends TestCase
             static fn($error) => $error,
         );
 
-        $this->assertInstanceOf(Success::class, $success);
+        // we allow server errors as we don't control the stability of the server
+        $this->assertThat(
+            $success,
+            $this->logicalOr(
+                $this->isInstanceOf(Success::class),
+                $this->isInstanceOf(ServerError::class),
+            ),
+        );
         // The file is a bit more than 2Mo, so if everything was kept in memory
         // the peak memory would be above 4Mo so we check that it is less than
         // 3Mo. It can't be less than 2Mo because the streams used have a memory

@@ -411,12 +411,18 @@ final class Curl implements Transport
             ->get('status')
             ->map(static fn($status) => $status->toString())
             ->flatMap(static fn($status) => StatusCode::maybe((int) $status));
-        /** @psalm-suppress NamedArgumentNotAllowed */
+        /**
+         * @psalm-suppress NamedArgumentNotAllowed
+         * Technically as header name can contain any octet between 0 and 127
+         * except control ones, the regexp below is a bit more restrictive than
+         * that by only accepting letters, numbers, '-', '_' and '.'
+         * @see https://www.rfc-editor.org/rfc/rfc2616#section-4.2
+         */
         $headers = Sequence::of(...$headers)
             ->map(static fn($header) => Str::of($header))
             ->map(static fn($header) => $header->rightTrim("\r\n"))
             ->filter(static fn($header) => !$header->empty())
-            ->map(static fn($header) => $header->capture('~^(?<name>[a-zA-Z\-\_]+): (?<value>.*)$~'))
+            ->map(static fn($header) => $header->capture('~^(?<name>[a-zA-Z0-9\-\_\.]+): (?<value>.*)$~'))
             ->map(fn($captured) => $this->createHeader($captured))
             ->match(
                 static fn($first, $rest) => Maybe::all($first, ...$rest->toList())->map(
