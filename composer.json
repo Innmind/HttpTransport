@@ -17,8 +17,8 @@
     "require": {
         "php": "~8.1",
         "ext-curl": "*",
-        "innmind/http": "~5.2",
-        "innmind/filesystem": "~5.2|~6.0",
+        "innmind/http": "dev-next",
+        "innmind/filesystem": "dev-capabilities",
         "psr/log": "~3.0",
         "ramsey/uuid": "^4.7",
         "innmind/time-warp": "~3.0",
@@ -26,6 +26,8 @@
         "innmind/immutable": "~4.1",
         "innmind/url": "~4.0"
     },
+    "minimum-stability": "dev",
+    "prefer-stable": true,
     "autoload": {
         "psr-4": {
             "Innmind\\HttpTransport\\": "src/"

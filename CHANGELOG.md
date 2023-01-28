@@ -1,5 +1,11 @@
 # Changelog
 
+## [Unreleased]
+
+### Added
+
+- `Innmind\HttpTransport\Curl::of()` now accepts `Innmind\Stream\Capabilities` as third argument
+
 ## 6.2.1 - 2023-01-15
 
 ### Fixed
