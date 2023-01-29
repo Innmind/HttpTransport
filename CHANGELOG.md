@@ -1,5 +1,12 @@
 # Changelog
 
+## 6.3.0 - 2023-01-29
+
+### Added
+
+- `Innmind\HttpTransport\Curl::of()` now accepts `Innmind\Stream\Capabilities` as third argument
+- Support for `innmind/http:~6.0`
+
 ## 6.2.1 - 2023-01-15
 
 ### Fixed

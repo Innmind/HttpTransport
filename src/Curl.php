@@ -21,10 +21,13 @@ use Innmind\Filesystem\{
 };
 use Innmind\Url\Authority\UserInformation\User;
 use Innmind\Stream\{
+    Capabilities,
+    Streams,
     Readable,
     Writable,
     FailedToWriteToStream,
     DataPartiallyWritten,
+    Exception\InvalidArgumentException,
 };
 use Innmind\Immutable\{
     Either,
@@ -37,17 +40,22 @@ use Innmind\Immutable\{
 final class Curl implements Transport
 {
     private TryFactory $headerFactory;
+    private Capabilities $capabilities;
     /** @var callable(Content): Sequence<Str> */
     private $chunk;
 
     /**
      * @param callable(Content): Sequence<Str> $chunk
      */
-    private function __construct(Clock $clock, callable $chunk)
-    {
+    private function __construct(
+        Clock $clock,
+        Capabilities $capabilities,
+        callable $chunk,
+    ) {
         $this->headerFactory = new TryFactory(
             Factories::default($clock),
         );
+        $this->capabilities = $capabilities;
         $this->chunk = $chunk;
     }
 
@@ -63,9 +71,12 @@ final class Curl implements Transport
     /**
      * @param callable(Content): Sequence<Str> $chunk
      */
-    public static function of(Clock $clock, callable $chunk = new Chunk): self
-    {
-        return new self($clock, $chunk);
+    public static function of(
+        Clock $clock,
+        callable $chunk = new Chunk,
+        Capabilities $capabilities = null,
+    ): self {
+        return new self($clock, $capabilities ?? Streams::fromAmbientAuthority(), $chunk);
     }
 
     /**
@@ -261,7 +272,10 @@ final class Curl implements Transport
                 static fn() => [],
             );
 
-        $inFile = Writable\Stream::of(\fopen('php://temp', 'r+'));
+        $inFile = $this
+            ->capabilities
+            ->temporary()
+            ->new();
         /** @var Either<FailedToWriteToStream|DataPartiallyWritten, Writable\Stream> */
         $carry = Either::right($inFile);
 
@@ -310,11 +324,13 @@ final class Curl implements Transport
         $status = '';
         /** @var list<string> */
         $headers = [];
-        // todo find a way to close these streams when the body is no longer used
-        // but beware of process forks where the stream in used only on one side
-        $body = \fopen('php://temp', 'r+');
 
-        if (!\is_resource($body)) {
+        try {
+            $body = $this
+                ->capabilities
+                ->temporary()
+                ->new();
+        } catch (InvalidArgumentException $e) {
             /** @var Either<Failure|ConnectionFailed|MalformedResponse, Response> */
             return Either::left(new Failure($request, 'Failed to write response body'));
         }
@@ -337,10 +353,15 @@ final class Curl implements Transport
             $handle,
             \CURLOPT_WRITEFUNCTION,
             static function(\CurlHandle $_, string $chunk) use ($body): int {
-                $written = \fwrite($body, $chunk);
+                $chunk = Str::of($chunk)->toEncoding('ASCII');
 
                 // return -1 when failed to write to make curl stop
-                return \is_int($written) ? $written : -1;
+                return $body
+                    ->write($chunk)
+                    ->match(
+                        static fn() => $chunk->length(),
+                        static fn() => -1,
+                    );
             },
         );
 
@@ -368,7 +389,7 @@ final class Curl implements Transport
                 $request,
                 $status,
                 $headers,
-                Readable\Stream::of($body),
+                $body,
             ),
             \CURLE_COULDNT_RESOLVE_PROXY, \CURLE_COULDNT_RESOLVE_HOST, \CURLE_COULDNT_CONNECT, \CURLE_SSL_CONNECT_ERROR => Either::left(new ConnectionFailed(
                 $request,
