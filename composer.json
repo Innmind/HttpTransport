@@ -27,8 +27,6 @@
         "innmind/immutable": "~4.1",
         "innmind/url": "~4.0"
     },
-    "minimum-stability": "dev",
-    "prefer-stable": true,
     "autoload": {
         "psr-4": {
             "Innmind\\HttpTransport\\": "src/"
