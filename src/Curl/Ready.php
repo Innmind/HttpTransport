@@ -124,43 +124,35 @@ final class Ready
     public function read(int $errorCode): Either
     {
         return $this
-            ->send($errorCode, $this->request, $this->handle, $this->inFile)
-            ->flatMap(fn($response) => $this->dispatch($this->request, $response));
+            ->send($errorCode)
+            ->flatMap($this->dispatch(...));
     }
 
     /**
      * @return Either<Failure|ConnectionFailed|MalformedResponse, Response>
      */
-    private function send(
-        int $errorCode,
-        Request $request,
-        \CurlHandle $handle,
-        Writable $inFile,
-    ): Either {
+    private function send(int $errorCode): Either
+    {
         try {
-            return $this->exec($errorCode, $request, $handle, $inFile);
+            return $this->exec($errorCode);
         } finally {
-            \curl_close($handle);
+            \curl_close($this->handle);
         }
     }
 
     /**
      * @return Either<Failure|ConnectionFailed|MalformedResponse, Response>
      */
-    private function exec(
-        int $errorCode,
-        Request $request,
-        \CurlHandle $handle,
-        Writable $inFile,
-    ): Either {
-        $error = $inFile->close()->match(
+    private function exec(int $errorCode): Either
+    {
+        $error = $this->inFile->close()->match(
             static fn() => null,
             static fn($error) => $error,
         );
 
         if ($error) {
             /** @var Either<Failure|ConnectionFailed|MalformedResponse, Response> */
-            return Either::left(new Failure($request, $error::class));
+            return Either::left(new Failure($this->request, $error::class));
         }
 
         /**
@@ -168,35 +160,24 @@ final class Ready
          * @var Either<Failure|ConnectionFailed|MalformedResponse, Response>
          */
         return match ($errorCode) {
-            \CURLE_OK => $this->buildResponse(
-                $request,
-                $this->status,
-                $this->headers,
-                $this->body,
-            ),
+            \CURLE_OK => $this->buildResponse(),
             \CURLE_COULDNT_RESOLVE_PROXY, \CURLE_COULDNT_RESOLVE_HOST, \CURLE_COULDNT_CONNECT, \CURLE_SSL_CONNECT_ERROR => Either::left(new ConnectionFailed(
-                $request,
+                $this->request,
                 \curl_strerror($errorCode) ?? '',
             )),
             default => Either::left(new Failure(
-                $request,
+                $this->request,
                 \curl_strerror($errorCode) ?? '',
             )),
         };
     }
 
     /**
-     * @param list<string> $headers
-     *
      * @return Either<MalformedResponse, Response>
      */
-    private function buildResponse(
-        Request $request,
-        string $status,
-        array $headers,
-        Readable $body,
-    ): Either {
-        $info = Str::of($status)->trim()->capture('~^HTTP/(?<major>\d)(\.(?<minor>\d))? (?<status>\d{3})~');
+    private function buildResponse(): Either
+    {
+        $info = Str::of($this->status)->trim()->capture('~^HTTP/(?<major>\d)(\.(?<minor>\d))? (?<status>\d{3})~');
         $major = $info
             ->get('major')
             ->map(static fn($major) => $major->toString())
@@ -222,7 +203,7 @@ final class Ready
          * that by only accepting letters, numbers, '-', '_' and '.'
          * @see https://www.rfc-editor.org/rfc/rfc2616#section-4.2
          */
-        $headers = Sequence::of(...$headers)
+        $headers = Sequence::of(...$this->headers)
             ->map(static fn($header) => Str::of($header))
             ->map(static fn($header) => $header->rightTrim("\r\n"))
             ->filter(static fn($header) => !$header->empty())
@@ -237,15 +218,15 @@ final class Ready
 
         /** @var Either<MalformedResponse, Response> */
         return Maybe::all($statusCode, $protocolVersion, $headers)
-            ->map(static fn(StatusCode $status, ProtocolVersion $protocol, Headers $headers) => new Response\Response(
+            ->map(fn(StatusCode $status, ProtocolVersion $protocol, Headers $headers) => new Response\Response(
                 $status,
                 $protocol,
                 $headers,
-                Content\OfStream::of($body),
+                Content\OfStream::of($this->body),
             ))
             ->match(
                 static fn($response) => Either::right($response),
-                static fn() => Either::left(new MalformedResponse($request)),
+                fn() => Either::left(new MalformedResponse($this->request)),
             );
     }
 
@@ -264,15 +245,15 @@ final class Ready
     /**
      * @return Either<Information|Redirection|ClientError|ServerError, Success>
      */
-    private function dispatch(Request $request, Response $response): Either
+    private function dispatch(Response $response): Either
     {
         /** @var Either<Information|Redirection|ClientError|ServerError, Success> */
         return match ($response->statusCode()->range()) {
-            StatusCode\Range::informational => Either::left(new Information($request, $response)),
-            StatusCode\Range::successful => Either::right(new Success($request, $response)),
-            StatusCode\Range::redirection => Either::left(new Redirection($request, $response)),
-            StatusCode\Range::clientError => Either::left(new ClientError($request, $response)),
-            StatusCode\Range::serverError => Either::left(new ServerError($request, $response)),
+            StatusCode\Range::informational => Either::left(new Information($this->request, $response)),
+            StatusCode\Range::successful => Either::right(new Success($this->request, $response)),
+            StatusCode\Range::redirection => Either::left(new Redirection($this->request, $response)),
+            StatusCode\Range::clientError => Either::left(new ClientError($this->request, $response)),
+            StatusCode\Range::serverError => Either::left(new ServerError($this->request, $response)),
         };
     }
 }

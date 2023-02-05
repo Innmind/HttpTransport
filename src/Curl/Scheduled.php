@@ -59,9 +59,9 @@ final class Scheduled
     public function __invoke(): Either
     {
         return $this
-            ->options($this->request)
-            ->flatMap(fn($handle) => $this->init($this->request, $handle[0], $handle[1]))
-            ->flatMap(fn($handle) => $this->ready($this->request, $handle[0], $handle[1]));
+            ->options()
+            ->flatMap(fn($handle) => $this->init($handle[0], $handle[1]))
+            ->flatMap(fn($handle) => $this->ready($handle[0], $handle[1]));
     }
 
     /**
@@ -81,16 +81,14 @@ final class Scheduled
      *
      * @return Either<Failure, list{\CurlHandle, Writable}>
      */
-    private function init(
-        Request $request,
-        array $options,
-        Writable $inFile,
-    ): Either {
+    private function init(array $options, Writable $inFile): Either
+    {
         $handle = \curl_init(
-            $request
+            $this
+                ->request
                 ->url()
                 ->withAuthority(
-                    $request->url()->authority()->withoutUserInformation(),
+                    $this->request->url()->authority()->withoutUserInformation(),
                 )
                 ->toString(),
         );
@@ -103,7 +101,7 @@ final class Scheduled
                     static fn($error) => $error::class,
                 );
 
-            return Either::left(new Failure($request, $reason));
+            return Either::left(new Failure($this->request, $reason));
         }
 
         $configured = true;
@@ -116,7 +114,7 @@ final class Scheduled
         }
 
         if (!$configured) {
-            return Either::left(new Failure($request, 'Failed to configure the curl handle'));
+            return Either::left(new Failure($this->request, 'Failed to configure the curl handle'));
         }
 
         return Either::right([$handle, $inFile]);
@@ -125,7 +123,7 @@ final class Scheduled
     /**
      * @return Either<Failure, array{0: list<array{0: int, 1: mixed}>, 1: Writable}>
      */
-    private function options(Request $request): Either
+    private function options(): Either
     {
         /** @var list<array{0: int, 1: mixed}> */
         $options = [
@@ -139,7 +137,7 @@ final class Scheduled
             [\CURLOPT_FOLLOWLOCATION, false],
             [\CURLOPT_HEADER, false],
             [\CURLOPT_RETURNTRANSFER, false],
-            [\CURLOPT_HTTP_VERSION, match ($request->protocolVersion()) {
+            [\CURLOPT_HTTP_VERSION, match ($this->request->protocolVersion()) {
                 ProtocolVersion::v10 => \CURL_HTTP_VERSION_1_0,
                 ProtocolVersion::v11 => \CURL_HTTP_VERSION_1_1,
                 ProtocolVersion::v20 => \CURL_HTTP_VERSION_2_0,
@@ -149,26 +147,26 @@ final class Scheduled
             // set CURLOPT_TIMEOUT ?
         ];
 
-        $header = match ($request->method()) {
+        $header = match ($this->request->method()) {
             Method::head => [\CURLOPT_NOBODY, true],
             Method::get => [\CURLOPT_HTTPGET, true],
-            default => [\CURLOPT_CUSTOMREQUEST, $request->method()->toString()],
+            default => [\CURLOPT_CUSTOMREQUEST, $this->request->method()->toString()],
         };
         $options[] = $header;
 
         $options = \array_merge(
             $options,
-            $this->headersOptions($request->headers()),
+            $this->headersOptions($this->request->headers()),
         );
-        $user = $request->url()->authority()->userInformation()->user();
-        $password = $request->url()->authority()->userInformation()->password();
+        $user = $this->request->url()->authority()->userInformation()->user();
+        $password = $this->request->url()->authority()->userInformation()->password();
 
         if (!$user->equals(User::none())) {
             $options[] = [\CURLOPT_USERPWD, $password->format($user)];
         }
 
         return $this
-            ->bodyOptions($request)
+            ->bodyOptions()
             ->map(static fn($info) => [
                 \array_merge(
                     $options,
@@ -254,10 +252,11 @@ final class Scheduled
     /**
      * @return Either<Failure, array{0: list<array{0: int, 1: mixed}>, 1: Writable}>
      */
-    private function bodyOptions(Request $request): Either
+    private function bodyOptions(): Either
     {
         /** @var list<array{0: int, 1: bool|int}> */
-        $options = $request
+        $options = $this
+            ->request
             ->body()
             ->size()
             ->filter(static fn($size) => $size->toInt() > 0)
@@ -277,7 +276,7 @@ final class Scheduled
         $carry = Either::right($inFile);
 
         /** @psalm-suppress MixedArgumentTypeCoercion Due to the reduce */
-        $written = ($this->chunk)($request->body())
+        $written = ($this->chunk)($this->request->body())
             ->map(static fn($chunk) => $chunk->toEncoding('ASCII'))
             ->reduce(
                 $carry,
@@ -295,8 +294,8 @@ final class Scheduled
 
                 return [$options, $inFile];
             })
-            ->leftMap(static fn($error) => new Failure(
-                $request,
+            ->leftMap(fn($error) => new Failure(
+                $this->request,
                 $error::class,
             ));
     }
@@ -304,11 +303,8 @@ final class Scheduled
     /**
      * @return Either<Failure, Ready>
      */
-    private function ready(
-        Request $request,
-        \CurlHandle $handle,
-        Writable $inFile,
-    ): Either {
+    private function ready(\CurlHandle $handle, Writable $inFile): Either
+    {
         try {
             $body = $this
                 ->capabilities
@@ -316,12 +312,12 @@ final class Scheduled
                 ->new();
         } catch (InvalidArgumentException $e) {
             /** @var Either<Failure, Ready> */
-            return Either::left(new Failure($request, 'Failed to write response body'));
+            return Either::left(new Failure($this->request, 'Failed to write response body'));
         }
 
         return Either::right(Ready::of(
             $this->headerFactory,
-            $request,
+            $this->request,
             $handle,
             $inFile,
             $body,
