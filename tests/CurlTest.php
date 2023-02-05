@@ -21,7 +21,10 @@ use Innmind\Http\{
     Header\Location,
 };
 use Innmind\Filesystem\File\Content;
-use Innmind\TimeContinuum\Earth\Clock;
+use Innmind\TimeContinuum\Earth\{
+    Clock,
+    ElapsedPeriod,
+};
 use Innmind\Url\{
     Url,
     Path,
@@ -375,6 +378,28 @@ class CurlTest extends TestCase
         // because depending on speed the 2 request could be faster than the
         // initial one
         $this->assertGreaterThanOrEqual(2 * $forOneRequest, \microtime(true) - $start);
+    }
+
+    public function testHeartbeat()
+    {
+        $heartbeat = 0;
+        $curl = $this->curl->heartbeat(
+            new ElapsedPeriod(1000),
+            static function() use (&$heartbeat) {
+                ++$heartbeat;
+            },
+        );
+
+        $_ = $curl(new Request(
+            Url::of('https://en.wikipedia.org/wiki/Culture_of_the_United_Kingdom'),
+            Method::get,
+            ProtocolVersion::v11,
+        ))->match(
+            static fn() => null,
+            static fn() => null,
+        );
+
+        $this->assertGreaterThan(1, $heartbeat);
     }
 
     // Don't know how to test MalformedResponse, ConnectionFailed, Information and ServerError

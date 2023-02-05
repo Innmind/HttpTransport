@@ -16,7 +16,11 @@ use Innmind\Http\{
     Factory\Header\TryFactory,
     Factory\Header\Factories,
 };
-use Innmind\TimeContinuum\Clock;
+use Innmind\TimeContinuum\{
+    Clock,
+    ElapsedPeriod,
+    Earth,
+};
 use Innmind\Filesystem\{
     File\Content,
     Chunk,
@@ -41,20 +45,28 @@ final class Curl implements Transport
     /** @var callable(Content): Sequence<Str> */
     private $chunk;
     private Multi $multi;
+    private ElapsedPeriod $timeout;
+    /** @var callable(): void */
+    private $heartbeat;
 
     /**
      * @param callable(Content): Sequence<Str> $chunk
+     * @param callable(): void $heartbeat
      */
     private function __construct(
         TryFactory $headerFactory,
         Capabilities $capabilities,
         callable $chunk,
         Multi $multi,
+        ElapsedPeriod $timeout,
+        callable $heartbeat,
     ) {
         $this->headerFactory = $headerFactory;
         $this->capabilities = $capabilities;
         $this->chunk = $chunk;
         $this->multi = $multi;
+        $this->timeout = $timeout;
+        $this->heartbeat = $heartbeat;
     }
 
     public function __invoke(Request $request): Either
@@ -68,7 +80,7 @@ final class Curl implements Transport
         $this->multi->add($scheduled);
 
         return Either::defer(function() use ($scheduled) {
-            $this->multi->exec();
+            $this->multi->exec($this->timeout, $this->heartbeat);
 
             return $this->multi->response($scheduled);
         });
@@ -89,6 +101,8 @@ final class Curl implements Transport
             $capabilities ?? Streams::fromAmbientAuthority(),
             $chunk,
             Multi::new(),
+            new Earth\ElapsedPeriod(1_000), // 1 second
+            static fn() => null,
         );
     }
 
@@ -104,6 +118,25 @@ final class Curl implements Transport
             $this->capabilities,
             $this->chunk,
             Multi::new($max),
+            $this->timeout,
+            $this->heartbeat,
+        );
+    }
+
+    /**
+     * @psalm-mutation-free
+     *
+     * @param callable(): void $heartbeat
+     */
+    public function heartbeat(ElapsedPeriod $timeout, callable $heartbeat = null): self
+    {
+        return new self(
+            $this->headerFactory,
+            $this->capabilities,
+            $this->chunk,
+            $this->multi,
+            $timeout,
+            $heartbeat ?? static fn() => null,
         );
     }
 }

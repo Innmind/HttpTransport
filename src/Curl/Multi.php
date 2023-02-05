@@ -8,6 +8,7 @@ use Innmind\HttpTransport\{
     Failure,
     Success,
 };
+use Innmind\TimeContinuum\ElapsedPeriod;
 use Innmind\Immutable\{
     Sequence,
     Map,
@@ -56,7 +57,10 @@ final class Multi
         $this->scheduled = ($this->scheduled)(\WeakReference::create($scheduled));
     }
 
-    public function exec(): void
+    /**
+     * @param callable(): void $heartbeat
+     */
+    public function exec(ElapsedPeriod $timeout, callable $heartbeat): void
     {
         // remove dead references
         $stillScheduled = $this
@@ -82,7 +86,7 @@ final class Multi
             return;
         }
 
-        $this->batch($toStart);
+        $this->batch($timeout, $heartbeat, $toStart);
     }
 
     /**
@@ -98,10 +102,14 @@ final class Multi
     }
 
     /**
+     * @param callable(): void $heartbeat
      * @param Sequence<Scheduled> $toStart
      */
-    private function batch(Sequence $toStart): void
-    {
+    private function batch(
+        ElapsedPeriod $timeout,
+        callable $heartbeat,
+        Sequence $toStart,
+    ): void {
         $multiHandle = \curl_multi_init();
 
         $started = $toStart->map(static fn($scheduled) => [
@@ -121,8 +129,9 @@ final class Multi
             $status = \curl_multi_exec($multiHandle, $stillActive);
 
             if ($stillActive) {
+                $heartbeat();
                 // Wait a short time for more activity
-                \curl_multi_select($multiHandle);
+                \curl_multi_select($multiHandle, $timeout->milliseconds() * 1000);
             }
         } while ($stillActive && $status === \CURLM_OK);
 
