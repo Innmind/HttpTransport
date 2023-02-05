@@ -3,7 +3,13 @@ declare(strict_types = 1);
 
 namespace Innmind\HttpTransport;
 
-use Innmind\HttpTransport\Curl\Handle;
+use Innmind\HttpTransport\{
+    Curl\Scheduled,
+    Curl\Ready,
+    Transport,
+    Failure,
+    Success,
+};
 use Innmind\Http\{
     Message\Request,
     Factory\Header\TryFactory,
@@ -24,6 +30,9 @@ use Innmind\Immutable\{
     Sequence,
 };
 
+/**
+ * @psalm-import-type Errors from Transport
+ */
 final class Curl implements Transport
 {
     private TryFactory $headerFactory;
@@ -48,34 +57,42 @@ final class Curl implements Transport
 
     public function __invoke(Request $request): Either
     {
-        $handle = Handle::of(
+        $scheduled = Scheduled::of(
             $this->headerFactory,
             $this->capabilities,
             $this->chunk,
             $request,
         );
 
-        return Either::defer(static function() use ($handle) {
-            return $handle(static function(\CurlHandle $handle): int {
-                $multiHandle = \curl_multi_init();
-                \curl_multi_add_handle($multiHandle, $handle);
+        return Either::defer(static function() use ($scheduled) {
+            $ready = $scheduled()->match(
+                static fn($ready) => $ready,
+                static fn($failure) => $failure,
+            );
 
-                do {
-                    $status = \curl_multi_exec($multiHandle, $stillActive);
+            if ($ready instanceof Failure) {
+                /** @var Either<Errors, Success> */
+                return Either::left($ready);
+            }
 
-                    if ($stillActive) {
-                        // Wait a short time for more activity
-                        \curl_multi_select($multiHandle);
-                    }
-                } while ($stillActive && $status === \CURLM_OK);
+            $multiHandle = \curl_multi_init();
+            \curl_multi_add_handle($multiHandle, $ready->handle());
 
-                /** @var int */
-                $result = \curl_multi_info_read($multiHandle)['result'];
-                \curl_multi_remove_handle($multiHandle, $handle);
-                \curl_multi_close($multiHandle);
+            do {
+                $status = \curl_multi_exec($multiHandle, $stillActive);
 
-                return $result;
-            });
+                if ($stillActive) {
+                    // Wait a short time for more activity
+                    \curl_multi_select($multiHandle);
+                }
+            } while ($stillActive && $status === \CURLM_OK);
+
+            /** @var int */
+            $result = \curl_multi_info_read($multiHandle)['result'];
+            \curl_multi_remove_handle($multiHandle, $ready->handle());
+            \curl_multi_close($multiHandle);
+
+            return $ready->read($result);
         });
     }
 
