@@ -70,7 +70,7 @@ $responses = Sequence::of(
 $responses; // list<Response>
 ```
 
-Let's say you have `100` urls to fetch, there will never be more than 5 requests being done in parallel.
+Let's say you have `100` urls to fetch, there will never be more than `5` requests being done in parallel.
 
 ## Log the request
 
