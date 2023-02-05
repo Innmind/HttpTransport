@@ -54,17 +54,6 @@ final class Scheduled
     }
 
     /**
-     * @return Either<Failure, Ready>
-     */
-    public function __invoke(): Either
-    {
-        return $this
-            ->options()
-            ->flatMap(fn($handle) => $this->init($handle[0], $handle[1]))
-            ->flatMap(fn($handle) => $this->ready($handle[0], $handle[1]));
-    }
-
-    /**
      * @param callable(Content): Sequence<Str> $chunk
      */
     public static function of(
@@ -74,6 +63,22 @@ final class Scheduled
         Request $request,
     ): self {
         return new self($headerFactory, $capabilities, $chunk, $request);
+    }
+
+    /**
+     * @return Either<Failure, Ready>
+     */
+    public function start(): Either
+    {
+        return $this
+            ->options()
+            ->flatMap(fn($handle) => $this->init($handle[0], $handle[1]))
+            ->flatMap(fn($handle) => $this->ready($handle[0], $handle[1]));
+    }
+
+    public function request(): Request
+    {
+        return $this->request;
     }
 
     /**

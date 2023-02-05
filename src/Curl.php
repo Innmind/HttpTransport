@@ -6,6 +6,7 @@ namespace Innmind\HttpTransport;
 use Innmind\HttpTransport\{
     Curl\Scheduled,
     Curl\Ready,
+    Curl\Multi,
     Transport,
     Failure,
     Success,
@@ -39,6 +40,7 @@ final class Curl implements Transport
     private Capabilities $capabilities;
     /** @var callable(Content): Sequence<Str> */
     private $chunk;
+    private Multi $multi;
 
     /**
      * @param callable(Content): Sequence<Str> $chunk
@@ -53,6 +55,7 @@ final class Curl implements Transport
         );
         $this->capabilities = $capabilities;
         $this->chunk = $chunk;
+        $this->multi = Multi::new();
     }
 
     public function __invoke(Request $request): Either
@@ -63,36 +66,12 @@ final class Curl implements Transport
             $this->chunk,
             $request,
         );
+        $this->multi->add($scheduled);
 
-        return Either::defer(static function() use ($scheduled) {
-            $ready = $scheduled()->match(
-                static fn($ready) => $ready,
-                static fn($failure) => $failure,
-            );
+        return Either::defer(function() use ($scheduled) {
+            $this->multi->exec();
 
-            if ($ready instanceof Failure) {
-                /** @var Either<Errors, Success> */
-                return Either::left($ready);
-            }
-
-            $multiHandle = \curl_multi_init();
-            \curl_multi_add_handle($multiHandle, $ready->handle());
-
-            do {
-                $status = \curl_multi_exec($multiHandle, $stillActive);
-
-                if ($stillActive) {
-                    // Wait a short time for more activity
-                    \curl_multi_select($multiHandle);
-                }
-            } while ($stillActive && $status === \CURLM_OK);
-
-            /** @var int */
-            $result = \curl_multi_info_read($multiHandle)['result'];
-            \curl_multi_remove_handle($multiHandle, $ready->handle());
-            \curl_multi_close($multiHandle);
-
-            return $ready->read($result);
+            return $this->multi->response($scheduled);
         });
     }
 

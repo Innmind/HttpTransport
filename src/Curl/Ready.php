@@ -115,6 +115,11 @@ final class Ready
         );
     }
 
+    public function request(): Request
+    {
+        return $this->request;
+    }
+
     public function handle(): \CurlHandle
     {
         return $this->handle;

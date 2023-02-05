@@ -26,7 +26,11 @@ use Innmind\Url\{
     Url,
     Path,
 };
-use Innmind\Immutable\Str;
+use Innmind\Immutable\{
+    Str,
+    Maybe,
+    Sequence,
+};
 use PHPUnit\Framework\TestCase;
 use Innmind\BlackBox\{
     PHPUnit\BlackBox,
@@ -304,6 +308,37 @@ class CurlTest extends TestCase
 
         $this->assertInstanceOf(Response::class, $success);
         $this->assertSame(ProtocolVersion::v20, $success->protocolVersion());
+    }
+
+    public function testConcurrency()
+    {
+        $request = new Request(
+            Url::of('https://github.com'),
+            Method::get,
+            ProtocolVersion::v11,
+        );
+
+        $start = \microtime(true);
+        $_ = ($this->curl)($request)->match(
+            static fn() => null,
+            static fn() => null,
+        );
+        $forOneRequest = \microtime(true) - $start;
+
+        $start = \microtime(true);
+        $responses = Maybe::all(
+            ($this->curl)($request)->maybe(),
+            ($this->curl)($request)->maybe(),
+        )
+            ->map(Sequence::of(...))
+            ->match(
+                static fn($responses) => $responses,
+                static fn() => Sequence::of(),
+            )
+            ->map(\get_class(...))
+            ->toList();
+        $this->assertSame([Success::class, Success::class], $responses);
+        $this->assertLessThan(2 * $forOneRequest, \microtime(true) - $start);
     }
 
     // Don't know how to test MalformedResponse, ConnectionFailed, Information and ServerError
