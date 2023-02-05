@@ -32,6 +32,46 @@ $either = $fulfill(
 
 `2xx` responses will be on the right side of `$either`, all errors and other kinds of responses will be on the left side.
 
+**Important**: you must call `match` to the returned `Either` otherwise the request will not be sent, but you can still call other methods on the `Either` before calling `match`.
+
+## Concurrency
+
+By default there is no limit of concurrency for the `Curl` transport. But if you call many requests before unwrapping the results you may want to configure the max concurrency like below.
+
+```php
+use Innmind\HttpTransport\Curl;
+use Innmind\Http\{
+    Message\Request\Request,
+    Message\Response,
+    Message\Method,
+    ProtocolVersion,
+};
+use Innmind\Url\Url;
+use Innmind\Immutable\Sequence;
+
+$fulfill = Curl::of(new Clock)->maxConcurrency(5);
+$responses = Sequence::of(
+    'https://github.com/user/repo-a',
+    'https://github.com/user/repo-b',
+    'https://github.com/user/repo-c',
+    // etc...
+)
+    ->map(static fn($url) => new Request(
+        Url::of($url),
+        Method::get,
+        ProtocolVersion::v20,
+    ))
+    ->map($fulfill)
+    ->flatMap(static fn($either) => $either->match(
+        static fn($success) => Sequence::of($success->response()),
+        static fn() => Sequence::of(), // discard errors
+    ))
+    ->toList();
+$responses; // list<Response>
+```
+
+Let's say you have `100` urls to fetch, there will never be more than `5` requests being done in parallel.
+
 ## Log the request
 
 You can easily log all your requests like so:
