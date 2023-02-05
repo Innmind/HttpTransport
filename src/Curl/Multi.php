@@ -25,17 +25,30 @@ final class Multi
     private Sequence $scheduled;
     /** @var \WeakMap<Scheduled, Either<Errors, Success>> */
     private \WeakMap $finished;
+    /** @var ?positive-int */
+    private ?int $maxConcurrency;
 
-    private function __construct()
+    /**
+     * @psalm-mutation-free
+     *
+     * @param ?positive-int $maxConcurrency
+     */
+    private function __construct(int $maxConcurrency = null)
     {
         $this->scheduled = Sequence::of();
         /** @var \WeakMap<Scheduled, Either<Errors, Success>> */
         $this->finished = new \WeakMap;
+        $this->maxConcurrency = $maxConcurrency;
     }
 
-    public static function new(): self
+    /**
+     * @psalm-mutation-free
+     *
+     * @param ?positive-int $maxConcurrency
+     */
+    public static function new(int $maxConcurrency = null): self
     {
-        return new self;
+        return new self($maxConcurrency);
     }
 
     public function add(Scheduled $scheduled): void
@@ -45,11 +58,25 @@ final class Multi
 
     public function exec(): void
     {
-        $toStart = $this
+        // remove dead references
+        $stillScheduled = $this
             ->scheduled
             ->map(static fn($ref) => $ref->get())
             ->keep(Instance::of(Scheduled::class));
-        $this->scheduled = $this->scheduled->clear();
+        // there is no loop here because the behaviour is that the first request
+        // that is unwrapped will trigger the first batch, the second request
+        // unwrap will trigger the second batch and so on
+        // for example if you have 10 concurrent request with a max concurrency
+        // of 5 all requests will be done when the second request is unwrapped
+        [$this->scheduled, $toStart] = match ($this->maxConcurrency) {
+            null => [$this->scheduled->clear(), $stillScheduled],
+            default => [
+                $stillScheduled
+                    ->drop($this->maxConcurrency)
+                    ->map(static fn($scheduled) => \WeakReference::create($scheduled)),
+                $stillScheduled->take($this->maxConcurrency),
+            ],
+        };
 
         if ($toStart->empty()) {
             return;

@@ -46,16 +46,15 @@ final class Curl implements Transport
      * @param callable(Content): Sequence<Str> $chunk
      */
     private function __construct(
-        Clock $clock,
+        TryFactory $headerFactory,
         Capabilities $capabilities,
         callable $chunk,
+        Multi $multi,
     ) {
-        $this->headerFactory = new TryFactory(
-            Factories::default($clock),
-        );
+        $this->headerFactory = $headerFactory;
         $this->capabilities = $capabilities;
         $this->chunk = $chunk;
-        $this->multi = Multi::new();
+        $this->multi = $multi;
     }
 
     public function __invoke(Request $request): Either
@@ -83,6 +82,28 @@ final class Curl implements Transport
         callable $chunk = new Chunk,
         Capabilities $capabilities = null,
     ): self {
-        return new self($clock, $capabilities ?? Streams::fromAmbientAuthority(), $chunk);
+        return new self(
+            new TryFactory(
+                Factories::default($clock),
+            ),
+            $capabilities ?? Streams::fromAmbientAuthority(),
+            $chunk,
+            Multi::new(),
+        );
+    }
+
+    /**
+     * @psalm-mutation-free
+     *
+     * @param positive-int $max
+     */
+    public function maxConcurrency(int $max): self
+    {
+        return new self(
+            $this->headerFactory,
+            $this->capabilities,
+            $this->chunk,
+            Multi::new($max),
+        );
     }
 }

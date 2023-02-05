@@ -341,5 +341,41 @@ class CurlTest extends TestCase
         $this->assertLessThan(2 * $forOneRequest, \microtime(true) - $start);
     }
 
+    public function testMaxConcurrency()
+    {
+        $curl = $this->curl->maxConcurrency(1);
+        $request = new Request(
+            Url::of('https://github.com'),
+            Method::get,
+            ProtocolVersion::v11,
+        );
+
+        $start = \microtime(true);
+        $_ = $curl($request)->match(
+            static fn() => null,
+            static fn() => null,
+        );
+        $forOneRequest = \microtime(true) - $start;
+
+        $start = \microtime(true);
+        $responses = Maybe::all(
+            $curl($request)->maybe(),
+            $curl($request)->maybe(),
+            $curl($request)->maybe(),
+        )
+            ->map(Sequence::of(...))
+            ->match(
+                static fn($responses) => $responses,
+                static fn() => Sequence::of(),
+            )
+            ->map(\get_class(...))
+            ->toList();
+        $this->assertSame([Success::class, Success::class, Success::class], $responses);
+        // even though there are 3 request we check it takes more than 2 times
+        // because depending on speed the 2 request could be faster than the
+        // initial one
+        $this->assertGreaterThanOrEqual(2 * $forOneRequest, \microtime(true) - $start);
+    }
+
     // Don't know how to test MalformedResponse, ConnectionFailed, Information and ServerError
 }
