@@ -55,8 +55,24 @@ final class Curl implements Transport
             $request,
         );
 
-        /** @psalm-suppress InvalidArgument ReturnTransfer is not used */
-        return Either::defer(static fn() => $handle(\curl_exec(...)));
+        return Either::defer(static function() use ($handle) {
+            return $handle(static function(\CurlHandle $handle): int {
+                $multiHandle = \curl_multi_init();
+                \curl_multi_add_handle($multiHandle, $handle);
+
+                do {
+                    $status = \curl_multi_exec($multiHandle, $stillActive);
+
+                    if ($stillActive) {
+                        // Wait a short time for more activity
+                        \curl_multi_select($multiHandle);
+                    }
+                } while ($stillActive && $status === \CURLM_OK);
+
+                /** @var int */
+                return \curl_multi_info_read($multiHandle)['result'];
+            });
+        });
     }
 
     /**

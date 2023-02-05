@@ -75,7 +75,7 @@ final class Handle
     }
 
     /**
-     * @param callable(\CurlHandle): bool $exec
+     * @param callable(\CurlHandle): int $exec
      *
      * @return Either<Errors, Success>
      */
@@ -326,7 +326,7 @@ final class Handle
     }
 
     /**
-     * @param callable(\CurlHandle): bool $exec
+     * @param callable(\CurlHandle): int $exec
      *
      * @return Either<Failure|ConnectionFailed|MalformedResponse, Response>
      */
@@ -344,7 +344,7 @@ final class Handle
     }
 
     /**
-     * @param callable(\CurlHandle): bool $exec
+     * @param callable(\CurlHandle): int $exec
      *
      * @return Either<Failure|ConnectionFailed|MalformedResponse, Response>
      */
@@ -398,10 +398,7 @@ final class Handle
             },
         );
 
-        if ($exec($handle) === false) {
-            /** @var Either<Failure|ConnectionFailed|MalformedResponse, Response> */
-            return Either::left(new Failure($request, 'Curl failed to execute the request'));
-        }
+        $errorCode = $exec($handle);
 
         $error = $inFile->close()->match(
             static fn() => null,
@@ -417,7 +414,7 @@ final class Handle
          * @psalm-suppress MixedArgument Due to the reference on $status and $headers above
          * @var Either<Failure|ConnectionFailed|MalformedResponse, Response>
          */
-        return match (\curl_errno($handle)) {
+        return match ($errorCode) {
             \CURLE_OK => $this->buildResponse(
                 $request,
                 $status,
@@ -426,11 +423,11 @@ final class Handle
             ),
             \CURLE_COULDNT_RESOLVE_PROXY, \CURLE_COULDNT_RESOLVE_HOST, \CURLE_COULDNT_CONNECT, \CURLE_SSL_CONNECT_ERROR => Either::left(new ConnectionFailed(
                 $request,
-                \curl_error($handle),
+                \curl_strerror($errorCode) ?? '',
             )),
             default => Either::left(new Failure(
                 $request,
-                \curl_error($handle),
+                \curl_strerror($errorCode) ?? '',
             )),
         };
     }

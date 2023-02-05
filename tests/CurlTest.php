@@ -9,7 +9,7 @@ use Innmind\HttpTransport\{
     Success,
     Redirection,
     ClientError,
-    Failure,
+    ConnectionFailed,
     ServerError,
 };
 use Innmind\Http\{
@@ -140,9 +140,9 @@ class CurlTest extends TestCase
             static fn($error) => $error,
         );
 
-        $this->assertInstanceOf(Failure::class, $error);
+        $this->assertInstanceOf(ConnectionFailed::class, $error);
         $this->assertSame($request, $error->request());
-        $this->assertSame('Curl failed to execute the request', $error->reason());
+        $this->assertSame("Couldn't connect to server", $error->reason());
     }
 
     public function testResponseBody()
