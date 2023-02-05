@@ -75,14 +75,16 @@ final class Handle
     }
 
     /**
+     * @param callable(\CurlHandle): bool $exec
+     *
      * @return Either<Errors, Success>
      */
-    public function __invoke(): Either
+    public function __invoke(callable $exec): Either
     {
         return $this
             ->options($this->request)
             ->flatMap(fn($handle) => $this->init($this->request, $handle[0], $handle[1]))
-            ->flatMap(fn($handle) => $this->send($this->request, $handle[0], $handle[1]))
+            ->flatMap(fn($handle) => $this->send($exec, $this->request, $handle[0], $handle[1]))
             ->flatMap(fn($response) => $this->dispatch($this->request, $response));
     }
 
@@ -324,22 +326,34 @@ final class Handle
     }
 
     /**
+     * @param callable(\CurlHandle): bool $exec
+     *
      * @return Either<Failure|ConnectionFailed|MalformedResponse, Response>
      */
-    private function send(Request $request, \CurlHandle $handle, Writable $inFile): Either
-    {
+    private function send(
+        callable $exec,
+        Request $request,
+        \CurlHandle $handle,
+        Writable $inFile,
+    ): Either {
         try {
-            return $this->exec($request, $handle, $inFile);
+            return $this->exec($exec, $request, $handle, $inFile);
         } finally {
             \curl_close($handle);
         }
     }
 
     /**
+     * @param callable(\CurlHandle): bool $exec
+     *
      * @return Either<Failure|ConnectionFailed|MalformedResponse, Response>
      */
-    private function exec(Request $request, \CurlHandle $handle, Writable $inFile): Either
-    {
+    private function exec(
+        callable $exec,
+        Request $request,
+        \CurlHandle $handle,
+        Writable $inFile,
+    ): Either {
         $status = '';
         /** @var list<string> */
         $headers = [];
@@ -384,7 +398,7 @@ final class Handle
             },
         );
 
-        if (\curl_exec($handle) === false) {
+        if ($exec($handle) === false) {
             /** @var Either<Failure|ConnectionFailed|MalformedResponse, Response> */
             return Either::left(new Failure($request, 'Curl failed to execute the request'));
         }

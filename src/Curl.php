@@ -55,7 +55,8 @@ final class Curl implements Transport
             $request,
         );
 
-        return $handle();
+        /** @psalm-suppress InvalidScalarArgument ReturnTransfer is not used */
+        return $handle(\curl_exec(...));
     }
 
     /**
