@@ -48,9 +48,9 @@ final class Ready
     private \CurlHandle $handle;
     private Writable $inFile;
     private Bidirectional $body;
-    private string $status = '';
-    /** @var list<string> */
-    private array $headers = [];
+    private Str $status;
+    /** @var Sequence<string> */
+    private Sequence $headers;
 
     private function __construct(
         TryFactory $headerFactory,
@@ -64,16 +64,18 @@ final class Ready
         $this->handle = $handle;
         $this->inFile = $inFile;
         $this->body = $body;
+        $this->status = Str::of('');
+        $this->headers = Sequence::of();
 
         \curl_setopt(
             $handle,
             \CURLOPT_HEADERFUNCTION,
             function(\CurlHandle $_, string $header): int {
                 if (Str::of($header)->trim()->toLower()->startsWith('http/')) {
-                    $this->status = $header;
+                    $this->status = Str::of($header);
                 } else {
                     /** @psalm-suppress MixedArrayAssignment Doesn't like the reference */
-                    $this->headers[] = $header;
+                    $this->headers = ($this->headers)($header);
                 }
 
                 return Str::of($header)->toEncoding('ASCII')->length();
@@ -177,7 +179,7 @@ final class Ready
      */
     private function buildResponse(): Either
     {
-        $info = Str::of($this->status)->trim()->capture('~^HTTP/(?<major>\d)(\.(?<minor>\d))? (?<status>\d{3})~');
+        $info = $this->status->trim()->capture('~^HTTP/(?<major>\d)(\.(?<minor>\d))? (?<status>\d{3})~');
         $major = $info
             ->get('major')
             ->map(static fn($major) => $major->toString())
@@ -203,7 +205,8 @@ final class Ready
          * that by only accepting letters, numbers, '-', '_' and '.'
          * @see https://www.rfc-editor.org/rfc/rfc2616#section-4.2
          */
-        $headers = Sequence::of(...$this->headers)
+        $headers = $this
+            ->headers
             ->map(static fn($header) => Str::of($header))
             ->map(static fn($header) => $header->rightTrim("\r\n"))
             ->filter(static fn($header) => !$header->empty())
