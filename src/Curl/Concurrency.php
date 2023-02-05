@@ -20,7 +20,7 @@ use Innmind\Immutable\{
  * @internal
  * @psalm-import-type Errors from Transport
  */
-final class Multi
+final class Concurrency
 {
     /** @var Sequence<\WeakReference<Scheduled>> */
     private Sequence $scheduled;
@@ -60,7 +60,7 @@ final class Multi
     /**
      * @param callable(): void $heartbeat
      */
-    public function exec(ElapsedPeriod $timeout, callable $heartbeat): void
+    public function run(ElapsedPeriod $timeout, callable $heartbeat): void
     {
         // remove dead references
         $stillScheduled = $this

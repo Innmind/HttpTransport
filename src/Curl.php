@@ -6,7 +6,7 @@ namespace Innmind\HttpTransport;
 use Innmind\HttpTransport\{
     Curl\Scheduled,
     Curl\Ready,
-    Curl\Multi,
+    Curl\Concurrency,
     Transport,
     Failure,
     Success,
@@ -44,7 +44,7 @@ final class Curl implements Transport
     private Capabilities $capabilities;
     /** @var callable(Content): Sequence<Str> */
     private $chunk;
-    private Multi $multi;
+    private Concurrency $concurrency;
     private ElapsedPeriod $timeout;
     /** @var callable(): void */
     private $heartbeat;
@@ -57,14 +57,14 @@ final class Curl implements Transport
         TryFactory $headerFactory,
         Capabilities $capabilities,
         callable $chunk,
-        Multi $multi,
+        Concurrency $concurrency,
         ElapsedPeriod $timeout,
         callable $heartbeat,
     ) {
         $this->headerFactory = $headerFactory;
         $this->capabilities = $capabilities;
         $this->chunk = $chunk;
-        $this->multi = $multi;
+        $this->concurrency = $concurrency;
         $this->timeout = $timeout;
         $this->heartbeat = $heartbeat;
     }
@@ -77,12 +77,12 @@ final class Curl implements Transport
             $this->chunk,
             $request,
         );
-        $this->multi->add($scheduled);
+        $this->concurrency->add($scheduled);
 
         return Either::defer(function() use ($scheduled) {
-            $this->multi->exec($this->timeout, $this->heartbeat);
+            $this->concurrency->run($this->timeout, $this->heartbeat);
 
-            return $this->multi->response($scheduled);
+            return $this->concurrency->response($scheduled);
         });
     }
 
@@ -100,7 +100,7 @@ final class Curl implements Transport
             ),
             $capabilities ?? Streams::fromAmbientAuthority(),
             $chunk,
-            Multi::new(),
+            Concurrency::new(),
             new Earth\ElapsedPeriod(1_000), // 1 second
             static fn() => null,
         );
@@ -117,7 +117,7 @@ final class Curl implements Transport
             $this->headerFactory,
             $this->capabilities,
             $this->chunk,
-            Multi::new($max),
+            Concurrency::new($max),
             $this->timeout,
             $this->heartbeat,
         );
@@ -134,7 +134,7 @@ final class Curl implements Transport
             $this->headerFactory,
             $this->capabilities,
             $this->chunk,
-            $this->multi,
+            $this->concurrency,
             $timeout,
             $heartbeat ?? static fn() => null,
         );
