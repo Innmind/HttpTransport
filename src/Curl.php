@@ -56,7 +56,7 @@ final class Curl implements Transport
         );
 
         /** @psalm-suppress InvalidArgument ReturnTransfer is not used */
-        return $handle(\curl_exec(...));
+        return Either::defer(static fn() => $handle(\curl_exec(...)));
     }
 
     /**
