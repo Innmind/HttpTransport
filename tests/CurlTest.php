@@ -9,7 +9,7 @@ use Innmind\HttpTransport\{
     Success,
     Redirection,
     ClientError,
-    Failure,
+    ConnectionFailed,
     ServerError,
 };
 use Innmind\Http\{
@@ -21,12 +21,19 @@ use Innmind\Http\{
     Header\Location,
 };
 use Innmind\Filesystem\File\Content;
-use Innmind\TimeContinuum\Earth\Clock;
+use Innmind\TimeContinuum\Earth\{
+    Clock,
+    ElapsedPeriod,
+};
 use Innmind\Url\{
     Url,
     Path,
 };
-use Innmind\Immutable\Str;
+use Innmind\Immutable\{
+    Str,
+    Maybe,
+    Sequence,
+};
 use PHPUnit\Framework\TestCase;
 use Innmind\BlackBox\{
     PHPUnit\BlackBox,
@@ -140,9 +147,9 @@ class CurlTest extends TestCase
             static fn($error) => $error,
         );
 
-        $this->assertInstanceOf(Failure::class, $error);
+        $this->assertInstanceOf(ConnectionFailed::class, $error);
         $this->assertSame($request, $error->request());
-        $this->assertSame('Curl failed to execute the request', $error->reason());
+        $this->assertSame("Couldn't connect to server", $error->reason());
     }
 
     public function testResponseBody()
@@ -304,6 +311,95 @@ class CurlTest extends TestCase
 
         $this->assertInstanceOf(Response::class, $success);
         $this->assertSame(ProtocolVersion::v20, $success->protocolVersion());
+    }
+
+    public function testConcurrency()
+    {
+        $request = new Request(
+            Url::of('https://github.com'),
+            Method::get,
+            ProtocolVersion::v11,
+        );
+
+        $start = \microtime(true);
+        $_ = ($this->curl)($request)->match(
+            static fn() => null,
+            static fn() => null,
+        );
+        $forOneRequest = \microtime(true) - $start;
+
+        $start = \microtime(true);
+        $responses = Maybe::all(
+            ($this->curl)($request)->maybe(),
+            ($this->curl)($request)->maybe(),
+        )
+            ->map(Sequence::of(...))
+            ->match(
+                static fn($responses) => $responses,
+                static fn() => Sequence::of(),
+            )
+            ->map(\get_class(...))
+            ->toList();
+        $this->assertSame([Success::class, Success::class], $responses);
+        $this->assertLessThan(2 * $forOneRequest, \microtime(true) - $start);
+    }
+
+    public function testMaxConcurrency()
+    {
+        $curl = $this->curl->maxConcurrency(1);
+        $request = new Request(
+            Url::of('https://github.com'),
+            Method::get,
+            ProtocolVersion::v11,
+        );
+
+        $start = \microtime(true);
+        $_ = $curl($request)->match(
+            static fn() => null,
+            static fn() => null,
+        );
+        $forOneRequest = \microtime(true) - $start;
+
+        $start = \microtime(true);
+        $responses = Maybe::all(
+            $curl($request)->maybe(),
+            $curl($request)->maybe(),
+            $curl($request)->maybe(),
+        )
+            ->map(Sequence::of(...))
+            ->match(
+                static fn($responses) => $responses,
+                static fn() => Sequence::of(),
+            )
+            ->map(\get_class(...))
+            ->toList();
+        $this->assertSame([Success::class, Success::class, Success::class], $responses);
+        // even though there are 3 request we check it takes more than 2 times
+        // because depending on speed the 2 request could be faster than the
+        // initial one
+        $this->assertGreaterThanOrEqual(2 * $forOneRequest, \microtime(true) - $start);
+    }
+
+    public function testHeartbeat()
+    {
+        $heartbeat = 0;
+        $curl = $this->curl->heartbeat(
+            new ElapsedPeriod(1000),
+            static function() use (&$heartbeat) {
+                ++$heartbeat;
+            },
+        );
+
+        $_ = $curl(new Request(
+            Url::of('https://en.wikipedia.org/wiki/Culture_of_the_United_Kingdom'),
+            Method::get,
+            ProtocolVersion::v11,
+        ))->match(
+            static fn() => null,
+            static fn() => null,
+        );
+
+        $this->assertGreaterThan(1, $heartbeat);
     }
 
     // Don't know how to test MalformedResponse, ConnectionFailed, Information and ServerError

@@ -1,5 +1,16 @@
 # Changelog
 
+## [Unreleased]
+
+### Added
+
+- `Innmind\HttpTransport\Curl::maxConcurrency()`
+- `Innmind\HttpTransport\Curl::heartbeat()`
+
+### Changed
+
+- `Innmind\HttpTransport\Curl::__invoke()` now returns a deferred `Innmind\Immmutable\Either` to allow concurrency, the requests are sent only when unwrapping the returned `Either`
+
 ## 6.3.0 - 2023-01-29
 
 ### Added
