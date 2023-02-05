@@ -103,7 +103,7 @@ final class Handle
     /**
      * @param list<array{0: int, 1: mixed}> $options
      *
-     * @return Either<Failure, array{0: \CurlHandle, 1: Writable}>
+     * @return Either<Failure, list{\CurlHandle, Writable}>
      */
     private function init(
         Request $request,
