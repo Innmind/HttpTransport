@@ -126,17 +126,17 @@ final class Ready
     public function read(int $errorCode): Either
     {
         return $this
-            ->send($errorCode)
+            ->finalize($errorCode)
             ->flatMap($this->dispatch(...));
     }
 
     /**
      * @return Either<Failure|ConnectionFailed|MalformedResponse, Response>
      */
-    private function send(int $errorCode): Either
+    private function finalize(int $errorCode): Either
     {
         try {
-            return $this->exec($errorCode);
+            return $this->decode($errorCode);
         } finally {
             \curl_close($this->handle);
         }
@@ -145,7 +145,7 @@ final class Ready
     /**
      * @return Either<Failure|ConnectionFailed|MalformedResponse, Response>
      */
-    private function exec(int $errorCode): Either
+    private function decode(int $errorCode): Either
     {
         $error = $this->inFile->close()->match(
             static fn() => null,
