@@ -70,7 +70,11 @@ final class Curl implements Transport
                 } while ($stillActive && $status === \CURLM_OK);
 
                 /** @var int */
-                return \curl_multi_info_read($multiHandle)['result'];
+                $result = \curl_multi_info_read($multiHandle)['result'];
+                \curl_multi_remove_handle($multiHandle, $handle);
+                \curl_multi_close($multiHandle);
+
+                return $result;
             });
         });
     }
