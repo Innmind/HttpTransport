@@ -67,26 +67,28 @@ final class Concurrency
             ->scheduled
             ->map(static fn($ref) => $ref->get())
             ->keep(Instance::of(Scheduled::class));
-        // there is no loop here because the behaviour is that the first request
-        // that is unwrapped will trigger the first batch, the second request
-        // unwrap will trigger the second batch and so on
-        // for example if you have 10 concurrent request with a max concurrency
-        // of 5 all requests will be done when the second request is unwrapped
-        [$this->scheduled, $toStart] = match ($this->maxConcurrency) {
-            null => [$this->scheduled->clear(), $stillScheduled],
-            default => [
-                $stillScheduled
-                    ->drop($this->maxConcurrency)
-                    ->map(static fn($scheduled) => \WeakReference::create($scheduled)),
-                $stillScheduled->take($this->maxConcurrency),
-            ],
-        };
 
-        if ($toStart->empty()) {
-            return;
-        }
+        // we loop over all the scheduled request to run them all by batches of
+        // {maxConcurrency} so no matter the order in which the responses are
+        // unwrapped we're sure all the responses are ready to be accessed
+        // this prevents coalescing to a Failure in self::response() when the
+        // user unwraps the last request first when maxConcurrency is lower than
+        // the number of scheduled requests
+        do {
+            [$stillScheduled, $toStart] = match ($this->maxConcurrency) {
+                null => [$stillScheduled->clear(), $stillScheduled],
+                default => [
+                    $stillScheduled->drop($this->maxConcurrency),
+                    $stillScheduled->take($this->maxConcurrency),
+                ],
+            };
 
-        $this->batch($timeout, $heartbeat, $toStart);
+            if (!$toStart->empty()) {
+                $this->batch($timeout, $heartbeat, $toStart);
+            }
+        } while (!$stillScheduled->empty());
+
+        $this->scheduled = $this->scheduled->clear();
     }
 
     /**

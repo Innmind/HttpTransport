@@ -402,5 +402,30 @@ class CurlTest extends TestCase
         $this->assertGreaterThan(1, $heartbeat);
     }
 
+    public function testOutOfOrderUnwrapWithMaxConcurrency()
+    {
+        $curl = $this->curl->maxConcurrency(2);
+        $request = new Request(
+            Url::of('https://github.com'),
+            Method::get,
+            ProtocolVersion::v11,
+        );
+        $responses = Sequence::of(...\range(0, 3))
+            ->map(static fn() => $request)
+            ->map($curl)
+            ->reverse()
+            ->map(static fn($either) => $either->match(
+                static fn($success) => $success,
+                static fn($error) => $error,
+            ))
+            ->map(static fn($data) => $data::class)
+            ->toList();
+
+        $this->assertSame(
+            [Success::class, Success::class, Success::class, Success::class],
+            $responses,
+        );
+    }
+
     // Don't know how to test MalformedResponse, ConnectionFailed, Information and ServerError
 }
