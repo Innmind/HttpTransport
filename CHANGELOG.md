@@ -1,5 +1,11 @@
 # Changelog
 
+## 6.4.1 - 2023-02-11
+
+### Fixed
+
+- Out of order unwrapping `Curl` responses when `maxConcurrency` is lower than the number of scheduled requests
+
 ## 6.4.0 - 2023-02-05
 
 ### Added
