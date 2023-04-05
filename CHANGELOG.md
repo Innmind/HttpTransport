@@ -1,5 +1,11 @@
 # Changelog
 
+## 6.5.0 - 2023-04-05
+
+### Added
+
+- `Innmind\HttpTransport\MalformedResponse::raw(): Innmind\HttpTransport\MalformedResponse\Raw` to access the raw data sent by the server
+
 ## 6.4.1 - 2023-02-11
 
 ### Fixed

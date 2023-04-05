@@ -10,6 +10,7 @@ use Innmind\HttpTransport\{
     Failure,
     Information,
     MalformedResponse,
+    MalformedResponse\Raw,
     Redirection,
     ServerError,
     Success,
@@ -234,7 +235,11 @@ final class Ready
             ))
             ->match(
                 static fn($response) => Either::right($response),
-                fn() => Either::left(new MalformedResponse($this->request)),
+                fn() => Either::left(new MalformedResponse($this->request, Raw::of(
+                    $this->status,
+                    $this->headers->map(Str::of(...)),
+                    Content\OfStream::of($this->body),
+                ))),
             );
     }
 

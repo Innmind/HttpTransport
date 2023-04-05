@@ -91,7 +91,7 @@ final class Curl implements Transport
      */
     public static function of(
         Clock $clock,
-        callable $chunk = new Chunk,
+        callable $chunk = null,
         Capabilities $capabilities = null,
     ): self {
         return new self(
@@ -99,7 +99,7 @@ final class Curl implements Transport
                 Factories::default($clock),
             ),
             $capabilities ?? Streams::fromAmbientAuthority(),
-            $chunk,
+            $chunk ?? new Chunk,
             Concurrency::new(),
             new Earth\ElapsedPeriod(1_000), // 1 second
             static fn() => null,
