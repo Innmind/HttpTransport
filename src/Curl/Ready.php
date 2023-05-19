@@ -144,6 +144,24 @@ final class Ready
         try {
             return $this->decode($errorCode);
         } finally {
+            // We need to override the callbacks defined in the constructor of
+            // this object to remove the reference to this object inside the
+            // callback, otherwise this object will not be destroyed until the
+            // end of the PHP program
+            \curl_setopt(
+                $this->handle,
+                \CURLOPT_HEADERFUNCTION,
+                static fn(\CurlHandle $_, string $header): int => Str::of($header)
+                    ->toEncoding('ASCII')
+                    ->length(),
+            );
+            \curl_setopt(
+                $this->handle,
+                \CURLOPT_WRITEFUNCTION,
+                static fn(\CurlHandle $_, string $chunk): int => Str::of($chunk)
+                    ->toEncoding('ASCII')
+                    ->length(),
+            );
             \curl_close($this->handle);
         }
     }

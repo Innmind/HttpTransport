@@ -176,5 +176,10 @@ final class Concurrency
 
             $this->finished[$scheduled] = $result;
         });
+        $_ = $infos->foreach(static fn($handle) => \curl_multi_remove_handle(
+            $multiHandle,
+            $handle,
+        ));
+        \curl_multi_close($multiHandle);
     }
 }

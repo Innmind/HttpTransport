@@ -1,5 +1,11 @@
 # Changelog
 
+## 6.5.1 - 2023-05-19
+
+### Fixed
+
+- `Response`s' body underlying resources weren't garbage collected at the same time than their object wrapper
+
 ## 6.5.0 - 2023-04-05
 
 ### Added

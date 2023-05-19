@@ -454,5 +454,33 @@ class CurlTest extends TestCase
         );
     }
 
+    public function testReleaseResources()
+    {
+        $initialCount = \count(\get_resources('stream'));
+        $initialMemory = \memory_get_usage() / 1024;
+
+        $request = new Request(
+            Url::of('https://github.com'),
+            Method::get,
+            ProtocolVersion::v11,
+        );
+        $responses = Sequence::of(...\range(0, 10))
+            ->map(static fn() => $request)
+            ->map($this->curl)
+            ->map(static fn($either) => $either->match(
+                static fn($success) => $success,
+                static fn($error) => $error,
+            ))
+            ->toList();
+
+        $this->assertNotSame($initialCount, \count(\get_resources('stream')));
+        $this->assertGreaterThan(10, (\memory_get_usage() / 1024) - $initialMemory);
+
+        unset($responses);
+
+        $this->assertSame($initialCount, \count(\get_resources('stream')));
+        $this->assertLessThan(10, (\memory_get_usage() / 1024) - $initialMemory);
+    }
+
     // Don't know how to test MalformedResponse, ConnectionFailed, Information and ServerError
 }
