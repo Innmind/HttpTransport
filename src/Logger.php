@@ -109,8 +109,11 @@ final class Logger implements Transport
 
     private function normalize(Headers $headers): array
     {
+        /** @var array<string, string> */
+        $raw = [];
+
         return $headers->reduce(
-            [],
+            $raw,
             static function(array $headers, Header $header): array {
                 $values = $header->values()->map(
                     static fn($value) => $value->toString(),

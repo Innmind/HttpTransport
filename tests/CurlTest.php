@@ -427,5 +427,57 @@ class CurlTest extends TestCase
         );
     }
 
+    public function testSubsequentRequestsAreCalledCorrectlyInsideFlatMaps()
+    {
+        $curl = $this->curl->maxConcurrency(2);
+        $request = new Request(
+            Url::of('https://github.com'),
+            Method::get,
+            ProtocolVersion::v11,
+        );
+        $responses = Sequence::of(...\range(0, 1))
+            ->map(static fn() => $request)
+            ->map($curl)
+            ->map(static fn($either) => $either->flatMap(
+                static fn() => $curl($request),
+            ))
+            ->map(static fn($either) => $either->match(
+                static fn($success) => $success,
+                static fn($error) => $error,
+            ))
+            ->map(static fn($data) => $data::class)
+            ->toList();
+
+        $this->assertSame(
+            [Success::class, Success::class],
+            $responses,
+        );
+    }
+
+    public function testReleaseResources()
+    {
+        $initialCount = \count(\get_resources('stream'));
+
+        $request = new Request(
+            Url::of('https://github.com'),
+            Method::get,
+            ProtocolVersion::v11,
+        );
+        $responses = Sequence::of(...\range(0, 10))
+            ->map(static fn() => $request)
+            ->map($this->curl)
+            ->map(static fn($either) => $either->match(
+                static fn($success) => $success,
+                static fn($error) => $error,
+            ))
+            ->toList();
+
+        $this->assertNotSame($initialCount, \count(\get_resources('stream')));
+
+        unset($responses);
+
+        $this->assertSame($initialCount, \count(\get_resources('stream')));
+    }
+
     // Don't know how to test MalformedResponse, ConnectionFailed, Information and ServerError
 }

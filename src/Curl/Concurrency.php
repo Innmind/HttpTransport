@@ -74,6 +74,11 @@ final class Concurrency
         // this prevents coalescing to a Failure in self::response() when the
         // user unwraps the last request first when maxConcurrency is lower than
         // the number of scheduled requests
+        //
+        // unwrapping all requests like this is the optimal approach because if
+        // instead we only unwrapped up to the response the user is unwrapping
+        // it would circumvent the concurrency because it would unwrap only one
+        // response at a time unless the user unwraps the response out of order
         do {
             [$stillScheduled, $toStart] = match ($this->maxConcurrency) {
                 null => [$stillScheduled->clear(), $stillScheduled],
@@ -171,5 +176,10 @@ final class Concurrency
 
             $this->finished[$scheduled] = $result;
         });
+        $_ = $infos->foreach(static fn($handle) => \curl_multi_remove_handle(
+            $multiHandle,
+            $handle,
+        ));
+        \curl_multi_close($multiHandle);
     }
 }

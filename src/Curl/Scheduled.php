@@ -206,8 +206,9 @@ final class Scheduled
         );
 
         /** @var list<string> */
+        $rawHeaders = [];
         $rawHeaders = $headers->reduce(
-            [],
+            $rawHeaders,
             static fn(array $headers, $header) => match ($header->name()) {
                 'Cookie' => $headers, // configured above
                 'Accept-Encoding' => $headers, // configured above
@@ -280,7 +281,7 @@ final class Scheduled
         /** @var Either<FailedToWriteToStream|DataPartiallyWritten, Writable\Stream> */
         $carry = Either::right($inFile);
 
-        /** @psalm-suppress MixedArgumentTypeCoercion Due to the reduce */
+        /** @psalm-suppress ArgumentTypeCoercion Due to the reduce */
         $written = ($this->chunk)($this->request->body())
             ->map(static fn($chunk) => $chunk->toEncoding('ASCII'))
             ->reduce(
