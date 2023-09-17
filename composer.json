@@ -15,7 +15,7 @@
         "issues": "http://github.com/Innmind/HttpTransport/issues"
     },
     "require": {
-        "php": "~8.1",
+        "php": "~8.2",
         "ext-curl": "*",
         "innmind/http": "~5.2|~6.0",
         "innmind/filesystem": "~6.2",
@@ -38,9 +38,9 @@
         }
     },
     "require-dev": {
-        "phpunit/phpunit": "~9.0",
+        "phpunit/phpunit": "~10.2",
         "vimeo/psalm": "~5.11",
         "innmind/coding-standard": "~2.0",
-        "innmind/black-box": "^4.18"
+        "innmind/black-box": "~5.5"
     }
 }

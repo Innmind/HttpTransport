@@ -190,20 +190,22 @@ class ExponentialBackoffTest extends TestCase
             ->with($request)
             ->willReturn($expected = Either::left(new ServerError($request, $response)));
         $halt
-            ->expects($this->exactly(10))
+            ->expects($matcher = $this->exactly(10))
             ->method('__invoke')
-            ->withConsecutive(
-                [new Millisecond(100)],
-                [new Millisecond(271)],
-                [new Millisecond(738)],
-                [new Millisecond(2008)],
-                [new Millisecond(5459)],
-                [new Millisecond(100)],
-                [new Millisecond(271)],
-                [new Millisecond(738)],
-                [new Millisecond(2008)],
-                [new Millisecond(5459)],
-            );
+            ->willReturnCallback(function($period) use ($matcher) {
+                match ($matcher->numberOfInvocations()) {
+                    1 => $this->assertEquals(new Millisecond(100), $period),
+                    2 => $this->assertEquals(new Millisecond(271), $period),
+                    3 => $this->assertEquals(new Millisecond(738), $period),
+                    4 => $this->assertEquals(new Millisecond(2008), $period),
+                    5 => $this->assertEquals(new Millisecond(5459), $period),
+                    6 => $this->assertEquals(new Millisecond(100), $period),
+                    7 => $this->assertEquals(new Millisecond(271), $period),
+                    8 => $this->assertEquals(new Millisecond(738), $period),
+                    9 => $this->assertEquals(new Millisecond(2008), $period),
+                    10 => $this->assertEquals(new Millisecond(5459), $period),
+                };
+            });
 
         $this->assertEquals($expected, $fulfill($request));
         // to make sure halt periods are kept between requests
@@ -223,20 +225,22 @@ class ExponentialBackoffTest extends TestCase
             ->with($request)
             ->willReturn($expected = Either::left(new ConnectionFailed($request, '')));
         $halt
-            ->expects($this->exactly(10))
+            ->expects($matcher = $this->exactly(10))
             ->method('__invoke')
-            ->withConsecutive(
-                [new Millisecond(100)],
-                [new Millisecond(271)],
-                [new Millisecond(738)],
-                [new Millisecond(2008)],
-                [new Millisecond(5459)],
-                [new Millisecond(100)],
-                [new Millisecond(271)],
-                [new Millisecond(738)],
-                [new Millisecond(2008)],
-                [new Millisecond(5459)],
-            );
+            ->willReturnCallback(function($period) use ($matcher) {
+                match ($matcher->numberOfInvocations()) {
+                    1 => $this->assertEquals(new Millisecond(100), $period),
+                    2 => $this->assertEquals(new Millisecond(271), $period),
+                    3 => $this->assertEquals(new Millisecond(738), $period),
+                    4 => $this->assertEquals(new Millisecond(2008), $period),
+                    5 => $this->assertEquals(new Millisecond(5459), $period),
+                    6 => $this->assertEquals(new Millisecond(100), $period),
+                    7 => $this->assertEquals(new Millisecond(271), $period),
+                    8 => $this->assertEquals(new Millisecond(738), $period),
+                    9 => $this->assertEquals(new Millisecond(2008), $period),
+                    10 => $this->assertEquals(new Millisecond(5459), $period),
+                };
+            });
 
         $this->assertEquals($expected, $fulfill($request));
         // to make sure halt periods are kept between requests
@@ -294,15 +298,17 @@ class ExponentialBackoffTest extends TestCase
             ->with($request)
             ->willReturn($expected = Either::left(new ServerError($request, $response)));
         $halt
-            ->expects($this->exactly(5))
+            ->expects($matcher = $this->exactly(5))
             ->method('__invoke')
-            ->withConsecutive(
-                [new Millisecond(100)],
-                [new Millisecond(271)],
-                [new Millisecond(738)],
-                [new Millisecond(2008)],
-                [new Millisecond(5459)],
-            );
+            ->willReturnCallback(function($period) use ($matcher) {
+                match ($matcher->numberOfInvocations()) {
+                    1 => $this->assertEquals(new Millisecond(100), $period),
+                    2 => $this->assertEquals(new Millisecond(271), $period),
+                    3 => $this->assertEquals(new Millisecond(738), $period),
+                    4 => $this->assertEquals(new Millisecond(2008), $period),
+                    5 => $this->assertEquals(new Millisecond(5459), $period),
+                };
+            });
 
         $this->assertEquals($expected, $fulfill($request));
     }
