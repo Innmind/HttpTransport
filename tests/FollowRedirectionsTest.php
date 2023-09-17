@@ -129,40 +129,28 @@ class FollowRedirectionsTest extends TestCase
                     $method,
                     $protocol,
                 );
+                $expected = Either::left(new Redirection(
+                    $start,
+                    new Response\Response(
+                        $statusCode,
+                        $protocol,
+                        Headers::of(
+                            Location::of($newUrl),
+                        ),
+                    ),
+                ));
                 $inner = $this->createMock(Transport::class);
                 $inner
-                    ->expects($this->exactly(6))
+                    ->expects($matcher = $this->exactly(6))
                     ->method('__invoke')
-                    ->withConsecutive(
-                        [$this->callback(static function($request) use ($start) {
-                            return $request === $start;
-                        })],
-                        [$this->callback(static function($request) use ($newUrl) {
-                            return $request->url() === $newUrl;
-                        })],
-                        [$this->callback(static function($request) use ($newUrl) {
-                            return $request->url() === $newUrl;
-                        })],
-                        [$this->callback(static function($request) use ($newUrl) {
-                            return $request->url() === $newUrl;
-                        })],
-                        [$this->callback(static function($request) use ($newUrl) {
-                            return $request->url() === $newUrl;
-                        })],
-                        [$this->callback(static function($request) use ($newUrl) {
-                            return $request->url() === $newUrl;
-                        })],
-                    )
-                    ->willReturn($expected = Either::left(new Redirection(
-                        $start,
-                        new Response\Response(
-                            $statusCode,
-                            $protocol,
-                            Headers::of(
-                                Location::of($newUrl),
-                            ),
-                        ),
-                    )));
+                    ->willReturnCallback(function($request) use ($matcher, $start, $newUrl, $expected) {
+                        match ($matcher->numberOfInvocations()) {
+                            1 => $this->assertSame($start, $request),
+                            default => $this->assertSame($newUrl, $request->url()),
+                        };
+
+                        return $expected;
+                    });
                 $fulfill = FollowRedirections::of($inner);
 
                 $result = $fulfill($start);
@@ -238,38 +226,41 @@ class FollowRedirectionsTest extends TestCase
                     null,
                     Content\Lines::ofContent($body),
                 );
+                $expected = Either::right(new Success(
+                    $this->createMock(Request::class),
+                    new Response\Response(
+                        StatusCode::ok,
+                        $protocol,
+                    ),
+                ));
                 $inner = $this->createMock(Transport::class);
                 $inner
-                    ->expects($this->exactly(2))
+                    ->expects($matcher = $this->exactly(2))
                     ->method('__invoke')
-                    ->withConsecutive(
-                        [$start],
-                        [$this->callback(static function($request) use ($start, $newUrl) {
-                            return $request->method() === Method::get &&
-                                $request->url() === $newUrl &&
-                                $request->headers() === $start->headers() &&
-                                $request->body()->toString() === '';
-                        })],
-                    )
-                    ->will($this->onConsecutiveCalls(
-                        Either::left(new Redirection(
-                            $start,
-                            new Response\Response(
-                                StatusCode::seeOther,
-                                $protocol,
-                                Headers::of(
-                                    Location::of($newUrl),
+                    ->willReturnCallback(function($request) use ($matcher, $start, $newUrl, $protocol, $expected) {
+                        if ($matcher->numberOfInvocations() === 1) {
+                            $this->assertSame($start, $request);
+                        } else {
+                            $this->assertSame(Method::get, $request->method());
+                            $this->assertSame($newUrl, $request->url());
+                            $this->assertSame($start->headers(), $request->headers());
+                            $this->assertSame('', $request->body()->toString());
+                        }
+
+                        return match ($matcher->numberOfInvocations()) {
+                            1 => Either::left(new Redirection(
+                                $start,
+                                new Response\Response(
+                                    StatusCode::seeOther,
+                                    $protocol,
+                                    Headers::of(
+                                        Location::of($newUrl),
+                                    ),
                                 ),
-                            ),
-                        )),
-                        $expected = Either::right(new Success(
-                            $this->createMock(Request::class),
-                            new Response\Response(
-                                StatusCode::ok,
-                                $protocol,
-                            ),
-                        )),
-                    ));
+                            )),
+                            2 => $expected,
+                        };
+                    });
                 $fulfill = FollowRedirections::of($inner);
 
                 $result = $fulfill($start);
@@ -306,38 +297,41 @@ class FollowRedirectionsTest extends TestCase
                     null,
                     Content\Lines::ofContent($body),
                 );
+                $expected = Either::right(new Success(
+                    $this->createMock(Request::class),
+                    new Response\Response(
+                        StatusCode::ok,
+                        $protocol,
+                    ),
+                ));
                 $inner = $this->createMock(Transport::class);
                 $inner
-                    ->expects($this->exactly(2))
+                    ->expects($matcher = $this->exactly(2))
                     ->method('__invoke')
-                    ->withConsecutive(
-                        [$start],
-                        [$this->callback(static function($request) use ($start, $newUrl) {
-                            return $request->method() === $start->method() &&
-                                $request->url() === $newUrl &&
-                                $request->headers() === $start->headers() &&
-                                $request->body() === $start->body();
-                        })],
-                    )
-                    ->will($this->onConsecutiveCalls(
-                        Either::left(new Redirection(
-                            $start,
-                            new Response\Response(
-                                $statusCode,
-                                $protocol,
-                                Headers::of(
-                                    Location::of($newUrl),
+                    ->willReturnCallback(function($request) use ($matcher, $start, $newUrl, $statusCode, $protocol, $expected) {
+                        if ($matcher->numberOfInvocations() === 1) {
+                            $this->assertSame($start, $request);
+                        } else {
+                            $this->assertSame($start->method(), $request->method());
+                            $this->assertSame($newUrl, $request->url());
+                            $this->assertSame($start->headers(), $request->headers());
+                            $this->assertSame($start->body(), $request->body());
+                        }
+
+                        return match ($matcher->numberOfInvocations()) {
+                            1 => Either::left(new Redirection(
+                                $start,
+                                new Response\Response(
+                                    $statusCode,
+                                    $protocol,
+                                    Headers::of(
+                                        Location::of($newUrl),
+                                    ),
                                 ),
-                            ),
-                        )),
-                        $expected = Either::right(new Success(
-                            $this->createMock(Request::class),
-                            new Response\Response(
-                                StatusCode::ok,
-                                $protocol,
-                            ),
-                        )),
-                    ));
+                            )),
+                            2 => $expected,
+                        };
+                    });
                 $fulfill = FollowRedirections::of($inner);
 
                 $result = $fulfill($start);

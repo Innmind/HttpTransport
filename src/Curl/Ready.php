@@ -79,14 +79,14 @@ final class Ready
                     $this->headers = ($this->headers)($header);
                 }
 
-                return Str::of($header)->toEncoding('ASCII')->length();
+                return Str::of($header)->toEncoding(Str\Encoding::ascii)->length();
             },
         );
         \curl_setopt(
             $handle,
             \CURLOPT_WRITEFUNCTION,
             function(\CurlHandle $_, string $chunk): int {
-                $chunk = Str::of($chunk)->toEncoding('ASCII');
+                $chunk = Str::of($chunk)->toEncoding(Str\Encoding::ascii);
 
                 // return -1 when failed to write to make curl stop
                 return $this
@@ -152,14 +152,14 @@ final class Ready
                 $this->handle,
                 \CURLOPT_HEADERFUNCTION,
                 static fn(\CurlHandle $_, string $header): int => Str::of($header)
-                    ->toEncoding('ASCII')
+                    ->toEncoding(Str\Encoding::ascii)
                     ->length(),
             );
             \curl_setopt(
                 $this->handle,
                 \CURLOPT_WRITEFUNCTION,
                 static fn(\CurlHandle $_, string $chunk): int => Str::of($chunk)
-                    ->toEncoding('ASCII')
+                    ->toEncoding(Str\Encoding::ascii)
                     ->length(),
             );
             \curl_close($this->handle);

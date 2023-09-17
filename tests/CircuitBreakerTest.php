@@ -243,14 +243,22 @@ class CircuitBreakerTest extends TestCase
             ->expects($this->any())
             ->method('statusCode')
             ->willReturn(StatusCode::ok);
+        $expected1 = Either::left(new ServerError($request1, $response1));
+        $expected2 = Either::left(new Success($request2, $response2));
         $inner
-            ->expects($this->exactly(2))
+            ->expects($matcher = $this->exactly(2))
             ->method('__invoke')
-            ->withConsecutive([$request1], [$request2])
-            ->will($this->onConsecutiveCalls(
-                $expected1 = Either::left(new ServerError($request1, $response1)),
-                $expected2 = Either::left(new Success($request2, $response2)),
-            ));
+            ->willReturnCallback(function($request) use ($matcher, $request1, $request2, $expected1, $expected2) {
+                match ($matcher->numberOfInvocations()) {
+                    1 => $this->assertSame($request1, $request),
+                    2 => $this->assertSame($request2, $request),
+                };
+
+                return match ($matcher->numberOfInvocations()) {
+                    1 => $expected1,
+                    2 => $expected2,
+                };
+            });
 
         $this->assertEquals($expected1, $fulfill($request1));
         $this->assertEquals($expected2, $fulfill($request2));

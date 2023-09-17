@@ -71,7 +71,6 @@ class LoggerTest extends TestCase
                     ),
                 ),
             );
-        $reference = null;
         $response = $this->createMock(Response::class);
         $response
             ->expects($this->any())
@@ -99,29 +98,24 @@ class LoggerTest extends TestCase
             );
         $this
             ->logger
-            ->expects($this->exactly(2))
+            ->expects($matcher = $this->exactly(2))
             ->method('debug')
-            ->withConsecutive(
-                [
-                    'Http request about to be sent',
-                    $this->callback(static function(array $data) use (&$reference): bool {
-                        $reference = $data['reference'];
+            ->willReturnCallback(function($message, $context) use ($matcher) {
+                match ($matcher->numberOfInvocations()) {
+                    1 => $this->assertSame('Http request about to be sent', $message),
+                    2 => $this->assertSame('Http request sent', $message),
+                };
 
-                        return $data['method'] === 'POST' &&
-                            $data['url'] === 'http://example.com/' &&
-                            $data['headers'] === ['foo' => 'bar, baz', 'foobar' => 'whatever'] &&
-                            !empty($data['reference']);
-                    }),
-                ],
-                [
-                    'Http request sent',
-                    $this->callback(static function(array $data) use (&$reference): bool {
-                        return $data['statusCode'] === 200 &&
-                            $data['headers'] === ['x-debug' => 'yay, nay'] &&
-                            $data['reference'] === $reference;
-                    }),
-                ],
-            );
+                if ($matcher->numberOfInvocations() === 1) {
+                    $this->assertSame('POST', $context['method']);
+                    $this->assertSame('http://example.com/', $context['url']);
+                    $this->assertSame(['foo' => 'bar, baz', 'foobar' => 'whatever'], $context['headers']);
+                    $this->assertTrue(!empty($context['reference']));
+                } else {
+                    $this->assertSame(200, $context['statusCode']);
+                    $this->assertSame(['x-debug' => 'yay, nay'], $context['headers']);
+                }
+            });
 
         $response = ($this->fulfill)($request);
 
