@@ -283,7 +283,7 @@ final class Scheduled
 
         /** @psalm-suppress ArgumentTypeCoercion Due to the reduce */
         $written = ($this->chunk)($this->request->body())
-            ->map(static fn($chunk) => $chunk->toEncoding('ASCII'))
+            ->map(static fn($chunk) => $chunk->toEncoding(Str\Encoding::ascii))
             ->reduce(
                 $carry,
                 static fn(Either $either, $chunk): Either => $either->flatMap(
