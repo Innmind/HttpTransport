@@ -4,8 +4,8 @@ declare(strict_types = 1);
 namespace Innmind\HttpTransport;
 
 use Innmind\Http\{
-    Message\Request,
-    Message\Response,
+    Request,
+    Response,
     Headers,
     Header,
     Header\Value,

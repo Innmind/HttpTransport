@@ -9,10 +9,11 @@ use Innmind\HttpTransport\{
     Success,
 };
 use Innmind\Http\{
-    Message\Request,
-    Message\Response,
-    Message\StatusCode,
-    Message\Method,
+    Request,
+    Response,
+    Response\StatusCode,
+    Method,
+    ProtocolVersion,
     Headers,
     Header,
     Header\Value\Value,
@@ -46,48 +47,33 @@ class LoggerTest extends TestCase
 
     public function testFulfill()
     {
-        $request = $this->createMock(Request::class);
-        $request
-            ->expects($this->once())
-            ->method('method')
-            ->willReturn(Method::of('POST'));
-        $request
-            ->expects($this->once())
-            ->method('url')
-            ->willReturn(Url::of('http://example.com'));
-        $request
-            ->expects($this->once())
-            ->method('headers')
-            ->willReturn(
-                Headers::of(
-                    new Header\Header(
-                        'foo',
-                        new Value('bar'),
-                        new Value('baz'),
-                    ),
-                    new Header\Header(
-                        'foobar',
-                        new Value('whatever'),
-                    ),
+        $request = Request::of(
+            Url::of('http://example.com'),
+            Method::post,
+            ProtocolVersion::v11,
+            Headers::of(
+                new Header\Header(
+                    'foo',
+                    new Value('bar'),
+                    new Value('baz'),
                 ),
-            );
-        $response = $this->createMock(Response::class);
-        $response
-            ->expects($this->any())
-            ->method('statusCode')
-            ->willReturn(StatusCode::ok);
-        $response
-            ->expects($this->once())
-            ->method('headers')
-            ->willReturn(
-                Headers::of(
-                    new Header\Header(
-                        'x-debug',
-                        new Value('yay'),
-                        new Value('nay'),
-                    ),
+                new Header\Header(
+                    'foobar',
+                    new Value('whatever'),
                 ),
-            );
+            ),
+        );
+        $response = Response::of(
+            StatusCode::ok,
+            $request->protocolVersion(),
+            Headers::of(
+                new Header\Header(
+                    'x-debug',
+                    new Value('yay'),
+                    new Value('nay'),
+                ),
+            ),
+        );
         $this
             ->inner
             ->expects($this->once())

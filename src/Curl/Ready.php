@@ -16,15 +16,16 @@ use Innmind\HttpTransport\{
     Success,
 };
 use Innmind\Http\{
-    Message\Request,
-    Message\Response,
-    Message\StatusCode,
+    Request,
+    Response,
+    Response\StatusCode,
     ProtocolVersion,
     Header,
     Headers,
     Factory\Header\TryFactory,
 };
 use Innmind\Filesystem\File\Content;
+use Innmind\IO\IO;
 use Innmind\Stream\{
     Readable,
     Writable,
@@ -44,6 +45,7 @@ use Innmind\Immutable\{
  */
 final class Ready
 {
+    private IO $io;
     private TryFactory $headerFactory;
     private Request $request;
     private \CurlHandle $handle;
@@ -54,12 +56,14 @@ final class Ready
     private Sequence $headers;
 
     private function __construct(
+        IO $io,
         TryFactory $headerFactory,
         Request $request,
         \CurlHandle $handle,
         Writable $inFile,
         Bidirectional $body,
     ) {
+        $this->io = $io;
         $this->headerFactory = $headerFactory;
         $this->request = $request;
         $this->handle = $handle;
@@ -101,6 +105,7 @@ final class Ready
     }
 
     public static function of(
+        IO $io,
         TryFactory $headerFactory,
         Request $request,
         \CurlHandle $handle,
@@ -108,6 +113,7 @@ final class Ready
         Bidirectional $body,
     ): self {
         return new self(
+            $io,
             $headerFactory,
             $request,
             $handle,
@@ -245,18 +251,18 @@ final class Ready
 
         /** @var Either<MalformedResponse, Response> */
         return Maybe::all($statusCode, $protocolVersion, $headers)
-            ->map(fn(StatusCode $status, ProtocolVersion $protocol, Headers $headers) => new Response\Response(
+            ->map(fn(StatusCode $status, ProtocolVersion $protocol, Headers $headers) => Response::of(
                 $status,
                 $protocol,
                 $headers,
-                Content\OfStream::of($this->body),
+                Content::io($this->io->readable()->wrap($this->body)),
             ))
             ->match(
                 static fn($response) => Either::right($response),
                 fn() => Either::left(new MalformedResponse($this->request, Raw::of(
                     $this->status,
                     $this->headers->map(Str::of(...)),
-                    Content\OfStream::of($this->body),
+                    Content::io($this->io->readable()->wrap($this->body)),
                 ))),
             );
     }

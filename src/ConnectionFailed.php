@@ -3,7 +3,7 @@ declare(strict_types = 1);
 
 namespace Innmind\HttpTransport;
 
-use Innmind\Http\Message\Request;
+use Innmind\Http\Request;
 
 final class ConnectionFailed
 {

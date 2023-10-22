@@ -44,7 +44,7 @@ final class Raw
      */
     public static function none(): self
     {
-        return new self(Str::of(''), Sequence::of(), Content\None::of());
+        return new self(Str::of(''), Sequence::of(), Content::none());
     }
 
     public function statusLine(): Str

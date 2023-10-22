@@ -4,9 +4,9 @@ declare(strict_types = 1);
 namespace Innmind\HttpTransport;
 
 use Innmind\Http\{
-    Message\Request,
-    Message\Response,
-    Message\StatusCode,
+    Request,
+    Response,
+    Response\StatusCode,
     ProtocolVersion,
     Headers,
     Header\Header,
@@ -98,7 +98,7 @@ final class CircuitBreaker implements Transport
     private function error(Request $request): Either
     {
         /** @var Either<Errors, Success> */
-        return Either::left(new ServerError($request, new Response\Response(
+        return Either::left(new ServerError($request, Response::of(
             $code = StatusCode::serviceUnavailable,
             ProtocolVersion::v20,
             Headers::of(

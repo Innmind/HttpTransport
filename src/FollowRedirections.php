@@ -4,9 +4,9 @@ declare(strict_types = 1);
 namespace Innmind\HttpTransport;
 
 use Innmind\Http\{
-    Message\Request,
-    Message\Method,
-    Message\StatusCode,
+    Request,
+    Method,
+    Response\StatusCode,
     Header\Location,
 };
 use Innmind\Immutable\{
@@ -92,7 +92,7 @@ final class FollowRedirections implements Transport
             ->headers()
             ->find(Location::class)
             ->map(static fn($header) => $header->url())
-            ->map(static fn($url) => new Request\Request(
+            ->map(static fn($url) => Request::of(
                 $url,
                 $redirection->request()->method(),
                 $redirection->request()->protocolVersion(),
@@ -121,7 +121,7 @@ final class FollowRedirections implements Transport
             ->headers()
             ->find(Location::class)
             ->map(static fn($header) => $header->url())
-            ->map(static fn($url) => new Request\Request(
+            ->map(static fn($url) => Request::of(
                 $url,
                 Method::get,
                 $redirection->request()->protocolVersion(),
