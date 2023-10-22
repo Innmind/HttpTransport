@@ -16,15 +16,16 @@ use Innmind\HttpTransport\{
     Failure,
 };
 use Innmind\Http\{
-    Message\Request,
-    Message\Response,
-    Message\StatusCode,
-    Message\Method,
+    Request,
+    Response,
+    Response\StatusCode,
+    Method,
     ProtocolVersion,
     Headers,
     Header\Location,
 };
 use Innmind\Filesystem\File\Content;
+use Innmind\Url\Url;
 use Innmind\Immutable\Either;
 use PHPUnit\Framework\TestCase;
 use Innmind\BlackBox\{
@@ -47,50 +48,55 @@ class FollowRedirectionsTest extends TestCase
 
     public function testDoesntModifyNonRedirectionResults()
     {
+        $request = Request::of(
+            Url::of('/'),
+            Method::get,
+            ProtocolVersion::v11,
+        );
+
         $this
             ->forAll(Set\Elements::of(
                 Either::right(new Success(
-                    $this->createMock(Request::class),
-                    new Response\Response(
+                    $request,
+                    Response::of(
                         StatusCode::ok,
                         ProtocolVersion::v11,
                     ),
                 )),
                 Either::left(new Information(
-                    $this->createMock(Request::class),
-                    new Response\Response(
+                    $request,
+                    Response::of(
                         StatusCode::continue,
                         ProtocolVersion::v11,
                     ),
                 )),
                 Either::left(new ClientError(
-                    $this->createMock(Request::class),
-                    new Response\Response(
+                    $request,
+                    Response::of(
                         StatusCode::badRequest,
                         ProtocolVersion::v11,
                     ),
                 )),
                 Either::left(new ServerError(
-                    $this->createMock(Request::class),
-                    new Response\Response(
+                    $request,
+                    Response::of(
                         StatusCode::internalServerError,
                         ProtocolVersion::v11,
                     ),
                 )),
                 Either::left(new MalformedResponse(
-                    $this->createMock(Request::class),
+                    $request,
                 )),
                 Either::left(new ConnectionFailed(
-                    $this->createMock(Request::class),
+                    $request,
                     '',
                 )),
                 Either::left(new Failure(
-                    $this->createMock(Request::class),
+                    $request,
                     '',
                 )),
             ))
-            ->then(function($result) {
-                $request = $this->createMock(Request::class);
+            ->then(function($result) use ($request) {
                 $inner = $this->createMock(Transport::class);
                 $inner
                     ->expects($this->once())
@@ -124,14 +130,14 @@ class FollowRedirectionsTest extends TestCase
                 ),
             )
             ->then(function($firstUrl, $newUrl, $method, $statusCode, $protocol) {
-                $start = new Request\Request(
+                $start = Request::of(
                     $firstUrl,
                     $method,
                     $protocol,
                 );
                 $expected = Either::left(new Redirection(
                     $start,
-                    new Response\Response(
+                    Response::of(
                         $statusCode,
                         $protocol,
                         Headers::of(
@@ -179,7 +185,7 @@ class FollowRedirectionsTest extends TestCase
                 ),
             )
             ->then(function($firstUrl, $method, $statusCode, $protocol) {
-                $start = new Request\Request(
+                $start = Request::of(
                     $firstUrl,
                     $method,
                     $protocol,
@@ -191,7 +197,7 @@ class FollowRedirectionsTest extends TestCase
                     ->with($start)
                     ->willReturn($expected = Either::left(new Redirection(
                         $start,
-                        new Response\Response(
+                        Response::of(
                             $statusCode,
                             $protocol,
                         ),
@@ -219,16 +225,16 @@ class FollowRedirectionsTest extends TestCase
                 Set\Unicode::strings(),
             )
             ->then(function($firstUrl, $newUrl, $method, $protocol, $body) {
-                $start = new Request\Request(
+                $start = Request::of(
                     $firstUrl,
                     $method,
                     $protocol,
                     null,
-                    Content\Lines::ofContent($body),
+                    Content::ofString($body),
                 );
                 $expected = Either::right(new Success(
-                    $this->createMock(Request::class),
-                    new Response\Response(
+                    clone $start,
+                    Response::of(
                         StatusCode::ok,
                         $protocol,
                     ),
@@ -250,7 +256,7 @@ class FollowRedirectionsTest extends TestCase
                         return match ($matcher->numberOfInvocations()) {
                             1 => Either::left(new Redirection(
                                 $start,
-                                new Response\Response(
+                                Response::of(
                                     StatusCode::seeOther,
                                     $protocol,
                                     Headers::of(
@@ -290,16 +296,16 @@ class FollowRedirectionsTest extends TestCase
                 Set\Unicode::strings(),
             )
             ->then(function($firstUrl, $newUrl, $method, $statusCode, $protocol, $body) {
-                $start = new Request\Request(
+                $start = Request::of(
                     $firstUrl,
                     $method,
                     $protocol,
                     null,
-                    Content\Lines::ofContent($body),
+                    Content::ofString($body),
                 );
                 $expected = Either::right(new Success(
-                    $this->createMock(Request::class),
-                    new Response\Response(
+                    clone $start,
+                    Response::of(
                         StatusCode::ok,
                         $protocol,
                     ),
@@ -321,7 +327,7 @@ class FollowRedirectionsTest extends TestCase
                         return match ($matcher->numberOfInvocations()) {
                             1 => Either::left(new Redirection(
                                 $start,
-                                new Response\Response(
+                                Response::of(
                                     $statusCode,
                                     $protocol,
                                     Headers::of(
@@ -363,12 +369,12 @@ class FollowRedirectionsTest extends TestCase
                 Set\Unicode::strings(),
             )
             ->then(function($firstUrl, $newUrl, $method, $statusCode, $protocol, $body) {
-                $start = new Request\Request(
+                $start = Request::of(
                     $firstUrl,
                     $method,
                     $protocol,
                     null,
-                    Content\Lines::ofContent($body),
+                    Content::ofString($body),
                 );
                 $inner = $this->createMock(Transport::class);
                 $inner
@@ -377,7 +383,7 @@ class FollowRedirectionsTest extends TestCase
                     ->with($start)
                     ->willReturn($expected = Either::left(new Redirection(
                         $start,
-                        new Response\Response(
+                        Response::of(
                             $statusCode,
                             $protocol,
                             Headers::of(

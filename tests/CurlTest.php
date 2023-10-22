@@ -13,9 +13,9 @@ use Innmind\HttpTransport\{
     ServerError,
 };
 use Innmind\Http\{
-    Message\Request\Request,
-    Message\Response,
-    Message\Method,
+    Request,
+    Response,
+    Method,
     ProtocolVersion,
     Header\Date,
     Header\Location,
@@ -25,6 +25,8 @@ use Innmind\TimeContinuum\Earth\{
     Clock,
     ElapsedPeriod,
 };
+use Innmind\IO\IO;
+use Innmind\Stream\Streams;
 use Innmind\Url\{
     Url,
     Path,
@@ -61,7 +63,7 @@ class CurlTest extends TestCase
 
     public function testOkResponse()
     {
-        $success = ($this->curl)(new Request(
+        $success = ($this->curl)(Request::of(
             Url::of('https://github.com'),
             Method::get,
             ProtocolVersion::v11,
@@ -86,7 +88,7 @@ class CurlTest extends TestCase
 
     public function testRedirection()
     {
-        $redirection = ($this->curl)(new Request(
+        $redirection = ($this->curl)(Request::of(
             Url::of('http://github.com'),
             Method::get,
             ProtocolVersion::v11,
@@ -112,7 +114,7 @@ class CurlTest extends TestCase
 
     public function testClientError()
     {
-        $error = ($this->curl)(new Request(
+        $error = ($this->curl)(Request::of(
             Url::of('https://github.com/innmind/unknown'),
             Method::get,
             ProtocolVersion::v11,
@@ -138,7 +140,7 @@ class CurlTest extends TestCase
 
     public function testFailure()
     {
-        $error = ($this->curl)($request = new Request(
+        $error = ($this->curl)($request = Request::of(
             Url::of('http://localhost:8080/'),
             Method::get,
             ProtocolVersion::v11,
@@ -154,7 +156,7 @@ class CurlTest extends TestCase
 
     public function testResponseBody()
     {
-        $success = ($this->curl)(new Request(
+        $success = ($this->curl)(Request::of(
             Url::of('https://raw.githubusercontent.com/Innmind/Immutable/develop/LICENSE'),
             Method::get,
             ProtocolVersion::v11,
@@ -206,7 +208,7 @@ class CurlTest extends TestCase
 
     public function testHead()
     {
-        $success = ($this->curl)(new Request(
+        $success = ($this->curl)(Request::of(
             Url::of('https://raw.githubusercontent.com/Innmind/Immutable/develop/LICENSE'),
             Method::head,
             ProtocolVersion::v11,
@@ -229,12 +231,12 @@ class CurlTest extends TestCase
             ->forAll(Set\Unicode::strings())
             ->disableShrinking()
             ->then(function($body) {
-                $success = ($this->curl)(new Request(
+                $success = ($this->curl)(Request::of(
                     Url::of('https://httpbin.org/post'),
                     Method::post,
                     ProtocolVersion::v11,
                     null,
-                    Content\Lines::ofContent($body),
+                    Content::ofString($body),
                 ))->match(
                     static fn($success) => $success,
                     static fn($error) => $error,
@@ -270,13 +272,23 @@ class CurlTest extends TestCase
 
     public function testPostLargeContent()
     {
+        $capabilities = Streams::fromAmbientAuthority();
+        $io = IO::of(static fn(?ElapsedPeriod $timeout) => match ($timeout) {
+            null => $capabilities->watch()->waitForever(),
+            default => $capabilities->watch()->timeoutAfter($timeout),
+        });
+
         $memory = \memory_get_peak_usage();
-        $success = ($this->curl)(new Request(
+        $success = ($this->curl)(Request::of(
             Url::of('https://httpbin.org/post'),
             Method::post,
             ProtocolVersion::v11,
             null,
-            Content\AtPath::of(Path::of(__DIR__.'/../data/screenshot.png')),
+            Content::atPath(
+                $capabilities->readable(),
+                $io->readable(),
+                Path::of(__DIR__.'/../data/screenshot.png'),
+            ),
         ))->match(
             static fn($success) => $success,
             static fn($error) => $error,
@@ -300,7 +312,7 @@ class CurlTest extends TestCase
     public function testMinorVersionOfProtocolMayNotBePresent()
     {
         // Packagist respond with HTTP/2 instead of HTTP/2.0
-        $success = ($this->curl)(new Request(
+        $success = ($this->curl)(Request::of(
             Url::of('https://packagist.org/search.json?q=innmind/'),
             Method::get,
             ProtocolVersion::v20,
@@ -315,7 +327,7 @@ class CurlTest extends TestCase
 
     public function testConcurrency()
     {
-        $request = new Request(
+        $request = Request::of(
             Url::of('https://github.com'),
             Method::get,
             ProtocolVersion::v11,
@@ -347,7 +359,7 @@ class CurlTest extends TestCase
     public function testMaxConcurrency()
     {
         $curl = $this->curl->maxConcurrency(1);
-        $request = new Request(
+        $request = Request::of(
             Url::of('https://github.com'),
             Method::get,
             ProtocolVersion::v11,
@@ -390,7 +402,7 @@ class CurlTest extends TestCase
             },
         );
 
-        $_ = $curl(new Request(
+        $_ = $curl(Request::of(
             Url::of('https://en.wikipedia.org/wiki/Culture_of_the_United_Kingdom'),
             Method::get,
             ProtocolVersion::v11,
@@ -405,7 +417,7 @@ class CurlTest extends TestCase
     public function testOutOfOrderUnwrapWithMaxConcurrency()
     {
         $curl = $this->curl->maxConcurrency(2);
-        $request = new Request(
+        $request = Request::of(
             Url::of('https://github.com'),
             Method::get,
             ProtocolVersion::v11,
@@ -430,7 +442,7 @@ class CurlTest extends TestCase
     public function testSubsequentRequestsAreCalledCorrectlyInsideFlatMaps()
     {
         $curl = $this->curl->maxConcurrency(2);
-        $request = new Request(
+        $request = Request::of(
             Url::of('https://github.com'),
             Method::get,
             ProtocolVersion::v11,
@@ -458,7 +470,7 @@ class CurlTest extends TestCase
     {
         $initialCount = \count(\get_resources('stream'));
 
-        $request = new Request(
+        $request = Request::of(
             Url::of('https://github.com'),
             Method::get,
             ProtocolVersion::v11,

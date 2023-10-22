@@ -13,10 +13,10 @@ use Innmind\HttpTransport\{
     ConnectionFailed,
 };
 use Innmind\Http\{
-    Message\Request,
-    Message\Response,
-    Message\StatusCode,
-    Message\Method,
+    Request,
+    Response,
+    Response\StatusCode,
+    Method,
     ProtocolVersion,
 };
 use Innmind\Url\Url;
@@ -49,16 +49,15 @@ class CircuitBreakerTest extends TestCase
             $this->createMock(Clock::class),
             $this->createMock(Period::class),
         );
-        $request = new Request\Request(
+        $request = Request::of(
             Url::of('http://example.com'),
             Method::get,
             ProtocolVersion::v11,
         );
-        $response = $this->createMock(Response::class);
-        $response
-            ->expects($this->any())
-            ->method('statusCode')
-            ->willReturn(StatusCode::ok);
+        $response = Response::of(
+            StatusCode::ok,
+            $request->protocolVersion(),
+        );
         $inner
             ->expects($this->exactly(2))
             ->method('__invoke')
@@ -76,16 +75,15 @@ class CircuitBreakerTest extends TestCase
             $this->createMock(Clock::class),
             $this->createMock(Period::class),
         );
-        $request = new Request\Request(
+        $request = Request::of(
             Url::of('http://example.com'),
             Method::get,
             ProtocolVersion::v11,
         );
-        $response = $this->createMock(Response::class);
-        $response
-            ->expects($this->any())
-            ->method('statusCode')
-            ->willReturn(StatusCode::movedPermanently);
+        $response = Response::of(
+            StatusCode::movedPermanently,
+            $request->protocolVersion(),
+        );
         $inner
             ->expects($this->exactly(2))
             ->method('__invoke')
@@ -103,16 +101,15 @@ class CircuitBreakerTest extends TestCase
             $this->createMock(Clock::class),
             $this->createMock(Period::class),
         );
-        $request = new Request\Request(
+        $request = Request::of(
             Url::of('http://example.com'),
             Method::get,
             ProtocolVersion::v11,
         );
-        $response = $this->createMock(Response::class);
-        $response
-            ->expects($this->any())
-            ->method('statusCode')
-            ->willReturn(StatusCode::notFound);
+        $response = Response::of(
+            StatusCode::notFound,
+            $request->protocolVersion(),
+        );
         $inner
             ->expects($this->exactly(2))
             ->method('__invoke')
@@ -130,16 +127,15 @@ class CircuitBreakerTest extends TestCase
             $clock = $this->createMock(Clock::class),
             $delay = $this->createMock(Period::class),
         );
-        $request = new Request\Request(
+        $request = Request::of(
             Url::of('http://example.com'),
             Method::get,
             ProtocolVersion::v11,
         );
-        $response = $this->createMock(Response::class);
-        $response
-            ->expects($this->any())
-            ->method('statusCode')
-            ->willReturn(StatusCode::internalServerError);
+        $response = Response::of(
+            StatusCode::internalServerError,
+            $request->protocolVersion(),
+        );
         $inner
             ->expects($this->once())
             ->method('__invoke')
@@ -179,7 +175,7 @@ class CircuitBreakerTest extends TestCase
             $clock = $this->createMock(Clock::class),
             $delay = $this->createMock(Period::class),
         );
-        $request = new Request\Request(
+        $request = Request::of(
             Url::of('http://example.com'),
             Method::get,
             ProtocolVersion::v11,
@@ -223,26 +219,24 @@ class CircuitBreakerTest extends TestCase
             $this->createMock(Clock::class),
             $this->createMock(Period::class),
         );
-        $request1 = $this->createMock(Request::class);
-        $request2 = $this->createMock(Request::class);
-        $request1
-            ->expects($this->any())
-            ->method('url')
-            ->willReturn(Url::of('http://error.example.com/'));
-        $request2
-            ->expects($this->any())
-            ->method('url')
-            ->willReturn(Url::of('http://example.com/'));
-        $response1 = $this->createMock(Response::class);
-        $response2 = $this->createMock(Response::class);
-        $response1
-            ->expects($this->any())
-            ->method('statusCode')
-            ->willReturn(StatusCode::internalServerError);
-        $response2
-            ->expects($this->any())
-            ->method('statusCode')
-            ->willReturn(StatusCode::ok);
+        $request1 = Request::of(
+            Url::of('http://error.example.com/'),
+            Method::get,
+            ProtocolVersion::v11,
+        );
+        $request2 = Request::of(
+            Url::of('http://example.com/'),
+            Method::get,
+            ProtocolVersion::v11,
+        );
+        $response1 = Response::of(
+            StatusCode::internalServerError,
+            $request1->protocolVersion(),
+        );
+        $response2 = Response::of(
+            StatusCode::ok,
+            $request2->protocolVersion(),
+        );
         $expected1 = Either::left(new ServerError($request1, $response1));
         $expected2 = Either::left(new Success($request2, $response2));
         $inner
@@ -271,21 +265,19 @@ class CircuitBreakerTest extends TestCase
             $clock = $this->createMock(Clock::class),
             $delay = $this->createMock(Period::class),
         );
-        $request = new Request\Request(
+        $request = Request::of(
             Url::of('http://example.com'),
             Method::get,
             ProtocolVersion::v11,
         );
-        $response1 = $this->createMock(Response::class);
-        $response2 = $this->createMock(Response::class);
-        $response1
-            ->expects($this->any())
-            ->method('statusCode')
-            ->willReturn(StatusCode::internalServerError);
-        $response2
-            ->expects($this->any())
-            ->method('statusCode')
-            ->willReturn(StatusCode::ok);
+        $response1 = Response::of(
+            StatusCode::internalServerError,
+            $request->protocolVersion(),
+        );
+        $response2 = Response::of(
+            StatusCode::ok,
+            $request->protocolVersion(),
+        );
         $inner
             ->expects($this->exactly(2))
             ->method('__invoke')

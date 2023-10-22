@@ -4,11 +4,14 @@ declare(strict_types = 1);
 namespace Tests\Innmind\HttpTransport;
 
 use Innmind\HttpTransport\ServerError;
-use Innmind\Http\Message\{
+use Innmind\Http\{
     Request,
     Response,
-    StatusCode,
+    Method,
+    ProtocolVersion,
+    Response\StatusCode,
 };
+use Innmind\Url\Url;
 use Innmind\Immutable\Sequence;
 use PHPUnit\Framework\TestCase;
 
@@ -19,11 +22,15 @@ class ServerErrorTest extends TestCase
         Sequence::of(...StatusCode::cases())
             ->filter(static fn($code) => $code->range() === StatusCode\Range::serverError)
             ->foreach(function($code) {
-                $request = $this->createMock(Request::class);
-                $response = $this->createMock(Response::class);
-                $response
-                    ->method('statusCode')
-                    ->willReturn($code);
+                $request = Request::of(
+                    Url::of('/'),
+                    Method::get,
+                    ProtocolVersion::v11,
+                );
+                $response = Response::of(
+                    $code,
+                    $request->protocolVersion(),
+                );
 
                 $serverError = new ServerError($request, $response);
                 $this->assertSame($request, $serverError->request());
@@ -36,11 +43,15 @@ class ServerErrorTest extends TestCase
         Sequence::of(...StatusCode::cases())
             ->filter(static fn($code) => $code->range() !== StatusCode\Range::serverError)
             ->foreach(function($code) {
-                $request = $this->createMock(Request::class);
-                $response = $this->createMock(Response::class);
-                $response
-                    ->method('statusCode')
-                    ->willReturn($code);
+                $request = Request::of(
+                    Url::of('/'),
+                    Method::get,
+                    ProtocolVersion::v11,
+                );
+                $response = Response::of(
+                    $code,
+                    $request->protocolVersion(),
+                );
 
                 try {
                     new ServerError($request, $response);

@@ -17,15 +17,16 @@
     "require": {
         "php": "~8.2",
         "ext-curl": "*",
-        "innmind/http": "~5.2|~6.0",
-        "innmind/filesystem": "~6.2",
+        "innmind/http": "~7.0",
+        "innmind/filesystem": "~7.1",
         "innmind/stream": "~4.0",
         "psr/log": "~3.0",
         "ramsey/uuid": "^4.7",
         "innmind/time-warp": "~3.0",
         "innmind/time-continuum": "~3.0",
         "innmind/immutable": "~4.15|~5.0",
-        "innmind/url": "~4.0"
+        "innmind/url": "~4.0",
+        "innmind/io": "~2.2"
     },
     "autoload": {
         "psr-4": {

@@ -15,13 +15,16 @@ use Innmind\HttpTransport\{
     MalformedResponse,
     Failure,
 };
-use Innmind\Http\Message\{
+use Innmind\Http\{
     Request,
     Response,
-    StatusCode,
+    Method,
+    ProtocolVersion,
+    Response\StatusCode,
 };
 use Innmind\TimeWarp\Halt;
 use Innmind\TimeContinuum\Earth\Period\Millisecond;
+use Innmind\Url\Url;
 use Innmind\Immutable\Either;
 use PHPUnit\Framework\TestCase;
 
@@ -44,12 +47,15 @@ class ExponentialBackoffTest extends TestCase
             $inner = $this->createMock(Transport::class),
             $halt = $this->createMock(Halt::class),
         );
-        $request = $this->createMock(Request::class);
-        $response = $this->createMock(Response::class);
-        $response
-            ->expects($this->any())
-            ->method('statusCode')
-            ->willReturn(StatusCode::continue);
+        $request = Request::of(
+            Url::of('/'),
+            Method::get,
+            ProtocolVersion::v11,
+        );
+        $response = Response::of(
+            StatusCode::continue,
+            $request->protocolVersion(),
+        );
         $inner
             ->expects($this->once())
             ->method('__invoke')
@@ -68,12 +74,15 @@ class ExponentialBackoffTest extends TestCase
             $inner = $this->createMock(Transport::class),
             $halt = $this->createMock(Halt::class),
         );
-        $request = $this->createMock(Request::class);
-        $response = $this->createMock(Response::class);
-        $response
-            ->expects($this->any())
-            ->method('statusCode')
-            ->willReturn(StatusCode::ok);
+        $request = Request::of(
+            Url::of('/'),
+            Method::get,
+            ProtocolVersion::v11,
+        );
+        $response = Response::of(
+            StatusCode::ok,
+            $request->protocolVersion(),
+        );
         $inner
             ->expects($this->once())
             ->method('__invoke')
@@ -92,12 +101,15 @@ class ExponentialBackoffTest extends TestCase
             $inner = $this->createMock(Transport::class),
             $halt = $this->createMock(Halt::class),
         );
-        $request = $this->createMock(Request::class);
-        $response = $this->createMock(Response::class);
-        $response
-            ->expects($this->any())
-            ->method('statusCode')
-            ->willReturn(StatusCode::movedPermanently);
+        $request = Request::of(
+            Url::of('/'),
+            Method::get,
+            ProtocolVersion::v11,
+        );
+        $response = Response::of(
+            StatusCode::movedPermanently,
+            $request->protocolVersion(),
+        );
         $inner
             ->expects($this->once())
             ->method('__invoke')
@@ -116,12 +128,15 @@ class ExponentialBackoffTest extends TestCase
             $inner = $this->createMock(Transport::class),
             $halt = $this->createMock(Halt::class),
         );
-        $request = $this->createMock(Request::class);
-        $response = $this->createMock(Response::class);
-        $response
-            ->expects($this->any())
-            ->method('statusCode')
-            ->willReturn(StatusCode::notFound);
+        $request = Request::of(
+            Url::of('/'),
+            Method::get,
+            ProtocolVersion::v11,
+        );
+        $response = Response::of(
+            StatusCode::notFound,
+            $request->protocolVersion(),
+        );
         $inner
             ->expects($this->once())
             ->method('__invoke')
@@ -140,7 +155,11 @@ class ExponentialBackoffTest extends TestCase
             $inner = $this->createMock(Transport::class),
             $halt = $this->createMock(Halt::class),
         );
-        $request = $this->createMock(Request::class);
+        $request = Request::of(
+            Url::of('/'),
+            Method::get,
+            ProtocolVersion::v11,
+        );
         $inner
             ->expects($this->once())
             ->method('__invoke')
@@ -159,7 +178,11 @@ class ExponentialBackoffTest extends TestCase
             $inner = $this->createMock(Transport::class),
             $halt = $this->createMock(Halt::class),
         );
-        $request = $this->createMock(Request::class);
+        $request = Request::of(
+            Url::of('/'),
+            Method::get,
+            ProtocolVersion::v11,
+        );
         $inner
             ->expects($this->once())
             ->method('__invoke')
@@ -178,12 +201,15 @@ class ExponentialBackoffTest extends TestCase
             $inner = $this->createMock(Transport::class),
             $halt = $this->createMock(Halt::class),
         );
-        $request = $this->createMock(Request::class);
-        $response = $this->createMock(Response::class);
-        $response
-            ->expects($this->any())
-            ->method('statusCode')
-            ->willReturn(StatusCode::internalServerError);
+        $request = Request::of(
+            Url::of('/'),
+            Method::get,
+            ProtocolVersion::v11,
+        );
+        $response = Response::of(
+            StatusCode::internalServerError,
+            $request->protocolVersion(),
+        );
         $inner
             ->expects($this->exactly(12))
             ->method('__invoke')
@@ -218,7 +244,11 @@ class ExponentialBackoffTest extends TestCase
             $inner = $this->createMock(Transport::class),
             $halt = $this->createMock(Halt::class),
         );
-        $request = $this->createMock(Request::class);
+        $request = Request::of(
+            Url::of('/'),
+            Method::get,
+            ProtocolVersion::v11,
+        );
         $inner
             ->expects($this->exactly(12))
             ->method('__invoke')
@@ -253,17 +283,19 @@ class ExponentialBackoffTest extends TestCase
             $inner = $this->createMock(Transport::class),
             $halt = $this->createMock(Halt::class),
         );
-        $request = $this->createMock(Request::class);
-        $response1 = $this->createMock(Response::class);
-        $response2 = $this->createMock(Response::class);
-        $response1
-            ->expects($this->any())
-            ->method('statusCode')
-            ->willReturn(StatusCode::internalServerError);
-        $response2
-            ->expects($this->any())
-            ->method('statusCode')
-            ->willReturn(StatusCode::ok);
+        $request = Request::of(
+            Url::of('/'),
+            Method::get,
+            ProtocolVersion::v11,
+        );
+        $response1 = Response::of(
+            StatusCode::internalServerError,
+            $request->protocolVersion(),
+        );
+        $response2 = Response::of(
+            StatusCode::ok,
+            $request->protocolVersion(),
+        );
         $inner
             ->expects($this->exactly(2))
             ->method('__invoke')
@@ -286,12 +318,15 @@ class ExponentialBackoffTest extends TestCase
             $inner = $this->createMock(Transport::class),
             $halt = $this->createMock(Halt::class),
         );
-        $request = $this->createMock(Request::class);
-        $response = $this->createMock(Response::class);
-        $response
-            ->expects($this->any())
-            ->method('statusCode')
-            ->willReturn(StatusCode::internalServerError);
+        $request = Request::of(
+            Url::of('/'),
+            Method::get,
+            ProtocolVersion::v11,
+        );
+        $response = Response::of(
+            StatusCode::internalServerError,
+            $request->protocolVersion(),
+        );
         $inner
             ->expects($this->exactly(6))
             ->method('__invoke')

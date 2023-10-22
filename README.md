@@ -21,12 +21,12 @@ Send a request:
 ```php
 use Innmind\HttpTransport\Curl;
 use Innmind\TimeContinuum\Earth\Clock;
-use Innmind\Http\Message\Request\Request;
+use Innmind\Http\Request;
 
 $fulfill = Curl::of(new Clock);
 
 $either = $fulfill(
-    new Request(/* initialize your request */),
+    Request::of(/* initialize your request */),
 );
 ```
 
@@ -41,9 +41,9 @@ By default there is no limit of concurrency for the `Curl` transport. But if you
 ```php
 use Innmind\HttpTransport\Curl;
 use Innmind\Http\{
-    Message\Request\Request,
-    Message\Response,
-    Message\Method,
+    Request,
+    Response,
+    Method,
     ProtocolVersion,
 };
 use Innmind\Url\Url;
@@ -56,7 +56,7 @@ $responses = Sequence::of(
     'https://github.com/user/repo-c',
     // etc...
 )
-    ->map(static fn($url) => new Request(
+    ->map(static fn($url) => Request::of(
         Url::of($url),
         Method::get,
         ProtocolVersion::v20,

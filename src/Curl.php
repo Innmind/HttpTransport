@@ -12,7 +12,7 @@ use Innmind\HttpTransport\{
     Success,
 };
 use Innmind\Http\{
-    Message\Request,
+    Request,
     Factory\Header\TryFactory,
     Factory\Header\Factories,
 };
@@ -21,10 +21,7 @@ use Innmind\TimeContinuum\{
     ElapsedPeriod,
     Earth,
 };
-use Innmind\Filesystem\{
-    File\Content,
-    Chunk,
-};
+use Innmind\IO\IO;
 use Innmind\Stream\{
     Capabilities,
     Streams,
@@ -42,28 +39,26 @@ final class Curl implements Transport
 {
     private TryFactory $headerFactory;
     private Capabilities $capabilities;
-    /** @var callable(Content): Sequence<Str> */
-    private $chunk;
+    private IO $io;
     private Concurrency $concurrency;
     private ElapsedPeriod $timeout;
     /** @var callable(): void */
     private $heartbeat;
 
     /**
-     * @param callable(Content): Sequence<Str> $chunk
      * @param callable(): void $heartbeat
      */
     private function __construct(
         TryFactory $headerFactory,
         Capabilities $capabilities,
-        callable $chunk,
+        IO $io,
         Concurrency $concurrency,
         ElapsedPeriod $timeout,
         callable $heartbeat,
     ) {
         $this->headerFactory = $headerFactory;
         $this->capabilities = $capabilities;
-        $this->chunk = $chunk;
+        $this->io = $io;
         $this->concurrency = $concurrency;
         $this->timeout = $timeout;
         $this->heartbeat = $heartbeat;
@@ -74,7 +69,7 @@ final class Curl implements Transport
         $scheduled = Scheduled::of(
             $this->headerFactory,
             $this->capabilities,
-            $this->chunk,
+            $this->io,
             $request,
         );
         $this->concurrency->add($scheduled);
@@ -86,20 +81,23 @@ final class Curl implements Transport
         });
     }
 
-    /**
-     * @param callable(Content): Sequence<Str> $chunk
-     */
     public static function of(
         Clock $clock,
-        callable $chunk = null,
         Capabilities $capabilities = null,
+        IO $io = null,
     ): self {
+        $capabilities ??= Streams::fromAmbientAuthority();
+        $io ??= IO::of(static fn(?ElapsedPeriod $timeout) => match ($timeout) {
+            null => $capabilities->watch()->waitForever(),
+            default => $capabilities->watch()->timeoutAfter($timeout),
+        });
+
         return new self(
             new TryFactory(
                 Factories::default($clock),
             ),
-            $capabilities ?? Streams::fromAmbientAuthority(),
-            $chunk ?? new Chunk,
+            $capabilities,
+            $io,
             Concurrency::new(),
             new Earth\ElapsedPeriod(1_000), // 1 second
             static fn() => null,
@@ -116,7 +114,7 @@ final class Curl implements Transport
         return new self(
             $this->headerFactory,
             $this->capabilities,
-            $this->chunk,
+            $this->io,
             Concurrency::new($max),
             $this->timeout,
             $this->heartbeat,
@@ -133,7 +131,7 @@ final class Curl implements Transport
         return new self(
             $this->headerFactory,
             $this->capabilities,
-            $this->chunk,
+            $this->io,
             $this->concurrency,
             $timeout,
             $heartbeat ?? static fn() => null,

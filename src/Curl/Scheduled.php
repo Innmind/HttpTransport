@@ -5,15 +5,15 @@ namespace Innmind\HttpTransport\Curl;
 
 use Innmind\HttpTransport\Failure;
 use Innmind\Http\{
-    Message\Request,
-    Message\Method,
+    Request,
+    Method,
     ProtocolVersion,
     Header,
     Headers,
     Factory\Header\TryFactory,
 };
-use Innmind\Filesystem\File\Content;
 use Innmind\Url\Authority\UserInformation\User;
+use Innmind\IO\IO;
 use Innmind\Stream\{
     Capabilities,
     Writable,
@@ -34,35 +34,28 @@ final class Scheduled
 {
     private TryFactory $headerFactory;
     private Capabilities $capabilities;
-    /** @var callable(Content): Sequence<Str> */
-    private $chunk;
+    private IO $io;
     private Request $request;
 
-    /**
-     * @param callable(Content): Sequence<Str> $chunk
-     */
     private function __construct(
         TryFactory $headerFactory,
         Capabilities $capabilities,
-        callable $chunk,
+        IO $io,
         Request $request,
     ) {
         $this->headerFactory = $headerFactory;
         $this->capabilities = $capabilities;
-        $this->chunk = $chunk;
+        $this->io = $io;
         $this->request = $request;
     }
 
-    /**
-     * @param callable(Content): Sequence<Str> $chunk
-     */
     public static function of(
         TryFactory $headerFactory,
         Capabilities $capabilities,
-        callable $chunk,
+        IO $io,
         Request $request,
     ): self {
-        return new self($headerFactory, $capabilities, $chunk, $request);
+        return new self($headerFactory, $capabilities, $io, $request);
     }
 
     /**
@@ -282,7 +275,10 @@ final class Scheduled
         $carry = Either::right($inFile);
 
         /** @psalm-suppress ArgumentTypeCoercion Due to the reduce */
-        $written = ($this->chunk)($this->request->body())
+        $written = $this
+            ->request
+            ->body()
+            ->chunks()
             ->map(static fn($chunk) => $chunk->toEncoding(Str\Encoding::ascii))
             ->reduce(
                 $carry,
@@ -322,6 +318,7 @@ final class Scheduled
         }
 
         return Either::right(Ready::of(
+            $this->io,
             $this->headerFactory,
             $this->request,
             $handle,
