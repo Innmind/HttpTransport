@@ -138,7 +138,7 @@ final class Concurrency
             if ($stillActive) {
                 $heartbeat();
                 // Wait a short time for more activity
-                \curl_multi_select($multiHandle, $timeout->milliseconds() * 1000);
+                \curl_multi_select($multiHandle, $timeout->milliseconds() / 1000);
             }
         } while ($stillActive && $status === \CURLM_OK);
 
