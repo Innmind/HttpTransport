@@ -1,5 +1,11 @@
 # Changelog
 
+## 7.0.1 - 2023-11-05
+
+### Fixed
+
+- Curl timeout that was not applied correctly
+
 ## 7.0.0 - 2023-10-22
 
 ### Changed
