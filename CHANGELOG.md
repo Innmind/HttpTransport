@@ -1,5 +1,11 @@
 # Changelog
 
+## 7.1.0 - 2023-11-11
+
+### Added
+
+- `Innmind\HttpTransport\Header\Timeout` to specify a request timeout
+
 ## 7.0.1 - 2023-11-05
 
 ### Fixed
