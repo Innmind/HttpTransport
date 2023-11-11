@@ -11,12 +11,15 @@ use Innmind\HttpTransport\{
     ClientError,
     ConnectionFailed,
     ServerError,
+    Failure,
+    Header\Timeout,
 };
 use Innmind\Http\{
     Request,
     Response,
     Method,
     ProtocolVersion,
+    Headers,
     Header\Date,
     Header\Location,
 };
@@ -489,6 +492,39 @@ class CurlTest extends TestCase
         unset($responses);
 
         $this->assertSame($initialCount, \count(\get_resources('stream')));
+    }
+
+    public function testTimeout()
+    {
+        $request = Request::of(
+            Url::of('https://httpbin.org/delay/2'),
+            Method::get,
+            ProtocolVersion::v11,
+        );
+
+        $result = ($this->curl)($request)->match(
+            static fn($success) => $success,
+            static fn() => null,
+        );
+
+        $this->assertInstanceOf(Success::class, $result);
+
+        $request = Request::of(
+            Url::of('https://httpbin.org/delay/2'),
+            Method::get,
+            ProtocolVersion::v11,
+            Headers::of(
+                Timeout::of(1),
+            ),
+        );
+
+        $result = ($this->curl)($request)->match(
+            static fn() => null,
+            static fn($error) => $error,
+        );
+
+        $this->assertInstanceOf(Failure::class, $result);
+        $this->assertSame('Timeout was reached', $result->reason());
     }
 
     // Don't know how to test MalformedResponse, ConnectionFailed, Information and ServerError

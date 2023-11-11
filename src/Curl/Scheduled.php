@@ -3,7 +3,10 @@ declare(strict_types = 1);
 
 namespace Innmind\HttpTransport\Curl;
 
-use Innmind\HttpTransport\Failure;
+use Innmind\HttpTransport\{
+    Failure,
+    Header\Timeout,
+};
 use Innmind\Http\{
     Request,
     Method,
@@ -142,7 +145,6 @@ final class Scheduled
             }],
             [\CURLOPT_PROTOCOLS, \CURLPROTO_HTTP | \CURLPROTO_HTTPS],
             [\CURLOPT_TCP_KEEPALIVE, 1],
-            // set CURLOPT_TIMEOUT ?
         ];
 
         $header = match ($this->request->method()) {
@@ -197,7 +199,15 @@ final class Scheduled
             ),
             static fn() => $options,
         );
+        $options = $headers->find(Timeout::class)->match(
+            static fn($header) => \array_merge(
+                $options,
+                [[\CURLOPT_TIMEOUT, $header->seconds()]],
+            ),
+            static fn() => $options,
+        );
 
+        $headers = $headers->filter(static fn($header) => !($header instanceof Timeout));
         /** @var list<string> */
         $rawHeaders = [];
         $rawHeaders = $headers->reduce(
