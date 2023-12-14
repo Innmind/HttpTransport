@@ -44,6 +44,7 @@ final class Curl implements Transport
     private ElapsedPeriod $timeout;
     /** @var callable(): void */
     private $heartbeat;
+    private bool $disableSSLVerification;
 
     /**
      * @param callable(): void $heartbeat
@@ -55,6 +56,7 @@ final class Curl implements Transport
         Concurrency $concurrency,
         ElapsedPeriod $timeout,
         callable $heartbeat,
+        bool $disableSSLVerification,
     ) {
         $this->headerFactory = $headerFactory;
         $this->capabilities = $capabilities;
@@ -62,6 +64,7 @@ final class Curl implements Transport
         $this->concurrency = $concurrency;
         $this->timeout = $timeout;
         $this->heartbeat = $heartbeat;
+        $this->disableSSLVerification = $disableSSLVerification;
     }
 
     public function __invoke(Request $request): Either
@@ -71,6 +74,7 @@ final class Curl implements Transport
             $this->capabilities,
             $this->io,
             $request,
+            $this->disableSSLVerification,
         );
         $this->concurrency->add($scheduled);
 
@@ -101,6 +105,7 @@ final class Curl implements Transport
             Concurrency::new(),
             new Earth\ElapsedPeriod(1_000), // 1 second
             static fn() => null,
+            false,
         );
     }
 
@@ -118,6 +123,7 @@ final class Curl implements Transport
             Concurrency::new($max),
             $this->timeout,
             $this->heartbeat,
+            $this->disableSSLVerification,
         );
     }
 
@@ -135,6 +141,26 @@ final class Curl implements Transport
             $this->concurrency,
             $timeout,
             $heartbeat ?? static fn() => null,
+            $this->disableSSLVerification,
+        );
+    }
+
+    /**
+     * You should use this method only when trying to call a server you own that
+     * uses a self signed certificate that will fail the verification.
+     *
+     * @psalm-mutation-free
+     */
+    public function disableSSLVerification(): self
+    {
+        return new self(
+            $this->headerFactory,
+            $this->capabilities,
+            $this->io,
+            $this->concurrency,
+            $this->timeout,
+            $this->heartbeat,
+            true,
         );
     }
 }

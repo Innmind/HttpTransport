@@ -1,5 +1,11 @@
 # Changelog
 
+## [Unreleased]
+
+### Added
+
+- `Innmind\HttpTransport\Curl::disableSSLVerification()`
+
 ## 7.1.0 - 2023-11-11
 
 ### Added

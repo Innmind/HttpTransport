@@ -39,17 +39,20 @@ final class Scheduled
     private Capabilities $capabilities;
     private IO $io;
     private Request $request;
+    private bool $disableSSLVerification;
 
     private function __construct(
         TryFactory $headerFactory,
         Capabilities $capabilities,
         IO $io,
         Request $request,
+        bool $disableSSLVerification,
     ) {
         $this->headerFactory = $headerFactory;
         $this->capabilities = $capabilities;
         $this->io = $io;
         $this->request = $request;
+        $this->disableSSLVerification = $disableSSLVerification;
     }
 
     public static function of(
@@ -57,8 +60,15 @@ final class Scheduled
         Capabilities $capabilities,
         IO $io,
         Request $request,
+        bool $disableSSLVerification,
     ): self {
-        return new self($headerFactory, $capabilities, $io, $request);
+        return new self(
+            $headerFactory,
+            $capabilities,
+            $io,
+            $request,
+            $disableSSLVerification,
+        );
     }
 
     /**
@@ -146,6 +156,10 @@ final class Scheduled
             [\CURLOPT_PROTOCOLS, \CURLPROTO_HTTP | \CURLPROTO_HTTPS],
             [\CURLOPT_TCP_KEEPALIVE, 1],
         ];
+
+        if ($this->disableSSLVerification) {
+            $options[] = [\CURLOPT_SSL_VERIFYPEER, false];
+        }
 
         $header = match ($this->request->method()) {
             Method::head => [\CURLOPT_NOBODY, true],
