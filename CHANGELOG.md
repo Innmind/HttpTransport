@@ -1,5 +1,11 @@
 # Changelog
 
+## 7.2.1 - 2024-03-01
+
+### Fixed
+
+- When following redirections (via `FollowRedirections`) if the target url is only a path it crashed because no host was provided, now the target url is resolved based on the previous request
+
 ## 7.2.0 - 2023-12-14
 
 ### Added
