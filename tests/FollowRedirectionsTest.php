@@ -218,7 +218,9 @@ class FollowRedirectionsTest extends TestCase
     {
         $this
             ->forAll(
-                FUrl::any()->filter(static fn($url) => !$url->authority()->equals(Authority::none())),
+                FUrl::any()
+                    ->filter(static fn($url) => !$url->authority()->equals(Authority::none()))
+                    ->filter(static fn($url) => $url->path()->absolute()),
                 FUrl::any(),
                 Set\Elements::of(...Method::cases()),
                 Set\Elements::of(
@@ -291,7 +293,9 @@ class FollowRedirectionsTest extends TestCase
     {
         $this
             ->forAll(
-                FUrl::any()->filter(static fn($url) => !$url->authority()->equals(Authority::none())),
+                FUrl::any()
+                    ->filter(static fn($url) => !$url->authority()->equals(Authority::none()))
+                    ->filter(static fn($url) => $url->path()->absolute()),
                 FUrl::any(),
                 Set\Elements::of(Method::get, Method::head), // unsafe methods are not redirected
                 Set\Elements::of(
