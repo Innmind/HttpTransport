@@ -8,7 +8,6 @@ use Innmind\Http\{
     Response,
     Headers,
     Header,
-    Header\Value,
 };
 use Innmind\Immutable\{
     Either,

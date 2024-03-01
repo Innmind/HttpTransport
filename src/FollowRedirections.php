@@ -9,6 +9,10 @@ use Innmind\Http\{
     Response\StatusCode,
     Header\Location,
 };
+use Innmind\Url\{
+    Url,
+    Authority,
+};
 use Innmind\Immutable\{
     Either,
     Sequence,
@@ -93,7 +97,7 @@ final class FollowRedirections implements Transport
             ->find(Location::class)
             ->map(static fn($header) => $header->url())
             ->map(static fn($url) => Request::of(
-                $url,
+                self::resolveUrl($redirection->request()->url(), $url),
                 $redirection->request()->method(),
                 $redirection->request()->protocolVersion(),
                 $redirection->request()->headers(),
@@ -122,7 +126,7 @@ final class FollowRedirections implements Transport
             ->find(Location::class)
             ->map(static fn($header) => $header->url())
             ->map(static fn($url) => Request::of(
-                $url,
+                self::resolveUrl($redirection->request()->url(), $url),
                 Method::get,
                 $redirection->request()->protocolVersion(),
                 $redirection->request()->headers(),
@@ -131,5 +135,18 @@ final class FollowRedirections implements Transport
                 fn($request) => ($this->fulfill)($request),
                 static fn() => Either::left($redirection),
             );
+    }
+
+    private static function resolveUrl(Url $request, Url $location): Url
+    {
+        if ($location->authority()->equals(Authority::none())) {
+            $location = $location
+                ->withScheme($request->scheme())
+                ->withAuthority($request->authority());
+        }
+
+        return $location->withPath(
+            $request->path()->resolve($location->path()),
+        );
     }
 }

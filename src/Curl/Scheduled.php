@@ -27,7 +27,6 @@ use Innmind\Stream\{
 use Innmind\Immutable\{
     Either,
     Str,
-    Sequence,
 };
 
 /**
