@@ -27,7 +27,6 @@ use Innmind\Http\{
 use Innmind\Filesystem\File\Content;
 use Innmind\IO\IO;
 use Innmind\Stream\{
-    Readable,
     Writable,
     Bidirectional,
 };
