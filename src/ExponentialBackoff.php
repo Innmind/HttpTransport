@@ -3,11 +3,7 @@ declare(strict_types = 1);
 
 namespace Innmind\HttpTransport;
 
-use Innmind\Http\{
-    Request,
-    Response,
-    Response\StatusCode,
-};
+use Innmind\Http\Request;
 use Innmind\TimeContinuum\{
     Period,
     Earth\Period\Millisecond,

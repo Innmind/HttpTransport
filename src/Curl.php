@@ -3,13 +3,9 @@ declare(strict_types = 1);
 
 namespace Innmind\HttpTransport;
 
-use Innmind\HttpTransport\{
-    Curl\Scheduled,
-    Curl\Ready,
-    Curl\Concurrency,
-    Transport,
-    Failure,
-    Success,
+use Innmind\HttpTransport\Curl\{
+    Scheduled,
+    Concurrency
 };
 use Innmind\Http\{
     Request,
@@ -26,11 +22,7 @@ use Innmind\Stream\{
     Capabilities,
     Streams,
 };
-use Innmind\Immutable\{
-    Either,
-    Str,
-    Sequence,
-};
+use Innmind\Immutable\Either;
 
 /**
  * @psalm-import-type Errors from Transport
