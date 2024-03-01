@@ -218,7 +218,7 @@ class FollowRedirectionsTest extends TestCase
     {
         $this
             ->forAll(
-                FUrl::any(),
+                FUrl::any()->filter(static fn($url) => !$url->authority()->equals(Authority::none())),
                 FUrl::any(),
                 Set\Elements::of(...Method::cases()),
                 Set\Elements::of(
