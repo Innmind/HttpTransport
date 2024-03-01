@@ -152,10 +152,11 @@ class FollowRedirectionsTest extends TestCase
                 $inner
                     ->expects($matcher = $this->exactly(6))
                     ->method('__invoke')
-                    ->willReturnCallback(function($request) use ($matcher, $start, $newUrl, $expected) {
+                    ->willReturnCallback(function($request) use ($matcher, $start, $firstUrl, $expected) {
                         match ($matcher->numberOfInvocations()) {
                             1 => $this->assertSame($start, $request),
-                            default => $this->assertSame($newUrl, $request->url()),
+                            // assertions on the new url are done in self::testRedirect() and self::testRedirectSeeOther()
+                            default => $this->assertNotSame($firstUrl, $request->url()),
                         };
 
                         return $expected;
@@ -251,7 +252,15 @@ class FollowRedirectionsTest extends TestCase
                             $this->assertSame($start, $request);
                         } else {
                             $this->assertSame(Method::get, $request->method());
-                            $this->assertSame($newUrl, $request->url());
+                            $this->assertFalse($request->url()->authority()->equals(Authority::none()));
+                            $this->assertTrue($request->url()->path()->absolute());
+                            // not a direct comparison as new url might be a relative path
+                            $this->assertStringEndsWith(
+                                $newUrl->path()->toString(),
+                                $request->url()->path()->toString(),
+                            );
+                            $this->assertSame($newUrl->query(), $request->url()->query());
+                            $this->assertSame($newUrl->fragment(), $request->url()->fragment());
                             $this->assertSame($start->headers(), $request->headers());
                             $this->assertSame('', $request->body()->toString());
                         }
@@ -322,7 +331,15 @@ class FollowRedirectionsTest extends TestCase
                             $this->assertSame($start, $request);
                         } else {
                             $this->assertSame($start->method(), $request->method());
-                            $this->assertSame($newUrl, $request->url());
+                            $this->assertFalse($request->url()->authority()->equals(Authority::none()));
+                            $this->assertTrue($request->url()->path()->absolute());
+                            // not a direct comparison as new url might be a relative path
+                            $this->assertStringEndsWith(
+                                $newUrl->path()->toString(),
+                                $request->url()->path()->toString(),
+                            );
+                            $this->assertSame($newUrl->query(), $request->url()->query());
+                            $this->assertSame($newUrl->fragment(), $request->url()->fragment());
                             $this->assertSame($start->headers(), $request->headers());
                             $this->assertSame($start->body(), $request->body());
                         }
