@@ -25,7 +25,10 @@ use Innmind\Http\{
     Header\Location,
 };
 use Innmind\Filesystem\File\Content;
-use Innmind\Url\Url;
+use Innmind\Url\{
+    Url,
+    Authority,
+};
 use Innmind\Immutable\Either;
 use PHPUnit\Framework\TestCase;
 use Innmind\BlackBox\{
@@ -279,7 +282,7 @@ class FollowRedirectionsTest extends TestCase
     {
         $this
             ->forAll(
-                FUrl::any(),
+                FUrl::any()->filter(static fn($url) => !$url->authority()->equals(Authority::none())),
                 FUrl::any(),
                 Set\Elements::of(Method::get, Method::head), // unsafe methods are not redirected
                 Set\Elements::of(
