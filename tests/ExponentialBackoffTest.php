@@ -195,6 +195,49 @@ class ExponentialBackoffTest extends TestCase
         $this->assertEquals($expected, $fulfill($request));
     }
 
+    public function testRetryWhileThereIsStillATooManyRequestsError()
+    {
+        $fulfill = ExponentialBackoff::of(
+            $inner = $this->createMock(Transport::class),
+            $halt = $this->createMock(Halt::class),
+        );
+        $request = Request::of(
+            Url::of('/'),
+            Method::get,
+            ProtocolVersion::v11,
+        );
+        $response = Response::of(
+            StatusCode::tooManyRequests,
+            $request->protocolVersion(),
+        );
+        $inner
+            ->expects($this->exactly(12))
+            ->method('__invoke')
+            ->with($request)
+            ->willReturn($expected = Either::left(new ClientError($request, $response)));
+        $halt
+            ->expects($matcher = $this->exactly(10))
+            ->method('__invoke')
+            ->willReturnCallback(function($period) use ($matcher) {
+                match ($matcher->numberOfInvocations()) {
+                    1 => $this->assertEquals(new Millisecond(100), $period),
+                    2 => $this->assertEquals(new Millisecond(271), $period),
+                    3 => $this->assertEquals(new Millisecond(738), $period),
+                    4 => $this->assertEquals(new Millisecond(2008), $period),
+                    5 => $this->assertEquals(new Millisecond(5459), $period),
+                    6 => $this->assertEquals(new Millisecond(100), $period),
+                    7 => $this->assertEquals(new Millisecond(271), $period),
+                    8 => $this->assertEquals(new Millisecond(738), $period),
+                    9 => $this->assertEquals(new Millisecond(2008), $period),
+                    10 => $this->assertEquals(new Millisecond(5459), $period),
+                };
+            });
+
+        $this->assertEquals($expected, $fulfill($request));
+        // to make sure halt periods are kept between requests
+        $this->assertEquals($expected, $fulfill($request));
+    }
+
     public function testRetryWhileThereIsStillAServerError()
     {
         $fulfill = ExponentialBackoff::of(
