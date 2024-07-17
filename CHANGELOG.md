@@ -1,5 +1,11 @@
 # Changelog
 
+## 7.3.0 - 2024-07-17
+
+### Changed
+
+- `429 Too Many Requests` errors are now retried when using `Innmind\HttpTransport\ExponentialBackoff`
+
 ## 7.2.1 - 2024-03-01
 
 ### Fixed
