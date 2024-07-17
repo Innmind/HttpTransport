@@ -4,6 +4,7 @@ declare(strict_types = 1);
 namespace Innmind\HttpTransport;
 
 use Innmind\Http\Request;
+use Innmind\Http\Response\StatusCode;
 use Innmind\TimeContinuum\{
     Period,
     Earth\Period\Millisecond,
@@ -74,6 +75,8 @@ final class ExponentialBackoff implements Transport
         Period $period,
     ): Either {
         return $result->otherwise(fn($error) => match (true) {
+            $error instanceof ClientError &&
+            $error->response()->statusCode() === StatusCode::tooManyRequests => $this->retry($request, $period),
             $error instanceof ServerError => $this->retry($request, $period),
             $error instanceof ConnectionFailed => $this->retry($request, $period),
             default => $this->return($error),
