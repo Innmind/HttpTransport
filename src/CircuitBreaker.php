@@ -46,6 +46,7 @@ final class CircuitBreaker implements Transport
         $this->openedCircuits = Map::of();
     }
 
+    #[\Override]
     public function __invoke(Request $request): Either
     {
         if ($this->opened($request->url())) {

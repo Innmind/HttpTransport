@@ -30,6 +30,7 @@ final class Logger implements Transport
         $this->logger = $logger;
     }
 
+    #[\Override]
     public function __invoke(Request $request): Either
     {
         $reference = $this->logRequest($request);

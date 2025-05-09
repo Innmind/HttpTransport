@@ -36,6 +36,7 @@ final class FollowRedirections implements Transport
         $this->hops = Sequence::of(...\range(1, $maxHops));
     }
 
+    #[\Override]
     public function __invoke(Request $request): Either
     {
         /**
