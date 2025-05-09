@@ -498,21 +498,27 @@ class CurlTest extends TestCase
 
     public function testTimeout()
     {
-        $request = Request::of(
-            Url::of('https://httpbin.org/delay/2'),
-            Method::get,
-            ProtocolVersion::v11,
-        );
+        foreach (['bin', 'bun'] as $server) {
+            $request = Request::of(
+                Url::of("https://http$server.org/delay/2"),
+                Method::get,
+                ProtocolVersion::v11,
+            );
 
-        $result = ($this->curl)($request)->match(
-            static fn($success) => $success,
-            static fn() => null,
-        );
+            $result = ($this->curl)($request)->match(
+                static fn($success) => $success,
+                static fn() => null,
+            );
+
+            if (!\is_null($result)) {
+                break;
+            }
+        }
 
         $this->assertInstanceOf(Success::class, $result);
 
         $request = Request::of(
-            Url::of('https://httpbin.org/delay/2'),
+            Url::of("https://http$server.org/delay/2"),
             Method::get,
             ProtocolVersion::v11,
             Headers::of(
