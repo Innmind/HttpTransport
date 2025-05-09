@@ -129,7 +129,7 @@ class CurlTest extends TestCase
         $this->assertInstanceOf(ClientError::class, $error);
         $this->assertSame(404, $error->response()->statusCode()->toInt());
         $this->assertSame(
-            'Server: GitHub.com',
+            'Server: github.com',
             $error
                 ->response()
                 ->headers()
@@ -154,7 +154,13 @@ class CurlTest extends TestCase
 
         $this->assertInstanceOf(ConnectionFailed::class, $error);
         $this->assertSame($request, $error->request());
-        $this->assertSame("Couldn't connect to server", $error->reason());
+        $this->assertContains(
+            $error->reason(),
+            [
+                'Could not connect to server',
+                "Couldn't connect to server",
+            ],
+        );
     }
 
     public function testResponseBody()
@@ -170,11 +176,10 @@ class CurlTest extends TestCase
 
         $this->assertInstanceOf(Success::class, $success);
 
-        $extraSpace = ' ';
         $license = <<<LICENSE
         The MIT License (MIT)
 
-        Copyright (c) 2015$extraSpace
+        Copyright (c) 2015-present
 
         Permission is hereby granted, free of charge, to any person obtaining a copy
         of this software and associated documentation files (the "Software"), to deal
