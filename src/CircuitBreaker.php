@@ -9,8 +9,8 @@ use Innmind\Http\{
     Response\StatusCode,
     ProtocolVersion,
     Headers,
-    Header\Header,
-    Header\Value\Value,
+    Header,
+    Header\Value,
 };
 use Innmind\Url\Url;
 use Innmind\TimeContinuum\{
@@ -103,9 +103,9 @@ final class CircuitBreaker implements Transport
             $code = StatusCode::serviceUnavailable,
             ProtocolVersion::v20,
             Headers::of(
-                new Header(
+                Header::of(
                     'X-Circuit-Opened',
-                    new Value('true'),
+                    Value::of('true'),
                 ),
             ),
         )));

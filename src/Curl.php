@@ -9,19 +9,14 @@ use Innmind\HttpTransport\Curl\{
 };
 use Innmind\Http\{
     Request,
-    Factory\Header\TryFactory,
-    Factory\Header\Factories,
+    Factory\Header\Factory,
 };
 use Innmind\TimeContinuum\{
     Clock,
     ElapsedPeriod,
-    Earth,
+    Period,
 };
 use Innmind\IO\IO;
-use Innmind\Stream\{
-    Capabilities,
-    Streams,
-};
 use Innmind\Immutable\Either;
 
 /**
@@ -29,8 +24,7 @@ use Innmind\Immutable\Either;
  */
 final class Curl implements Transport
 {
-    private TryFactory $headerFactory;
-    private Capabilities $capabilities;
+    private Factory $headerFactory;
     private IO $io;
     private Concurrency $concurrency;
     private ElapsedPeriod $timeout;
@@ -42,8 +36,7 @@ final class Curl implements Transport
      * @param callable(): void $heartbeat
      */
     private function __construct(
-        TryFactory $headerFactory,
-        Capabilities $capabilities,
+        Factory $headerFactory,
         IO $io,
         Concurrency $concurrency,
         ElapsedPeriod $timeout,
@@ -51,7 +44,6 @@ final class Curl implements Transport
         bool $disableSSLVerification,
     ) {
         $this->headerFactory = $headerFactory;
-        $this->capabilities = $capabilities;
         $this->io = $io;
         $this->concurrency = $concurrency;
         $this->timeout = $timeout;
@@ -64,7 +56,6 @@ final class Curl implements Transport
     {
         $scheduled = Scheduled::of(
             $this->headerFactory,
-            $this->capabilities,
             $this->io,
             $request,
             $this->disableSSLVerification,
@@ -80,23 +71,15 @@ final class Curl implements Transport
 
     public static function of(
         Clock $clock,
-        ?Capabilities $capabilities = null,
         ?IO $io = null,
     ): self {
-        $capabilities ??= Streams::fromAmbientAuthority();
-        $io ??= IO::of(static fn(?ElapsedPeriod $timeout) => match ($timeout) {
-            null => $capabilities->watch()->waitForever(),
-            default => $capabilities->watch()->timeoutAfter($timeout),
-        });
+        $io ??= IO::fromAmbientAuthority();
 
         return new self(
-            new TryFactory(
-                Factories::default($clock),
-            ),
-            $capabilities,
+            Factory::new($clock),
             $io,
             Concurrency::new(),
-            new Earth\ElapsedPeriod(1_000), // 1 second
+            Period::second(1)->asElapsedPeriod(),
             static fn() => null,
             false,
         );
@@ -111,7 +94,6 @@ final class Curl implements Transport
     {
         return new self(
             $this->headerFactory,
-            $this->capabilities,
             $this->io,
             Concurrency::new($max),
             $this->timeout,
@@ -129,7 +111,6 @@ final class Curl implements Transport
     {
         return new self(
             $this->headerFactory,
-            $this->capabilities,
             $this->io,
             $this->concurrency,
             $timeout,
@@ -148,7 +129,6 @@ final class Curl implements Transport
     {
         return new self(
             $this->headerFactory,
-            $this->capabilities,
             $this->io,
             $this->concurrency,
             $this->timeout,

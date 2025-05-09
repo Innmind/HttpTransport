@@ -16,7 +16,7 @@ use Innmind\Http\{
     ProtocolVersion,
     Headers,
     Header,
-    Header\Value\Value,
+    Header\Value,
 };
 use Innmind\Url\Url;
 use Innmind\Immutable\Either;
@@ -52,14 +52,14 @@ class LoggerTest extends TestCase
             Method::post,
             ProtocolVersion::v11,
             Headers::of(
-                new Header\Header(
+                Header::of(
                     'foo',
-                    new Value('bar'),
-                    new Value('baz'),
+                    Value::of('bar'),
+                    Value::of('baz'),
                 ),
-                new Header\Header(
+                Header::of(
                     'foobar',
-                    new Value('whatever'),
+                    Value::of('whatever'),
                 ),
             ),
         );
@@ -67,10 +67,10 @@ class LoggerTest extends TestCase
             StatusCode::ok,
             $request->protocolVersion(),
             Headers::of(
-                new Header\Header(
+                Header::of(
                     'x-debug',
-                    new Value('yay'),
-                    new Value('nay'),
+                    Value::of('yay'),
+                    Value::of('nay'),
                 ),
             ),
         );
