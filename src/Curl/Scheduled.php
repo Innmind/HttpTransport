@@ -13,20 +13,17 @@ use Innmind\Http\{
     ProtocolVersion,
     Header,
     Headers,
-    Factory\Header\TryFactory,
+    Factory\Header\Factory,
 };
 use Innmind\Url\Authority\UserInformation\User;
-use Innmind\IO\IO;
-use Innmind\Stream\{
-    Capabilities,
-    Writable,
-    FailedToWriteToStream,
-    DataPartiallyWritten,
-    Exception\InvalidArgumentException,
+use Innmind\IO\{
+    IO,
+    Files\Temporary,
 };
 use Innmind\Immutable\{
     Either,
     Str,
+    Sequence,
 };
 
 /**
@@ -34,36 +31,31 @@ use Innmind\Immutable\{
  */
 final class Scheduled
 {
-    private TryFactory $headerFactory;
-    private Capabilities $capabilities;
+    private Factory $headerFactory;
     private IO $io;
     private Request $request;
     private bool $disableSSLVerification;
 
     private function __construct(
-        TryFactory $headerFactory,
-        Capabilities $capabilities,
+        Factory $headerFactory,
         IO $io,
         Request $request,
         bool $disableSSLVerification,
     ) {
         $this->headerFactory = $headerFactory;
-        $this->capabilities = $capabilities;
         $this->io = $io;
         $this->request = $request;
         $this->disableSSLVerification = $disableSSLVerification;
     }
 
     public static function of(
-        TryFactory $headerFactory,
-        Capabilities $capabilities,
+        Factory $headerFactory,
         IO $io,
         Request $request,
         bool $disableSSLVerification,
     ): self {
         return new self(
             $headerFactory,
-            $capabilities,
             $io,
             $request,
             $disableSSLVerification,
@@ -89,9 +81,9 @@ final class Scheduled
     /**
      * @param list<array{0: int, 1: mixed}> $options
      *
-     * @return Either<Failure, list{\CurlHandle, Writable}>
+     * @return Either<Failure, list{\CurlHandle, Temporary}>
      */
-    private function init(array $options, Writable $inFile): Either
+    private function init(array $options, Temporary $inFile): Either
     {
         $handle = \curl_init(
             $this
@@ -131,7 +123,7 @@ final class Scheduled
     }
 
     /**
-     * @return Either<Failure, array{0: list<array{0: int, 1: mixed}>, 1: Writable}>
+     * @return Either<Failure, array{0: list<array{0: int, 1: mixed}>, 1: Temporary}>
      */
     private function options(): Either
     {
@@ -220,7 +212,9 @@ final class Scheduled
             static fn() => $options,
         );
 
-        $headers = $headers->filter(static fn($header) => !($header instanceof Timeout));
+        $headers = $headers->filter(
+            static fn($header) => $header->name() !== Timeout::of(1)->normalize()->name(),
+        );
         /** @var list<string> */
         $rawHeaders = [];
         $rawHeaders = $headers->reduce(
@@ -272,7 +266,7 @@ final class Scheduled
     }
 
     /**
-     * @return Either<Failure, array{0: list<array{0: int, 1: mixed}>, 1: Writable}>
+     * @return Either<Failure, array{0: list<array{0: int, 1: mixed}>, 1: Temporary}>
      */
     private function bodyOptions(): Either
     {
@@ -290,35 +284,23 @@ final class Scheduled
                 static fn() => [],
             );
 
-        $inFile = $this
-            ->capabilities
-            ->temporary()
-            ->new();
-        /** @var Either<FailedToWriteToStream|DataPartiallyWritten, Writable\Stream> */
-        $carry = Either::right($inFile);
+        return $this
+            ->io
+            ->files()
+            ->temporary(
+                $this
+                    ->request
+                    ->body()
+                    ->chunks(),
+            )
+            ->flatMap(static fn($tmp) => $tmp->internal()->rewind()->map(
+                static function() use ($tmp, $options) {
+                    $options[] = [\CURLOPT_INFILE, $tmp->internal()->resource()];
 
-        /** @psalm-suppress ArgumentTypeCoercion Due to the reduce */
-        $written = $this
-            ->request
-            ->body()
-            ->chunks()
-            ->map(static fn($chunk) => $chunk->toEncoding(Str\Encoding::ascii))
-            ->reduce(
-                $carry,
-                static fn(Either $either, $chunk): Either => $either->flatMap(
-                    static fn(Writable $inFile) => $inFile->write($chunk),
-                ),
-            );
-
-        /** @var Either<Failure, array{0: list<array{0: int, 1: mixed}>, 1: Writable}> */
-        return $written
-            ->flatMap(static fn($inFile) => $inFile->rewind())
-            ->map(static function($inFile) use ($options) {
-                /** @psalm-suppress UndefinedInterfaceMethod */
-                $options[] = [\CURLOPT_INFILE, $inFile->resource()];
-
-                return [$options, $inFile];
-            })
+                    return [$options, $tmp];
+                },
+            ))
+            ->either()
             ->leftMap(fn($error) => new Failure(
                 $this->request,
                 $error::class,
@@ -328,25 +310,24 @@ final class Scheduled
     /**
      * @return Either<Failure, Ready>
      */
-    private function ready(\CurlHandle $handle, Writable $inFile): Either
+    private function ready(\CurlHandle $handle, Temporary $inFile): Either
     {
-        try {
-            $body = $this
-                ->capabilities
-                ->temporary()
-                ->new();
-        } catch (InvalidArgumentException $e) {
-            /** @var Either<Failure, Ready> */
-            return Either::left(new Failure($this->request, 'Failed to write response body'));
-        }
-
-        return Either::right(Ready::of(
-            $this->io,
-            $this->headerFactory,
-            $this->request,
-            $handle,
-            $inFile,
-            $body,
-        ));
+        return $this
+            ->io
+            ->files()
+            ->temporary(Sequence::of())
+            ->map(fn($body) => Ready::of(
+                $this->io,
+                $this->headerFactory,
+                $this->request,
+                $handle,
+                $inFile,
+                $body,
+            ))
+            ->either()
+            ->leftMap(fn() => new Failure(
+                $this->request,
+                'Failed to write response body',
+            ));
     }
 }

@@ -22,13 +22,12 @@ use Innmind\Http\{
     ProtocolVersion,
     Header,
     Headers,
-    Factory\Header\TryFactory,
+    Factory\Header\Factory,
 };
 use Innmind\Filesystem\File\Content;
-use Innmind\IO\IO;
-use Innmind\Stream\{
-    Writable,
-    Bidirectional,
+use Innmind\IO\{
+    IO,
+    Files\Temporary,
 };
 use Innmind\Immutable\{
     Either,
@@ -45,22 +44,22 @@ use Innmind\Immutable\{
 final class Ready
 {
     private IO $io;
-    private TryFactory $headerFactory;
+    private Factory $headerFactory;
     private Request $request;
     private \CurlHandle $handle;
-    private Writable $inFile;
-    private Bidirectional $body;
+    private Temporary $inFile;
+    private Temporary $body;
     private Str $status;
     /** @var Sequence<string> */
     private Sequence $headers;
 
     private function __construct(
         IO $io,
-        TryFactory $headerFactory,
+        Factory $headerFactory,
         Request $request,
         \CurlHandle $handle,
-        Writable $inFile,
-        Bidirectional $body,
+        Temporary $inFile,
+        Temporary $body,
     ) {
         $this->io = $io;
         $this->headerFactory = $headerFactory;
@@ -94,7 +93,8 @@ final class Ready
                 // return -1 when failed to write to make curl stop
                 return $this
                     ->body
-                    ->write($chunk)
+                    ->push()
+                    ->chunk($chunk)
                     ->match(
                         static fn() => $chunk->length(),
                         static fn() => -1,
@@ -105,11 +105,11 @@ final class Ready
 
     public static function of(
         IO $io,
-        TryFactory $headerFactory,
+        Factory $headerFactory,
         Request $request,
         \CurlHandle $handle,
-        Writable $inFile,
-        Bidirectional $body,
+        Temporary $inFile,
+        Temporary $body,
     ): self {
         return new self(
             $io,
@@ -243,7 +243,7 @@ final class Ready
             ->map(fn($captured) => $this->createHeader($captured))
             ->match(
                 static fn($first, $rest) => Maybe::all($first, ...$rest->toList())->map(
-                    static fn(Header ...$headers) => Headers::of(...$headers),
+                    static fn(Header|Header\Custom ...$headers) => Headers::of(...$headers),
                 ),
                 static fn() => Maybe::just(Headers::of()),
             );
@@ -254,14 +254,14 @@ final class Ready
                 $status,
                 $protocol,
                 $headers,
-                Content::io($this->io->readable()->wrap($this->body)),
+                Content::io($this->body->read()),
             ))
             ->match(
                 static fn($response) => Either::right($response),
                 fn() => Either::left(new MalformedResponse($this->request, Raw::of(
                     $this->status,
                     $this->headers->map(Str::of(...)),
-                    Content::io($this->io->readable()->wrap($this->body)),
+                    Content::io($this->body->read()),
                 ))),
             );
     }
@@ -269,7 +269,7 @@ final class Ready
     /**
      * @param Map<int|string, Str> $info
      *
-     * @return Maybe<Header>
+     * @return Maybe<Header|Header\Custom>
      */
     private function createHeader(Map $info): Maybe
     {

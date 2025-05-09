@@ -23,9 +23,13 @@ use Innmind\Http\{
     Response\StatusCode,
 };
 use Innmind\TimeWarp\Halt;
-use Innmind\TimeContinuum\Earth\Period\Millisecond;
+use Innmind\TimeContinuum\Period;
 use Innmind\Url\Url;
-use Innmind\Immutable\Either;
+use Innmind\Immutable\{
+    Either,
+    Attempt,
+    SideEffect,
+};
 use PHPUnit\Framework\TestCase;
 
 class ExponentialBackoffTest extends TestCase
@@ -220,17 +224,19 @@ class ExponentialBackoffTest extends TestCase
             ->method('__invoke')
             ->willReturnCallback(function($period) use ($matcher) {
                 match ($matcher->numberOfInvocations()) {
-                    1 => $this->assertEquals(new Millisecond(100), $period),
-                    2 => $this->assertEquals(new Millisecond(271), $period),
-                    3 => $this->assertEquals(new Millisecond(738), $period),
-                    4 => $this->assertEquals(new Millisecond(2008), $period),
-                    5 => $this->assertEquals(new Millisecond(5459), $period),
-                    6 => $this->assertEquals(new Millisecond(100), $period),
-                    7 => $this->assertEquals(new Millisecond(271), $period),
-                    8 => $this->assertEquals(new Millisecond(738), $period),
-                    9 => $this->assertEquals(new Millisecond(2008), $period),
-                    10 => $this->assertEquals(new Millisecond(5459), $period),
+                    1 => $this->assertEquals(Period::millisecond(100), $period),
+                    2 => $this->assertEquals(Period::millisecond(271), $period),
+                    3 => $this->assertEquals(Period::millisecond(738), $period),
+                    4 => $this->assertEquals(Period::millisecond(2008), $period),
+                    5 => $this->assertEquals(Period::millisecond(5459), $period),
+                    6 => $this->assertEquals(Period::millisecond(100), $period),
+                    7 => $this->assertEquals(Period::millisecond(271), $period),
+                    8 => $this->assertEquals(Period::millisecond(738), $period),
+                    9 => $this->assertEquals(Period::millisecond(2008), $period),
+                    10 => $this->assertEquals(Period::millisecond(5459), $period),
                 };
+
+                return Attempt::result(SideEffect::identity());
             });
 
         $this->assertEquals($expected, $fulfill($request));
@@ -263,17 +269,19 @@ class ExponentialBackoffTest extends TestCase
             ->method('__invoke')
             ->willReturnCallback(function($period) use ($matcher) {
                 match ($matcher->numberOfInvocations()) {
-                    1 => $this->assertEquals(new Millisecond(100), $period),
-                    2 => $this->assertEquals(new Millisecond(271), $period),
-                    3 => $this->assertEquals(new Millisecond(738), $period),
-                    4 => $this->assertEquals(new Millisecond(2008), $period),
-                    5 => $this->assertEquals(new Millisecond(5459), $period),
-                    6 => $this->assertEquals(new Millisecond(100), $period),
-                    7 => $this->assertEquals(new Millisecond(271), $period),
-                    8 => $this->assertEquals(new Millisecond(738), $period),
-                    9 => $this->assertEquals(new Millisecond(2008), $period),
-                    10 => $this->assertEquals(new Millisecond(5459), $period),
+                    1 => $this->assertEquals(Period::millisecond(100), $period),
+                    2 => $this->assertEquals(Period::millisecond(271), $period),
+                    3 => $this->assertEquals(Period::millisecond(738), $period),
+                    4 => $this->assertEquals(Period::millisecond(2008), $period),
+                    5 => $this->assertEquals(Period::millisecond(5459), $period),
+                    6 => $this->assertEquals(Period::millisecond(100), $period),
+                    7 => $this->assertEquals(Period::millisecond(271), $period),
+                    8 => $this->assertEquals(Period::millisecond(738), $period),
+                    9 => $this->assertEquals(Period::millisecond(2008), $period),
+                    10 => $this->assertEquals(Period::millisecond(5459), $period),
                 };
+
+                return Attempt::result(SideEffect::identity());
             });
 
         $this->assertEquals($expected, $fulfill($request));
@@ -302,17 +310,19 @@ class ExponentialBackoffTest extends TestCase
             ->method('__invoke')
             ->willReturnCallback(function($period) use ($matcher) {
                 match ($matcher->numberOfInvocations()) {
-                    1 => $this->assertEquals(new Millisecond(100), $period),
-                    2 => $this->assertEquals(new Millisecond(271), $period),
-                    3 => $this->assertEquals(new Millisecond(738), $period),
-                    4 => $this->assertEquals(new Millisecond(2008), $period),
-                    5 => $this->assertEquals(new Millisecond(5459), $period),
-                    6 => $this->assertEquals(new Millisecond(100), $period),
-                    7 => $this->assertEquals(new Millisecond(271), $period),
-                    8 => $this->assertEquals(new Millisecond(738), $period),
-                    9 => $this->assertEquals(new Millisecond(2008), $period),
-                    10 => $this->assertEquals(new Millisecond(5459), $period),
+                    1 => $this->assertEquals(Period::millisecond(100), $period),
+                    2 => $this->assertEquals(Period::millisecond(271), $period),
+                    3 => $this->assertEquals(Period::millisecond(738), $period),
+                    4 => $this->assertEquals(Period::millisecond(2008), $period),
+                    5 => $this->assertEquals(Period::millisecond(5459), $period),
+                    6 => $this->assertEquals(Period::millisecond(100), $period),
+                    7 => $this->assertEquals(Period::millisecond(271), $period),
+                    8 => $this->assertEquals(Period::millisecond(738), $period),
+                    9 => $this->assertEquals(Period::millisecond(2008), $period),
+                    10 => $this->assertEquals(Period::millisecond(5459), $period),
                 };
+
+                return Attempt::result(SideEffect::identity());
             });
 
         $this->assertEquals($expected, $fulfill($request));
@@ -350,7 +360,8 @@ class ExponentialBackoffTest extends TestCase
         $halt
             ->expects($this->once())
             ->method('__invoke')
-            ->with(new Millisecond(100));
+            ->with(Period::millisecond(100))
+            ->willReturn(Attempt::result(SideEffect::identity()));
 
         $this->assertEquals($expected, $fulfill($request));
     }
@@ -380,12 +391,14 @@ class ExponentialBackoffTest extends TestCase
             ->method('__invoke')
             ->willReturnCallback(function($period) use ($matcher) {
                 match ($matcher->numberOfInvocations()) {
-                    1 => $this->assertEquals(new Millisecond(100), $period),
-                    2 => $this->assertEquals(new Millisecond(271), $period),
-                    3 => $this->assertEquals(new Millisecond(738), $period),
-                    4 => $this->assertEquals(new Millisecond(2008), $period),
-                    5 => $this->assertEquals(new Millisecond(5459), $period),
+                    1 => $this->assertEquals(Period::millisecond(100), $period),
+                    2 => $this->assertEquals(Period::millisecond(271), $period),
+                    3 => $this->assertEquals(Period::millisecond(738), $period),
+                    4 => $this->assertEquals(Period::millisecond(2008), $period),
+                    5 => $this->assertEquals(Period::millisecond(5459), $period),
                 };
+
+                return Attempt::result(SideEffect::identity());
             });
 
         $this->assertEquals($expected, $fulfill($request));

@@ -23,13 +23,15 @@ use Innmind\Http\{
     Header\Date,
     Header\Location,
 };
-use Innmind\Filesystem\File\Content;
-use Innmind\TimeContinuum\Earth\{
-    Clock,
-    ElapsedPeriod,
+use Innmind\Filesystem\{
+    Adapter\Filesystem,
+    File\Content,
+    Name,
 };
-use Innmind\IO\IO;
-use Innmind\Stream\Streams;
+use Innmind\TimeContinuum\{
+    Clock,
+    Period,
+};
 use Innmind\Url\{
     Url,
     Path,
@@ -53,7 +55,7 @@ class CurlTest extends TestCase
 
     public function setUp(): void
     {
-        $this->curl = Curl::of(new Clock);
+        $this->curl = Curl::of(Clock::live());
     }
 
     public function testInterface()
@@ -109,7 +111,7 @@ class CurlTest extends TestCase
                 ->headers()
                 ->find(Location::class)
                 ->match(
-                    static fn($header) => $header->toString(),
+                    static fn($header) => $header->normalize()->toString(),
                     static fn() => null,
                 ),
         );
@@ -280,11 +282,7 @@ class CurlTest extends TestCase
 
     public function testPostLargeContent()
     {
-        $capabilities = Streams::fromAmbientAuthority();
-        $io = IO::of(static fn(?ElapsedPeriod $timeout) => match ($timeout) {
-            null => $capabilities->watch()->waitForever(),
-            default => $capabilities->watch()->timeoutAfter($timeout),
-        });
+        $data = Filesystem::mount(Path::of(__DIR__.'/../data/'));
 
         $memory = \memory_get_peak_usage();
         $success = ($this->curl)(Request::of(
@@ -292,10 +290,9 @@ class CurlTest extends TestCase
             Method::post,
             ProtocolVersion::v11,
             null,
-            Content::atPath(
-                $capabilities->readable(),
-                $io->readable(),
-                Path::of(__DIR__.'/../data/screenshot.png'),
+            $data->get(Name::of('screenshot.png'))->match(
+                static fn($file) => $file->content(),
+                static fn() => throw new \Exception,
             ),
         ))->match(
             static fn($success) => $success,
@@ -404,7 +401,7 @@ class CurlTest extends TestCase
     {
         $heartbeat = 0;
         $curl = $this->curl->heartbeat(
-            new ElapsedPeriod(1000),
+            Period::second(1)->asElapsedPeriod(),
             static function() use (&$heartbeat) {
                 ++$heartbeat;
             },
@@ -501,21 +498,27 @@ class CurlTest extends TestCase
 
     public function testTimeout()
     {
-        $request = Request::of(
-            Url::of('https://httpbin.org/delay/2'),
-            Method::get,
-            ProtocolVersion::v11,
-        );
+        foreach (['bin', 'bun'] as $server) {
+            $request = Request::of(
+                Url::of("https://http$server.org/delay/2"),
+                Method::get,
+                ProtocolVersion::v11,
+            );
 
-        $result = ($this->curl)($request)->match(
-            static fn($success) => $success,
-            static fn() => null,
-        );
+            $result = ($this->curl)($request)->match(
+                static fn($success) => $success,
+                static fn() => null,
+            );
+
+            if (!\is_null($result)) {
+                break;
+            }
+        }
 
         $this->assertInstanceOf(Success::class, $result);
 
         $request = Request::of(
-            Url::of('https://httpbin.org/delay/2'),
+            Url::of("https://http$server.org/delay/2"),
             Method::get,
             ProtocolVersion::v11,
             Headers::of(

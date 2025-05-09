@@ -5,16 +5,16 @@ namespace Innmind\HttpTransport\Header;
 
 use Innmind\Http\{
     Header,
-    Header\Value\Value,
+    Header\Value,
+    Header\Custom,
 };
-use Innmind\Immutable\Set;
 
 /**
  * This class is to be used to specify the timeout for a given request
  *
  * @psalm-immutable
  */
-final class Timeout implements Header
+final class Timeout implements Custom
 {
     /** @var positive-int */
     private int $seconds;
@@ -46,20 +46,11 @@ final class Timeout implements Header
     }
 
     #[\Override]
-    public function name(): string
+    public function normalize(): Header
     {
-        return 'X-Innmind-Timeout';
-    }
-
-    #[\Override]
-    public function values(): Set
-    {
-        return Set::of(new Value((string) $this->seconds));
-    }
-
-    #[\Override]
-    public function toString(): string
-    {
-        return (new Header\Header($this->name(), new Value((string) $this->seconds)))->toString();
+        return Header::of(
+            'X-Innmind-Timeout',
+            Value::of((string) $this->seconds),
+        );
     }
 }
