@@ -45,16 +45,19 @@ final class Timeout implements Header
         return $this->seconds;
     }
 
+    #[\Override]
     public function name(): string
     {
         return 'X-Innmind-Timeout';
     }
 
+    #[\Override]
     public function values(): Set
     {
         return Set::of(new Value((string) $this->seconds));
     }
 
+    #[\Override]
     public function toString(): string
     {
         return (new Header\Header($this->name(), new Value((string) $this->seconds)))->toString();

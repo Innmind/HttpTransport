@@ -39,6 +39,7 @@ final class ExponentialBackoff implements Transport
         $this->retries = Sequence::of($retry, ...$retries);
     }
 
+    #[\Override]
     public function __invoke(Request $request): Either
     {
         /** @psalm-suppress MixedArgumentTypeCoercion Can't type the templates for Either */
@@ -56,11 +57,11 @@ final class ExponentialBackoff implements Transport
         return new self(
             $fulfill,
             $halt,
-            new Millisecond((int) (\exp(0) * 100)),
-            new Millisecond((int) (\exp(1) * 100)),
-            new Millisecond((int) (\exp(2) * 100)),
-            new Millisecond((int) (\exp(3) * 100)),
-            new Millisecond((int) (\exp(4) * 100)),
+            new Millisecond((int) (\exp(0) * 100.0)),
+            new Millisecond((int) (\exp(1) * 100.0)),
+            new Millisecond((int) (\exp(2) * 100.0)),
+            new Millisecond((int) (\exp(3) * 100.0)),
+            new Millisecond((int) (\exp(4) * 100.0)),
         );
     }
 

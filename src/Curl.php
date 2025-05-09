@@ -59,6 +59,7 @@ final class Curl implements Transport
         $this->disableSSLVerification = $disableSSLVerification;
     }
 
+    #[\Override]
     public function __invoke(Request $request): Either
     {
         $scheduled = Scheduled::of(
