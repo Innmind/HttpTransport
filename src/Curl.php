@@ -79,8 +79,8 @@ final class Curl implements Transport
 
     public static function of(
         Clock $clock,
-        Capabilities $capabilities = null,
-        IO $io = null,
+        ?Capabilities $capabilities = null,
+        ?IO $io = null,
     ): self {
         $capabilities ??= Streams::fromAmbientAuthority();
         $io ??= IO::of(static fn(?ElapsedPeriod $timeout) => match ($timeout) {
@@ -124,7 +124,7 @@ final class Curl implements Transport
      *
      * @param callable(): void $heartbeat
      */
-    public function heartbeat(ElapsedPeriod $timeout, callable $heartbeat = null): self
+    public function heartbeat(ElapsedPeriod $timeout, ?callable $heartbeat = null): self
     {
         return new self(
             $this->headerFactory,

@@ -34,7 +34,7 @@ final class Concurrency
      *
      * @param ?positive-int $maxConcurrency
      */
-    private function __construct(int $maxConcurrency = null)
+    private function __construct(?int $maxConcurrency = null)
     {
         $this->scheduled = Sequence::of();
         /** @var \WeakMap<Scheduled, Either<Errors, Success>> */
@@ -47,7 +47,7 @@ final class Concurrency
      *
      * @param ?positive-int $maxConcurrency
      */
-    public static function new(int $maxConcurrency = null): self
+    public static function new(?int $maxConcurrency = null): self
     {
         return new self($maxConcurrency);
     }

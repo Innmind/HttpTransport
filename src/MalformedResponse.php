@@ -11,7 +11,7 @@ final class MalformedResponse
     private Request $request;
     private Raw $raw;
 
-    public function __construct(Request $request, Raw $raw = null)
+    public function __construct(Request $request, ?Raw $raw = null)
     {
         $this->request = $request;
         $this->raw = $raw ?? Raw::none();
