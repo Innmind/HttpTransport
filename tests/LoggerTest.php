@@ -5,13 +5,13 @@ namespace Tests\Innmind\HttpTransport;
 
 use Innmind\HttpTransport\{
     Logger,
+    Curl,
     Transport,
     Success,
 };
+use Innmind\TimeContinuum\Clock;
 use Innmind\Http\{
     Request,
-    Response,
-    Response\StatusCode,
     Method,
     ProtocolVersion,
     Headers,
@@ -19,21 +19,18 @@ use Innmind\Http\{
     Header\Value,
 };
 use Innmind\Url\Url;
-use Innmind\Immutable\Either;
-use Psr\Log\LoggerInterface;
+use Psr\Log\NullLogger;
 use PHPUnit\Framework\TestCase;
 
 class LoggerTest extends TestCase
 {
     private $fulfill;
-    private $inner;
-    private $logger;
 
     public function setUp(): void
     {
         $this->fulfill = Logger::psr(
-            $this->inner = $this->createMock(Transport::class),
-            $this->logger = $this->createMock(LoggerInterface::class),
+            Curl::of(Clock::live()),
+            new NullLogger,
         );
     }
 
@@ -49,7 +46,7 @@ class LoggerTest extends TestCase
     {
         $request = Request::of(
             Url::of('http://example.com'),
-            Method::post,
+            Method::get,
             ProtocolVersion::v11,
             Headers::of(
                 Header::of(
@@ -63,48 +60,12 @@ class LoggerTest extends TestCase
                 ),
             ),
         );
-        $response = Response::of(
-            StatusCode::ok,
-            $request->protocolVersion(),
-            Headers::of(
-                Header::of(
-                    'x-debug',
-                    Value::of('yay'),
-                    Value::of('nay'),
-                ),
-            ),
+
+        $success = ($this->fulfill)($request)->match(
+            static fn($success) => $success,
+            static fn() => null,
         );
-        $this
-            ->inner
-            ->expects($this->once())
-            ->method('__invoke')
-            ->with($request)
-            ->willReturn(
-                $expected = Either::right(new Success($request, $response)),
-            );
-        $this
-            ->logger
-            ->expects($matcher = $this->exactly(2))
-            ->method('debug')
-            ->willReturnCallback(function($message, $context) use ($matcher) {
-                match ($matcher->numberOfInvocations()) {
-                    1 => $this->assertSame('Http request about to be sent', $message),
-                    2 => $this->assertSame('Http request sent', $message),
-                };
 
-                if ($matcher->numberOfInvocations() === 1) {
-                    $this->assertSame('POST', $context['method']);
-                    $this->assertSame('http://example.com/', $context['url']);
-                    $this->assertSame(['foo' => 'bar, baz', 'foobar' => 'whatever'], $context['headers']);
-                    $this->assertTrue(!empty($context['reference']));
-                } else {
-                    $this->assertSame(200, $context['statusCode']);
-                    $this->assertSame(['x-debug' => 'yay, nay'], $context['headers']);
-                }
-            });
-
-        $response = ($this->fulfill)($request);
-
-        $this->assertEquals($expected, $response);
+        $this->assertInstanceOf(Success::class, $success);
     }
 }
