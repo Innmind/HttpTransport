@@ -254,6 +254,9 @@ class CurlTest extends TestCase
                 // we allow server errors as we don't control the stability of
                 // the server
                 if ($success instanceof ServerError) {
+                    // A scenario must have at least one scenario
+                    $this->assertTrue(true);
+
                     return;
                 }
 
