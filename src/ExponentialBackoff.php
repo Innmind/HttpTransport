@@ -5,12 +5,11 @@ namespace Innmind\HttpTransport;
 
 use Innmind\Http\Request;
 use Innmind\Http\Response\StatusCode;
+use Innmind\TimeWarp\Halt;
 use Innmind\TimeContinuum\Period;
 use Innmind\Immutable\{
     Sequence,
     Either,
-    Attempt,
-    SideEffect,
 };
 
 /**
@@ -19,17 +18,13 @@ use Innmind\Immutable\{
 final class ExponentialBackoff implements Transport
 {
     private Transport $fulfill;
-    /** @var callable(Period): Attempt<SideEffect> */
-    private $halt;
+    private Halt $halt;
     /** @var Sequence<Period> */
     private Sequence $retries;
 
-    /**
-     * @param callable(Period): Attempt<SideEffect> $halt
-     */
     private function __construct(
         Transport $fulfill,
-        callable $halt,
+        Halt $halt,
         Period $retry,
         Period ...$retries,
     ) {
@@ -48,10 +43,7 @@ final class ExponentialBackoff implements Transport
         );
     }
 
-    /**
-     * @param callable(Period): Attempt<SideEffect> $halt
-     */
-    public static function of(Transport $fulfill, callable $halt): self
+    public static function of(Transport $fulfill, Halt $halt): self
     {
         /** @psalm-suppress ArgumentTypeCoercion Periods are necessarily positive */
         return new self(
