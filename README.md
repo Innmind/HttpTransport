@@ -6,7 +6,8 @@
 
 This library allows you to send [http](https://packagist.org/packages/innmind/http) request.
 
-**Important**: to use this library correctly you must use [`vimeo/psalm`](https://packagist.org/packages/vimeo/psalm).
+> [!IMPORTANT]
+> to use this library correctly you must use [`vimeo/psalm`](https://packagist.org/packages/vimeo/psalm).
 
 ## Installation
 
@@ -20,10 +21,10 @@ Send a request:
 
 ```php
 use Innmind\HttpTransport\Curl;
-use Innmind\TimeContinuum\Earth\Clock;
+use Innmind\TimeContinuum\Clock;
 use Innmind\Http\Request;
 
-$fulfill = Curl::of(new Clock);
+$fulfill = Curl::of(Clock::live());
 
 $either = $fulfill(
     Request::of(/* initialize your request */),
@@ -32,7 +33,8 @@ $either = $fulfill(
 
 `2xx` responses will be on the right side of `$either`, all errors and other kinds of responses will be on the left side.
 
-**Important**: you must call `match` to the returned `Either` otherwise the request will not be sent, but you can still call other methods on the `Either` before calling `match`.
+> [!IMPORTANT]
+> you must call `match` to the returned `Either` otherwise the request will not be sent, but you can still call other methods on the `Either` before calling `match`.
 
 ## Concurrency
 
@@ -49,7 +51,7 @@ use Innmind\Http\{
 use Innmind\Url\Url;
 use Innmind\Immutable\Sequence;
 
-$fulfill = Curl::of(new Clock)->maxConcurrency(5);
+$fulfill = Curl::of(Clock::live())->maxConcurrency(5);
 $responses = Sequence::of(
     'https://github.com/user/repo-a',
     'https://github.com/user/repo-b',
@@ -97,7 +99,7 @@ use Innmind\TimeWarp\Halt\Usleep;
 
 $fulfill = ExponentialBackoff::of(
     /* an instance of Transport */,
-    new Usleep,
+    Usleep::new(),
 );
 
 $fulfill(/* your request */);
@@ -111,15 +113,15 @@ When a call to a certain domain fails you may want to all further calls to that 
 
 ```php
 use Innmind\HttpTransport\CircuitBreaker;
-use Innmind\TimeContinuum\Earth\{
+use Innmind\TimeContinuum\{
     Clock,
-    Period\Minute,
+    Period,
 };
 
 $fulfill = CircuitBreaker::of(
     /* an instance of CircuitBreaker */,
-    new Clock,
-    new Minute(10),
+    Clock::live(),
+    Period::minute(10),
 );
 
 $fulfill(/* your request */);
@@ -141,4 +143,5 @@ $fulfill(/* your request */);
 
 To avoid infinite loops it will follow up to 5 consecutive redirections.
 
-**Important**: as defined in the [rfc](https://datatracker.ietf.org/doc/html/rfc2616/#section-10.3.2), requests with methods other than `GET` and `HEAD` that results in redirection with the codes `301`, `302`, `307` and `308` will **NOT** be redirected. It will be up to you to implement the redirection as you need to make sure such redirection is safe.
+> [!IMPORTANT]
+> as defined in the [rfc](https://datatracker.ietf.org/doc/html/rfc2616/#section-10.3.2), requests with methods other than `GET` and `HEAD` that results in redirection with the codes `301`, `302`, `307` and `308` will **NOT** be redirected. It will be up to you to implement the redirection as you need to make sure such redirection is safe.
