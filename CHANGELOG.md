@@ -10,6 +10,7 @@
 - Requires `innmind/time-continuum:~4.1`
 - Requires `innmind/immutable:~5.14`
 - Requires `innmind/io:~3.2`
+- `Innmind\HttpTransport\ExponentialBackoff::of()` halt function must now be an instance of `Innmind\TimeWarp\Halt`
 
 ### Fixed
 
