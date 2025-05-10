@@ -9,19 +9,13 @@ use Innmind\HttpTransport\Curl\{
 };
 use Innmind\Http\{
     Request,
-    Factory\Header\TryFactory,
-    Factory\Header\Factories,
+    Factory\Header\Factory,
 };
 use Innmind\TimeContinuum\{
     Clock,
-    ElapsedPeriod,
-    Earth,
+    Period,
 };
 use Innmind\IO\IO;
-use Innmind\Stream\{
-    Capabilities,
-    Streams,
-};
 use Innmind\Immutable\Either;
 
 /**
@@ -29,41 +23,24 @@ use Innmind\Immutable\Either;
  */
 final class Curl implements Transport
 {
-    private TryFactory $headerFactory;
-    private Capabilities $capabilities;
-    private IO $io;
-    private Concurrency $concurrency;
-    private ElapsedPeriod $timeout;
-    /** @var callable(): void */
-    private $heartbeat;
-    private bool $disableSSLVerification;
-
     /**
-     * @param callable(): void $heartbeat
+     * @param \Closure(): void $heartbeat
      */
     private function __construct(
-        TryFactory $headerFactory,
-        Capabilities $capabilities,
-        IO $io,
-        Concurrency $concurrency,
-        ElapsedPeriod $timeout,
-        callable $heartbeat,
-        bool $disableSSLVerification,
+        private Factory $headerFactory,
+        private IO $io,
+        private Concurrency $concurrency,
+        private Period $timeout,
+        private \Closure $heartbeat,
+        private bool $disableSSLVerification,
     ) {
-        $this->headerFactory = $headerFactory;
-        $this->capabilities = $capabilities;
-        $this->io = $io;
-        $this->concurrency = $concurrency;
-        $this->timeout = $timeout;
-        $this->heartbeat = $heartbeat;
-        $this->disableSSLVerification = $disableSSLVerification;
     }
 
+    #[\Override]
     public function __invoke(Request $request): Either
     {
         $scheduled = Scheduled::of(
             $this->headerFactory,
-            $this->capabilities,
             $this->io,
             $request,
             $this->disableSSLVerification,
@@ -79,23 +56,15 @@ final class Curl implements Transport
 
     public static function of(
         Clock $clock,
-        Capabilities $capabilities = null,
-        IO $io = null,
+        ?IO $io = null,
     ): self {
-        $capabilities ??= Streams::fromAmbientAuthority();
-        $io ??= IO::of(static fn(?ElapsedPeriod $timeout) => match ($timeout) {
-            null => $capabilities->watch()->waitForever(),
-            default => $capabilities->watch()->timeoutAfter($timeout),
-        });
+        $io ??= IO::fromAmbientAuthority();
 
         return new self(
-            new TryFactory(
-                Factories::default($clock),
-            ),
-            $capabilities,
+            Factory::new($clock),
             $io,
             Concurrency::new(),
-            new Earth\ElapsedPeriod(1_000), // 1 second
+            Period::second(1),
             static fn() => null,
             false,
         );
@@ -110,7 +79,6 @@ final class Curl implements Transport
     {
         return new self(
             $this->headerFactory,
-            $this->capabilities,
             $this->io,
             Concurrency::new($max),
             $this->timeout,
@@ -122,17 +90,20 @@ final class Curl implements Transport
     /**
      * @psalm-mutation-free
      *
+     * @param Period $timeout Only seconds are allowed
      * @param callable(): void $heartbeat
      */
-    public function heartbeat(ElapsedPeriod $timeout, callable $heartbeat = null): self
+    public function heartbeat(Period $timeout, ?callable $heartbeat = null): self
     {
         return new self(
             $this->headerFactory,
-            $this->capabilities,
             $this->io,
             $this->concurrency,
             $timeout,
-            $heartbeat ?? static fn() => null,
+            match ($heartbeat) {
+                null => static fn() => null,
+                default => \Closure::fromCallable($heartbeat),
+            },
             $this->disableSSLVerification,
         );
     }
@@ -147,7 +118,6 @@ final class Curl implements Transport
     {
         return new self(
             $this->headerFactory,
-            $this->capabilities,
             $this->io,
             $this->concurrency,
             $this->timeout,

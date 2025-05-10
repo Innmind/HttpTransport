@@ -13,41 +13,26 @@ use Innmind\Url\{
     Url,
     Authority,
 };
-use Innmind\Immutable\{
-    Either,
-    Sequence,
-};
+use Innmind\Immutable\Either;
 
 /**
  * @psalm-import-type Errors from Transport
  */
 final class FollowRedirections implements Transport
 {
-    private Transport $fulfill;
-    /** @var Sequence<int> */
-    private Sequence $hops;
-
     /**
-     * @param positive-int $maxHops
+     * @param int<1, max> $hops
      */
-    private function __construct(Transport $fulfill, int $maxHops)
-    {
-        $this->fulfill = $fulfill;
-        $this->hops = Sequence::of(...\range(1, $maxHops));
+    private function __construct(
+        private Transport $fulfill,
+        private int $hops,
+    ) {
     }
 
+    #[\Override]
     public function __invoke(Request $request): Either
     {
-        /**
-         * @psalm-suppress MixedArgument
-         * @var Either<Errors, Success>
-         */
-        return $this->hops->reduce(
-            ($this->fulfill)($request),
-            fn(Either $success) => $success->otherwise(
-                fn($error) => $this->maybeRedirect($error),
-            ),
-        );
+        return $this->fulfill($request, $this->hops);
     }
 
     public static function of(Transport $fulfill): self
@@ -56,39 +41,59 @@ final class FollowRedirections implements Transport
     }
 
     /**
-     * @param Errors $error
+     * @param int<0, max> $hops
      *
      * @return Either<Errors, Success>
      */
-    private function maybeRedirect(object $error): Either
+    private function fulfill(Request $request, int $hops): Either
+    {
+        return ($this->fulfill)($request)->otherwise(
+            fn($error) => match ($hops) {
+                0 => Either::left($error),
+                default => $this->maybeRedirect($error, $hops - 1),
+            },
+        );
+    }
+
+    /**
+     * @param Errors $error
+     * @param int<0, max> $hops
+     *
+     * @return Either<Errors, Success>
+     */
+    private function maybeRedirect(object $error, int $hops): Either
     {
         /** @var Either<Errors, Success> */
         return match (true) {
-            $error instanceof Redirection => $this->handle($error),
+            $error instanceof Redirection => $this->handle($error, $hops),
             default => Either::left($error),
         };
     }
 
     /**
+     * @param int<0, max> $hops
+     *
      * @return Either<Errors, Success>
      */
-    private function handle(Redirection $redirection): Either
+    private function handle(Redirection $redirection, int $hops): Either
     {
         /** @var Either<Errors, Success> */
         return match ($redirection->response()->statusCode()) {
-            StatusCode::movedPermanently => $this->redirect($redirection),
-            StatusCode::found => $this->redirect($redirection),
-            StatusCode::seeOther => $this->seeOther($redirection),
-            StatusCode::temporaryRedirect => $this->redirect($redirection),
-            StatusCode::permanentlyRedirect => $this->redirect($redirection),
+            StatusCode::movedPermanently => $this->redirect($redirection, $hops),
+            StatusCode::found => $this->redirect($redirection, $hops),
+            StatusCode::seeOther => $this->seeOther($redirection, $hops),
+            StatusCode::temporaryRedirect => $this->redirect($redirection, $hops),
+            StatusCode::permanentlyRedirect => $this->redirect($redirection, $hops),
             default => Either::left($redirection), // some redirections cannot be applied
         };
     }
 
     /**
+     * @param int<0, max> $hops
+     *
      * @return Either<Errors, Success>
      */
-    private function redirect(Redirection $redirection): Either
+    private function redirect(Redirection $redirection, int $hops): Either
     {
         /** @var Either<Errors, Success> */
         return $redirection
@@ -109,15 +114,17 @@ final class FollowRedirections implements Transport
                 true,
             ))
             ->match(
-                fn($request) => ($this->fulfill)($request),
+                fn($request) => $this->fulfill($request, $hops),
                 static fn() => Either::left($redirection),
             );
     }
 
     /**
+     * @param int<0, max> $hops
+     *
      * @return Either<Errors, Success>
      */
-    private function seeOther(Redirection $redirection): Either
+    private function seeOther(Redirection $redirection, int $hops): Either
     {
         /** @var Either<Errors, Success> */
         return $redirection
@@ -132,7 +139,7 @@ final class FollowRedirections implements Transport
                 $redirection->request()->headers(),
             ))
             ->match(
-                fn($request) => ($this->fulfill)($request),
+                fn($request) => $this->fulfill($request, $hops),
                 static fn() => Either::left($redirection),
             );
     }

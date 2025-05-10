@@ -5,10 +5,8 @@ namespace Innmind\HttpTransport;
 
 use Innmind\Http\Request;
 use Innmind\Http\Response\StatusCode;
-use Innmind\TimeContinuum\{
-    Period,
-    Earth\Period\Millisecond,
-};
+use Innmind\TimeWarp\Halt;
+use Innmind\TimeContinuum\Period;
 use Innmind\Immutable\{
     Sequence,
     Either,
@@ -19,68 +17,67 @@ use Innmind\Immutable\{
  */
 final class ExponentialBackoff implements Transport
 {
-    private Transport $fulfill;
-    /** @var callable(Period): void */
-    private $halt;
-    /** @var Sequence<Period> */
-    private Sequence $retries;
-
     /**
-     * @param callable(Period): void $halt
+     * @param Sequence<Period> $retries
      */
     private function __construct(
-        Transport $fulfill,
-        callable $halt,
-        Period $retry,
-        Period ...$retries,
+        private Transport $fulfill,
+        private Halt $halt,
+        private Sequence $retries,
     ) {
-        $this->fulfill = $fulfill;
-        $this->halt = $halt;
-        $this->retries = Sequence::of($retry, ...$retries);
     }
 
+    #[\Override]
     public function __invoke(Request $request): Either
     {
-        /** @psalm-suppress MixedArgumentTypeCoercion Can't type the templates for Either */
-        return $this->retries->reduce(
-            ($this->fulfill)($request),
-            fn(Either $result, $period) => $this->maybeRetry($result, $request, $period),
-        );
+        return $this->fulfill($request, $this->retries);
     }
 
-    /**
-     * @param callable(Period): void $halt
-     */
-    public static function of(Transport $fulfill, callable $halt): self
+    public static function of(Transport $fulfill, Halt $halt): self
     {
+        /** @psalm-suppress ArgumentTypeCoercion Periods are necessarily positive */
         return new self(
             $fulfill,
             $halt,
-            new Millisecond((int) (\exp(0) * 100)),
-            new Millisecond((int) (\exp(1) * 100)),
-            new Millisecond((int) (\exp(2) * 100)),
-            new Millisecond((int) (\exp(3) * 100)),
-            new Millisecond((int) (\exp(4) * 100)),
+            Sequence::of(
+                Period::millisecond((int) (\exp(0) * 100.0)),
+                Period::millisecond((int) (\exp(1) * 100.0)),
+                Period::millisecond((int) (\exp(2) * 100.0)),
+                Period::millisecond((int) (\exp(3) * 100.0)),
+                Period::millisecond((int) (\exp(4) * 100.0)),
+            ),
         );
     }
 
     /**
-     * @param Either<Errors, Success> $result
+     * @param Sequence<Period> $retries
+     *
+     * @return Either<Errors, Success>
+     */
+    private function fulfill(Request $request, Sequence $retries): Either
+    {
+        return ($this->fulfill)($request)->otherwise(
+            fn($error) => $this->maybeRetry($error, $request, $retries),
+        );
+    }
+
+    /**
+     * @param Sequence<Period> $retries
      *
      * @return Either<Errors, Success> $result
      */
     private function maybeRetry(
-        Either $result,
+        Failure|ConnectionFailed|MalformedResponse|Information|Redirection|ClientError|ServerError $error,
         Request $request,
-        Period $period,
+        Sequence $retries,
     ): Either {
-        return $result->otherwise(fn($error) => match (true) {
+        return match (true) {
             $error instanceof ClientError &&
-            $error->response()->statusCode() === StatusCode::tooManyRequests => $this->retry($request, $period),
-            $error instanceof ServerError => $this->retry($request, $period),
-            $error instanceof ConnectionFailed => $this->retry($request, $period),
+            $error->response()->statusCode() === StatusCode::tooManyRequests => $this->retry($error, $request, $retries),
+            $error instanceof ServerError => $this->retry($error, $request, $retries),
+            $error instanceof ConnectionFailed => $this->retry($error, $request, $retries),
             default => $this->return($error),
-        });
+        };
     }
 
     /**
@@ -93,12 +90,24 @@ final class ExponentialBackoff implements Transport
     }
 
     /**
+     * @param Sequence<Period> $retries
+     *
      * @return Either<Errors, Success>
      */
-    private function retry(Request $request, Period $period): Either
-    {
-        ($this->halt)($period);
-
-        return ($this->fulfill)($request);
+    private function retry(
+        Failure|ConnectionFailed|MalformedResponse|Information|Redirection|ClientError|ServerError $error,
+        Request $request,
+        Sequence $retries,
+    ): Either {
+        return $retries
+            ->first()
+            ->either()
+            ->eitherWay(
+                fn($period) => ($this->halt)($period)
+                    ->either()
+                    ->leftMap(static fn($error) => new Failure($request, $error::class))
+                    ->flatMap(fn() => $this->fulfill($request, $retries->drop(1))),
+                static fn() => Either::left($error),
+            );
     }
 }

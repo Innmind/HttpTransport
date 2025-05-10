@@ -22,13 +22,12 @@ use Innmind\Http\{
     ProtocolVersion,
     Header,
     Headers,
-    Factory\Header\TryFactory,
+    Factory\Header\Factory,
 };
 use Innmind\Filesystem\File\Content;
-use Innmind\IO\IO;
-use Innmind\Stream\{
-    Writable,
-    Bidirectional,
+use Innmind\IO\{
+    IO,
+    Files\Temporary,
 };
 use Innmind\Immutable\{
     Either,
@@ -45,22 +44,22 @@ use Innmind\Immutable\{
 final class Ready
 {
     private IO $io;
-    private TryFactory $headerFactory;
+    private Factory $headerFactory;
     private Request $request;
     private \CurlHandle $handle;
-    private Writable $inFile;
-    private Bidirectional $body;
+    private Temporary $inFile;
+    private Temporary $body;
     private Str $status;
     /** @var Sequence<string> */
     private Sequence $headers;
 
     private function __construct(
         IO $io,
-        TryFactory $headerFactory,
+        Factory $headerFactory,
         Request $request,
         \CurlHandle $handle,
-        Writable $inFile,
-        Bidirectional $body,
+        Temporary $inFile,
+        Temporary $body,
     ) {
         $this->io = $io;
         $this->headerFactory = $headerFactory;
@@ -94,7 +93,8 @@ final class Ready
                 // return -1 when failed to write to make curl stop
                 return $this
                     ->body
-                    ->write($chunk)
+                    ->push()
+                    ->chunk($chunk)
                     ->match(
                         static fn() => $chunk->length(),
                         static fn() => -1,
@@ -105,11 +105,11 @@ final class Ready
 
     public static function of(
         IO $io,
-        TryFactory $headerFactory,
+        Factory $headerFactory,
         Request $request,
         \CurlHandle $handle,
-        Writable $inFile,
-        Bidirectional $body,
+        Temporary $inFile,
+        Temporary $body,
     ): self {
         return new self(
             $io,
@@ -176,31 +176,31 @@ final class Ready
      */
     private function decode(int $errorCode): Either
     {
-        $error = $this->inFile->close()->match(
-            static fn() => null,
-            static fn($error) => $error,
-        );
-
-        if ($error) {
-            /** @var Either<Failure|ConnectionFailed|MalformedResponse, Response> */
-            return Either::left(new Failure($this->request, $error::class));
-        }
-
-        /**
-         * @psalm-suppress MixedArgument Due to the reference on $status and $headers above
-         * @var Either<Failure|ConnectionFailed|MalformedResponse, Response>
-         */
-        return match ($errorCode) {
-            \CURLE_OK => $this->buildResponse(),
-            \CURLE_COULDNT_RESOLVE_PROXY, \CURLE_COULDNT_RESOLVE_HOST, \CURLE_COULDNT_CONNECT, \CURLE_SSL_CONNECT_ERROR => Either::left(new ConnectionFailed(
+        return $this
+            ->inFile
+            ->close()
+            ->either()
+            ->leftMap(fn($error) => new Failure(
                 $this->request,
-                \curl_strerror($errorCode) ?? '',
-            )),
-            default => Either::left(new Failure(
-                $this->request,
-                \curl_strerror($errorCode) ?? '',
-            )),
-        };
+                $error::class,
+            ))
+            ->flatMap(function() use ($errorCode) {
+                /** @var Either<Failure|ConnectionFailed|MalformedResponse, Response> */
+                return match ($errorCode) {
+                    \CURLE_OK => $this->buildResponse(),
+                    \CURLE_COULDNT_RESOLVE_PROXY,
+                    \CURLE_COULDNT_RESOLVE_HOST,
+                    \CURLE_COULDNT_CONNECT,
+                    \CURLE_SSL_CONNECT_ERROR => Either::left(new ConnectionFailed(
+                        $this->request,
+                        \curl_strerror($errorCode) ?? '',
+                    )),
+                    default => Either::left(new Failure(
+                        $this->request,
+                        \curl_strerror($errorCode) ?? '',
+                    )),
+                };
+            });
     }
 
     /**
@@ -241,12 +241,8 @@ final class Ready
             ->filter(static fn($header) => !$header->empty())
             ->map(static fn($header) => $header->capture('~^(?<name>[a-zA-Z0-9\-\_\.]+): (?<value>.*)$~'))
             ->map(fn($captured) => $this->createHeader($captured))
-            ->match(
-                static fn($first, $rest) => Maybe::all($first, ...$rest->toList())->map(
-                    static fn(Header ...$headers) => Headers::of(...$headers),
-                ),
-                static fn() => Maybe::just(Headers::of()),
-            );
+            ->sink(Headers::of())
+            ->maybe(static fn($headers, $header) => $header->map($headers));
 
         /** @var Either<MalformedResponse, Response> */
         return Maybe::all($statusCode, $protocolVersion, $headers)
@@ -254,22 +250,20 @@ final class Ready
                 $status,
                 $protocol,
                 $headers,
-                Content::io($this->io->readable()->wrap($this->body)),
+                Content::io($this->body->read()),
             ))
-            ->match(
-                static fn($response) => Either::right($response),
-                fn() => Either::left(new MalformedResponse($this->request, Raw::of(
-                    $this->status,
-                    $this->headers->map(Str::of(...)),
-                    Content::io($this->io->readable()->wrap($this->body)),
-                ))),
-            );
+            ->either()
+            ->leftMap(fn() => new MalformedResponse($this->request, Raw::of(
+                $this->status,
+                $this->headers->map(Str::of(...)),
+                Content::io($this->body->read()),
+            )));
     }
 
     /**
      * @param Map<int|string, Str> $info
      *
-     * @return Maybe<Header>
+     * @return Maybe<Header|Header\Custom>
      */
     private function createHeader(Map $info): Maybe
     {

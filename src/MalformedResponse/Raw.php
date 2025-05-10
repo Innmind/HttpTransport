@@ -14,19 +14,14 @@ use Innmind\Immutable\{
  */
 final class Raw
 {
-    private Str $statusLine;
-    /** @var Sequence<Str> */
-    private Sequence $headers;
-    private Content $body;
-
     /**
      * @param Sequence<Str> $headers
      */
-    private function __construct(Str $statusLine, Sequence $headers, Content $body)
-    {
-        $this->statusLine = $statusLine;
-        $this->headers = $headers;
-        $this->body = $body;
+    private function __construct(
+        private Str $statusLine,
+        private Sequence $headers,
+        private Content $body,
+    ) {
     }
 
     /**

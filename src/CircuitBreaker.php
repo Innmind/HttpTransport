@@ -9,8 +9,8 @@ use Innmind\Http\{
     Response\StatusCode,
     ProtocolVersion,
     Headers,
-    Header\Header,
-    Header\Value\Value,
+    Header,
+    Header\Value,
 };
 use Innmind\Url\Url;
 use Innmind\TimeContinuum\{
@@ -28,24 +28,18 @@ use Innmind\Immutable\{
  */
 final class CircuitBreaker implements Transport
 {
-    private Transport $fulfill;
-    private Clock $clock;
-    private Period $delayBeforeRetry;
-    /** @var Map<string , PointInTime> */
-    private Map $openedCircuits;
-
+    /**
+     * @param Map<string , PointInTime> $openedCircuits
+     */
     private function __construct(
-        Transport $fulfill,
-        Clock $clock,
-        Period $delayBeforeRetry,
+        private Transport $fulfill,
+        private Clock $clock,
+        private Period $delayBeforeRetry,
+        private Map $openedCircuits,
     ) {
-        $this->fulfill = $fulfill;
-        $this->clock = $clock;
-        $this->delayBeforeRetry = $delayBeforeRetry;
-        /** @var Map<string , PointInTime> */
-        $this->openedCircuits = Map::of();
     }
 
+    #[\Override]
     public function __invoke(Request $request): Either
     {
         if ($this->opened($request->url())) {
@@ -64,7 +58,12 @@ final class CircuitBreaker implements Transport
         Clock $clock,
         Period $delayBeforeRetry,
     ): self {
-        return new self($fulfill, $clock, $delayBeforeRetry);
+        return new self(
+            $fulfill,
+            $clock,
+            $delayBeforeRetry,
+            Map::of(),
+        );
     }
 
     private function open(
@@ -102,9 +101,9 @@ final class CircuitBreaker implements Transport
             $code = StatusCode::serviceUnavailable,
             ProtocolVersion::v20,
             Headers::of(
-                new Header(
+                Header::of(
                     'X-Circuit-Opened',
-                    new Value('true'),
+                    Value::of('true'),
                 ),
             ),
         )));

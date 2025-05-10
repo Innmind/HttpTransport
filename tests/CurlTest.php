@@ -23,13 +23,15 @@ use Innmind\Http\{
     Header\Date,
     Header\Location,
 };
-use Innmind\Filesystem\File\Content;
-use Innmind\TimeContinuum\Earth\{
-    Clock,
-    ElapsedPeriod,
+use Innmind\Filesystem\{
+    Adapter\Filesystem,
+    File\Content,
+    Name,
 };
-use Innmind\IO\IO;
-use Innmind\Stream\Streams;
+use Innmind\TimeContinuum\{
+    Clock,
+    Period,
+};
 use Innmind\Url\{
     Url,
     Path,
@@ -39,8 +41,8 @@ use Innmind\Immutable\{
     Maybe,
     Sequence,
 };
-use PHPUnit\Framework\TestCase;
 use Innmind\BlackBox\{
+    PHPUnit\Framework\TestCase,
     PHPUnit\BlackBox,
     Set,
 };
@@ -53,7 +55,7 @@ class CurlTest extends TestCase
 
     public function setUp(): void
     {
-        $this->curl = Curl::of(new Clock);
+        $this->curl = Curl::of(Clock::live());
     }
 
     public function testInterface()
@@ -109,7 +111,7 @@ class CurlTest extends TestCase
                 ->headers()
                 ->find(Location::class)
                 ->match(
-                    static fn($header) => $header->toString(),
+                    static fn($header) => $header->normalize()->toString(),
                     static fn() => null,
                 ),
         );
@@ -129,7 +131,7 @@ class CurlTest extends TestCase
         $this->assertInstanceOf(ClientError::class, $error);
         $this->assertSame(404, $error->response()->statusCode()->toInt());
         $this->assertSame(
-            'Server: GitHub.com',
+            'Server: github.com',
             $error
                 ->response()
                 ->headers()
@@ -154,7 +156,13 @@ class CurlTest extends TestCase
 
         $this->assertInstanceOf(ConnectionFailed::class, $error);
         $this->assertSame($request, $error->request());
-        $this->assertSame("Couldn't connect to server", $error->reason());
+        $this->assertContains(
+            $error->reason(),
+            [
+                'Could not connect to server',
+                "Couldn't connect to server",
+            ],
+        );
     }
 
     public function testResponseBody()
@@ -170,11 +178,10 @@ class CurlTest extends TestCase
 
         $this->assertInstanceOf(Success::class, $success);
 
-        $extraSpace = ' ';
         $license = <<<LICENSE
         The MIT License (MIT)
 
-        Copyright (c) 2015$extraSpace
+        Copyright (c) 2015-present
 
         Permission is hereby granted, free of charge, to any person obtaining a copy
         of this software and associated documentation files (the "Software"), to deal
@@ -228,12 +235,11 @@ class CurlTest extends TestCase
         );
     }
 
-    public function testPost()
+    public function testPost(): BlackBox\Proof
     {
-        $this
+        return $this
             ->forAll(Set\Unicode::strings())
-            ->disableShrinking()
-            ->then(function($body) {
+            ->prove(function($body) {
                 $success = ($this->curl)(Request::of(
                     Url::of('https://httpbin.org/post'),
                     Method::post,
@@ -247,17 +253,14 @@ class CurlTest extends TestCase
 
                 // we allow server errors as we don't control the stability of
                 // the server
-                $this->assertThat(
-                    $success,
-                    $this->logicalOr(
-                        $this->isInstanceOf(Success::class),
-                        $this->isInstanceOf(ServerError::class),
-                    ),
-                );
-
                 if ($success instanceof ServerError) {
+                    // A scenario must have at least one scenario
+                    $this->assertTrue(true);
+
                     return;
                 }
+
+                $this->assertInstanceOf(Success::class, $success);
 
                 $response = \json_decode(
                     $success->response()->body()->toString(),
@@ -275,41 +278,38 @@ class CurlTest extends TestCase
 
     public function testPostLargeContent()
     {
-        $capabilities = Streams::fromAmbientAuthority();
-        $io = IO::of(static fn(?ElapsedPeriod $timeout) => match ($timeout) {
-            null => $capabilities->watch()->waitForever(),
-            default => $capabilities->watch()->timeoutAfter($timeout),
-        });
-
-        $memory = \memory_get_peak_usage();
-        $success = ($this->curl)(Request::of(
-            Url::of('https://httpbin.org/post'),
-            Method::post,
-            ProtocolVersion::v11,
-            null,
-            Content::atPath(
-                $capabilities->readable(),
-                $io->readable(),
-                Path::of(__DIR__.'/../data/screenshot.png'),
-            ),
-        ))->match(
-            static fn($success) => $success,
-            static fn($error) => $error,
-        );
-
-        // we allow server errors as we don't control the stability of the server
-        $this->assertThat(
-            $success,
-            $this->logicalOr(
-                $this->isInstanceOf(Success::class),
-                $this->isInstanceOf(ServerError::class),
-            ),
-        );
         // The file is a bit more than 2Mo, so if everything was kept in memory
         // the peak memory would be above 4Mo so we check that it is less than
         // 3Mo. It can't be less than 2Mo because the streams used have a memory
         // buffer of 2Mo before writing to disk
-        $this->assertLessThan(3_698_688, \memory_get_peak_usage() - $memory);
+        $this
+            ->assert()
+            ->memory(function() {
+                $data = Filesystem::mount(Path::of(__DIR__.'/../data/'));
+
+                $memory = \memory_get_peak_usage();
+                $success = ($this->curl)(Request::of(
+                    Url::of('https://httpbin.org/post'),
+                    Method::post,
+                    ProtocolVersion::v11,
+                    null,
+                    $data->get(Name::of('screenshot.png'))->match(
+                        static fn($file) => $file->content(),
+                        static fn() => throw new \Exception,
+                    ),
+                ))->match(
+                    static fn($success) => $success,
+                    static fn($error) => $error,
+                );
+
+                // we allow server errors as we don't control the stability of the server
+                $this->assertContains(
+                    $success::class,
+                    [Success::class, ServerError::class],
+                );
+            })
+            ->inLessThan()
+            ->megaBytes(3);
     }
 
     public function testMinorVersionOfProtocolMayNotBePresent()
@@ -343,20 +343,24 @@ class CurlTest extends TestCase
         );
         $forOneRequest = \microtime(true) - $start;
 
-        $start = \microtime(true);
-        $responses = Maybe::all(
-            ($this->curl)($request)->maybe(),
-            ($this->curl)($request)->maybe(),
-        )
-            ->map(Sequence::of(...))
-            ->match(
-                static fn($responses) => $responses,
-                static fn() => Sequence::of(),
-            )
-            ->map(\get_class(...))
-            ->toList();
-        $this->assertSame([Success::class, Success::class], $responses);
-        $this->assertLessThan(2 * $forOneRequest, \microtime(true) - $start);
+        $this
+            ->assert()
+            ->time(function() use ($request) {
+                $responses = Maybe::all(
+                    ($this->curl)($request)->maybe(),
+                    ($this->curl)($request)->maybe(),
+                )
+                    ->map(Sequence::of(...))
+                    ->match(
+                        static fn($responses) => $responses,
+                        static fn() => Sequence::of(),
+                    )
+                    ->map(\get_class(...))
+                    ->toList();
+                $this->assertSame([Success::class, Success::class], $responses);
+            })
+            ->inLessThan()
+            ->seconds((int) \ceil(2 * $forOneRequest));
     }
 
     public function testMaxConcurrency()
@@ -375,31 +379,35 @@ class CurlTest extends TestCase
         );
         $forOneRequest = \microtime(true) - $start;
 
-        $start = \microtime(true);
-        $responses = Maybe::all(
-            $curl($request)->maybe(),
-            $curl($request)->maybe(),
-            $curl($request)->maybe(),
-        )
-            ->map(Sequence::of(...))
-            ->match(
-                static fn($responses) => $responses,
-                static fn() => Sequence::of(),
-            )
-            ->map(\get_class(...))
-            ->toList();
-        $this->assertSame([Success::class, Success::class, Success::class], $responses);
         // even though there are 3 request we check it takes more than 2 times
         // because depending on speed the 2 request could be faster than the
         // initial one
-        $this->assertGreaterThanOrEqual(2 * $forOneRequest, \microtime(true) - $start);
+        $this
+            ->assert()
+            ->time(function() use ($curl, $request) {
+                $responses = Maybe::all(
+                    $curl($request)->maybe(),
+                    $curl($request)->maybe(),
+                    $curl($request)->maybe(),
+                )
+                    ->map(Sequence::of(...))
+                    ->match(
+                        static fn($responses) => $responses,
+                        static fn() => Sequence::of(),
+                    )
+                    ->map(\get_class(...))
+                    ->toList();
+                $this->assertSame([Success::class, Success::class, Success::class], $responses);
+            })
+            ->inMoreThan()
+            ->seconds((int) (2 * $forOneRequest));
     }
 
     public function testHeartbeat()
     {
         $heartbeat = 0;
         $curl = $this->curl->heartbeat(
-            new ElapsedPeriod(1000),
+            Period::second(1),
             static function() use (&$heartbeat) {
                 ++$heartbeat;
             },
@@ -496,21 +504,27 @@ class CurlTest extends TestCase
 
     public function testTimeout()
     {
-        $request = Request::of(
-            Url::of('https://httpbin.org/delay/2'),
-            Method::get,
-            ProtocolVersion::v11,
-        );
+        foreach (['bin', 'bun'] as $server) {
+            $request = Request::of(
+                Url::of("https://http$server.org/delay/2"),
+                Method::get,
+                ProtocolVersion::v11,
+            );
 
-        $result = ($this->curl)($request)->match(
-            static fn($success) => $success,
-            static fn() => null,
-        );
+            $result = ($this->curl)($request)->match(
+                static fn($success) => $success,
+                static fn() => null,
+            );
+
+            if (!\is_null($result)) {
+                break;
+            }
+        }
 
         $this->assertInstanceOf(Success::class, $result);
 
         $request = Request::of(
-            Url::of('https://httpbin.org/delay/2'),
+            Url::of("https://http$server.org/delay/2"),
             Method::get,
             ProtocolVersion::v11,
             Headers::of(

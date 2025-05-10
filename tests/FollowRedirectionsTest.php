@@ -5,6 +5,7 @@ namespace Tests\Innmind\HttpTransport;
 
 use Innmind\HttpTransport\{
     FollowRedirections,
+    Curl,
     Transport,
     Information,
     Success,
@@ -15,6 +16,7 @@ use Innmind\HttpTransport\{
     ConnectionFailed,
     Failure,
 };
+use Innmind\TimeContinuum\Clock;
 use Innmind\Http\{
     Request,
     Response,
@@ -30,8 +32,8 @@ use Innmind\Url\{
     Authority,
 };
 use Innmind\Immutable\Either;
-use PHPUnit\Framework\TestCase;
 use Innmind\BlackBox\{
+    PHPUnit\Framework\TestCase,
     PHPUnit\BlackBox,
     Set,
 };
@@ -45,11 +47,11 @@ class FollowRedirectionsTest extends TestCase
     {
         $this->assertInstanceOf(
             Transport::class,
-            FollowRedirections::of($this->createMock(Transport::class)),
+            FollowRedirections::of(Curl::of(Clock::live())),
         );
     }
 
-    public function testDoesntModifyNonRedirectionResults()
+    public function testDoesntModifyNonRedirectionResults(): BlackBox\Proof
     {
         $request = Request::of(
             Url::of('/'),
@@ -57,7 +59,7 @@ class FollowRedirectionsTest extends TestCase
             ProtocolVersion::v11,
         );
 
-        $this
+        return $this
             ->forAll(Set\Elements::of(
                 Either::right(new Success(
                     $request,
@@ -99,22 +101,27 @@ class FollowRedirectionsTest extends TestCase
                     '',
                 )),
             ))
-            ->then(function($result) use ($request) {
-                $inner = $this->createMock(Transport::class);
-                $inner
-                    ->expects($this->once())
-                    ->method('__invoke')
-                    ->with($request)
-                    ->willReturn($result);
+            ->prove(function($result) use ($request) {
+                $inner = new class($result) implements Transport {
+                    public function __construct(
+                        private $result,
+                    ) {
+                    }
+
+                    public function __invoke(Request $request): Either
+                    {
+                        return $this->result;
+                    }
+                };
                 $fulfill = FollowRedirections::of($inner);
 
                 $this->assertEquals($result, $fulfill($request));
             });
     }
 
-    public function testRedirectMaximum5Times()
+    public function testRedirectMaximum5Times(): BlackBox\Proof
     {
-        $this
+        return $this
             ->forAll(
                 FUrl::any(),
                 FUrl::any(),
@@ -132,7 +139,7 @@ class FollowRedirectionsTest extends TestCase
                     ProtocolVersion::v20,
                 ),
             )
-            ->then(function($firstUrl, $newUrl, $method, $statusCode, $protocol) {
+            ->prove(function($firstUrl, $newUrl, $method, $statusCode, $protocol) {
                 $start = Request::of(
                     $firstUrl,
                     $method,
@@ -148,30 +155,41 @@ class FollowRedirectionsTest extends TestCase
                         ),
                     ),
                 ));
-                $inner = $this->createMock(Transport::class);
-                $inner
-                    ->expects($matcher = $this->exactly(6))
-                    ->method('__invoke')
-                    ->willReturnCallback(function($request) use ($matcher, $start, $firstUrl, $expected) {
-                        match ($matcher->numberOfInvocations()) {
-                            1 => $this->assertSame($start, $request),
-                            // assertions on the new url are done in self::testRedirect() and self::testRedirectSeeOther()
-                            default => $this->assertNotSame($firstUrl, $request->url()),
-                        };
+                $inner = new class($this, $firstUrl, $expected) implements Transport {
+                    public function __construct(
+                        private $test,
+                        private $firstUrl,
+                        private $expected,
+                        public int $calls = 0,
+                    ) {
+                    }
 
-                        return $expected;
-                    });
+                    public function __invoke(Request $request): Either
+                    {
+                        ++$this->calls;
+
+                        if ($this->firstUrl) {
+                            $this->test->assertSame($this->firstUrl, $request->url());
+                            $this->firstUrl = null;
+                        } else {
+                            $this->test->assertNotSame($this->firstUrl, $request->url());
+                        }
+
+                        return $this->expected;
+                    }
+                };
                 $fulfill = FollowRedirections::of($inner);
 
                 $result = $fulfill($start);
 
                 $this->assertEquals($expected, $result);
+                $this->assertSame(6, $inner->calls);
             });
     }
 
-    public function testDoesntRedirectWhenNoLocationHeader()
+    public function testDoesntRedirectWhenNoLocationHeader(): BlackBox\Proof
     {
-        $this
+        return $this
             ->forAll(
                 FUrl::any(),
                 Set\Elements::of(...Method::cases()),
@@ -188,24 +206,30 @@ class FollowRedirectionsTest extends TestCase
                     ProtocolVersion::v20,
                 ),
             )
-            ->then(function($firstUrl, $method, $statusCode, $protocol) {
+            ->prove(function($firstUrl, $method, $statusCode, $protocol) {
                 $start = Request::of(
                     $firstUrl,
                     $method,
                     $protocol,
                 );
-                $inner = $this->createMock(Transport::class);
-                $inner
-                    ->expects($this->once())
-                    ->method('__invoke')
-                    ->with($start)
-                    ->willReturn($expected = Either::left(new Redirection(
-                        $start,
-                        Response::of(
-                            $statusCode,
-                            $protocol,
-                        ),
-                    )));
+                $expected = Either::left(new Redirection(
+                    $start,
+                    Response::of(
+                        $statusCode,
+                        $protocol,
+                    ),
+                ));
+                $inner = new class($expected) implements Transport {
+                    public function __construct(
+                        private $expected,
+                    ) {
+                    }
+
+                    public function __invoke(Request $request): Either
+                    {
+                        return $this->expected;
+                    }
+                };
                 $fulfill = FollowRedirections::of($inner);
 
                 $result = $fulfill($start);
@@ -214,9 +238,9 @@ class FollowRedirectionsTest extends TestCase
             });
     }
 
-    public function testRedirectSeeOther()
+    public function testRedirectSeeOther(): BlackBox\Proof
     {
-        $this
+        return $this
             ->forAll(
                 FUrl::any()
                     ->filter(static fn($url) => !$url->authority()->equals(Authority::none()))
@@ -230,7 +254,7 @@ class FollowRedirectionsTest extends TestCase
                 ),
                 Set\Unicode::strings(),
             )
-            ->then(function($firstUrl, $newUrl, $method, $protocol, $body) {
+            ->prove(function($firstUrl, $newUrl, $method, $protocol, $body) {
                 $start = Request::of(
                     $firstUrl,
                     $method,
@@ -245,53 +269,64 @@ class FollowRedirectionsTest extends TestCase
                         $protocol,
                     ),
                 ));
-                $inner = $this->createMock(Transport::class);
-                $inner
-                    ->expects($matcher = $this->exactly(2))
-                    ->method('__invoke')
-                    ->willReturnCallback(function($request) use ($matcher, $start, $newUrl, $protocol, $expected) {
-                        if ($matcher->numberOfInvocations() === 1) {
-                            $this->assertSame($start, $request);
-                        } else {
-                            $this->assertSame(Method::get, $request->method());
-                            $this->assertFalse($request->url()->authority()->equals(Authority::none()));
-                            $this->assertTrue($request->url()->path()->absolute());
-                            // not a direct comparison as new url might be a relative path
-                            $this->assertStringEndsWith(
-                                $newUrl->path()->toString(),
-                                $request->url()->path()->toString(),
-                            );
-                            $this->assertSame($newUrl->query(), $request->url()->query());
-                            $this->assertSame($newUrl->fragment(), $request->url()->fragment());
-                            $this->assertSame($start->headers(), $request->headers());
-                            $this->assertSame('', $request->body()->toString());
-                        }
+                $inner = new class($this, $start, $newUrl, $protocol, $expected) implements Transport {
+                    public function __construct(
+                        private $test,
+                        private $start,
+                        private $newUrl,
+                        private $protocol,
+                        private $expected,
+                        public int $calls = 0,
+                    ) {
+                    }
 
-                        return match ($matcher->numberOfInvocations()) {
-                            1 => Either::left(new Redirection(
-                                $start,
+                    public function __invoke(Request $request): Either
+                    {
+                        ++$this->calls;
+
+                        if ($this->calls === 1) {
+                            $this->test->assertSame($this->start, $request);
+
+                            return Either::left(new Redirection(
+                                $this->start,
                                 Response::of(
                                     StatusCode::seeOther,
-                                    $protocol,
+                                    $this->protocol,
                                     Headers::of(
-                                        Location::of($newUrl),
+                                        Location::of($this->newUrl),
                                     ),
                                 ),
-                            )),
-                            2 => $expected,
-                        };
-                    });
+                            ));
+                        }
+
+                        $this->test->assertSame(Method::get, $request->method());
+                        $this->test->assertFalse($request->url()->authority()->equals(Authority::none()));
+                        $this->test->assertTrue($request->url()->path()->absolute());
+                        // not a direct comparison as new url might be a relative path
+                        $this->test->assertStringEndsWith(
+                            $this->newUrl->path()->toString(),
+                            $request->url()->path()->toString(),
+                        );
+                        $this->test->assertSame($this->newUrl->query(), $request->url()->query());
+                        $this->test->assertSame($this->newUrl->fragment(), $request->url()->fragment());
+                        $this->test->assertSame($this->start->headers(), $request->headers());
+                        $this->test->assertSame('', $request->body()->toString());
+
+                        return $this->expected;
+                    }
+                };
                 $fulfill = FollowRedirections::of($inner);
 
                 $result = $fulfill($start);
 
                 $this->assertEquals($expected, $result);
+                $this->assertSame(2, $inner->calls);
             });
     }
 
-    public function testRedirect()
+    public function testRedirect(): BlackBox\Proof
     {
-        $this
+        return $this
             ->forAll(
                 FUrl::any()
                     ->filter(static fn($url) => !$url->authority()->equals(Authority::none()))
@@ -311,7 +346,7 @@ class FollowRedirectionsTest extends TestCase
                 ),
                 Set\Unicode::strings(),
             )
-            ->then(function($firstUrl, $newUrl, $method, $statusCode, $protocol, $body) {
+            ->prove(function($firstUrl, $newUrl, $method, $statusCode, $protocol, $body) {
                 $start = Request::of(
                     $firstUrl,
                     $method,
@@ -326,53 +361,65 @@ class FollowRedirectionsTest extends TestCase
                         $protocol,
                     ),
                 ));
-                $inner = $this->createMock(Transport::class);
-                $inner
-                    ->expects($matcher = $this->exactly(2))
-                    ->method('__invoke')
-                    ->willReturnCallback(function($request) use ($matcher, $start, $newUrl, $statusCode, $protocol, $expected) {
-                        if ($matcher->numberOfInvocations() === 1) {
-                            $this->assertSame($start, $request);
-                        } else {
-                            $this->assertSame($start->method(), $request->method());
-                            $this->assertFalse($request->url()->authority()->equals(Authority::none()));
-                            $this->assertTrue($request->url()->path()->absolute());
-                            // not a direct comparison as new url might be a relative path
-                            $this->assertStringEndsWith(
-                                $newUrl->path()->toString(),
-                                $request->url()->path()->toString(),
-                            );
-                            $this->assertSame($newUrl->query(), $request->url()->query());
-                            $this->assertSame($newUrl->fragment(), $request->url()->fragment());
-                            $this->assertSame($start->headers(), $request->headers());
-                            $this->assertSame($start->body(), $request->body());
-                        }
+                $inner = new class($this, $start, $newUrl, $statusCode, $protocol, $expected) implements Transport {
+                    public function __construct(
+                        private $test,
+                        private $start,
+                        private $newUrl,
+                        private $statusCode,
+                        private $protocol,
+                        private $expected,
+                        public int $calls = 0,
+                    ) {
+                    }
 
-                        return match ($matcher->numberOfInvocations()) {
-                            1 => Either::left(new Redirection(
-                                $start,
+                    public function __invoke(Request $request): Either
+                    {
+                        ++$this->calls;
+
+                        if ($this->calls === 1) {
+                            $this->test->assertSame($this->start, $request);
+
+                            return Either::left(new Redirection(
+                                $this->start,
                                 Response::of(
-                                    $statusCode,
-                                    $protocol,
+                                    $this->statusCode,
+                                    $this->protocol,
                                     Headers::of(
-                                        Location::of($newUrl),
+                                        Location::of($this->newUrl),
                                     ),
                                 ),
-                            )),
-                            2 => $expected,
-                        };
-                    });
+                            ));
+                        }
+
+                        $this->test->assertSame($this->start->method(), $request->method());
+                        $this->test->assertFalse($request->url()->authority()->equals(Authority::none()));
+                        $this->test->assertTrue($request->url()->path()->absolute());
+                        // not a direct comparison as new url might be a relative path
+                        $this->test->assertStringEndsWith(
+                            $this->newUrl->path()->toString(),
+                            $request->url()->path()->toString(),
+                        );
+                        $this->test->assertSame($this->newUrl->query(), $request->url()->query());
+                        $this->test->assertSame($this->newUrl->fragment(), $request->url()->fragment());
+                        $this->test->assertSame($this->start->headers(), $request->headers());
+                        $this->test->assertSame($this->start->body(), $request->body());
+
+                        return $this->expected;
+                    }
+                };
                 $fulfill = FollowRedirections::of($inner);
 
                 $result = $fulfill($start);
 
                 $this->assertEquals($expected, $result);
+                $this->assertSame(2, $inner->calls);
             });
     }
 
-    public function testDoesntRedirectUnsafeMethods()
+    public function testDoesntRedirectUnsafeMethods(): BlackBox\Proof
     {
-        $this
+        return $this
             ->forAll(
                 FUrl::any(),
                 FUrl::any(),
@@ -392,7 +439,7 @@ class FollowRedirectionsTest extends TestCase
                 ),
                 Set\Unicode::strings(),
             )
-            ->then(function($firstUrl, $newUrl, $method, $statusCode, $protocol, $body) {
+            ->prove(function($firstUrl, $newUrl, $method, $statusCode, $protocol, $body) {
                 $start = Request::of(
                     $firstUrl,
                     $method,
@@ -400,21 +447,27 @@ class FollowRedirectionsTest extends TestCase
                     null,
                     Content::ofString($body),
                 );
-                $inner = $this->createMock(Transport::class);
-                $inner
-                    ->expects($this->once())
-                    ->method('__invoke')
-                    ->with($start)
-                    ->willReturn($expected = Either::left(new Redirection(
-                        $start,
-                        Response::of(
-                            $statusCode,
-                            $protocol,
-                            Headers::of(
-                                Location::of($newUrl),
-                            ),
+                $expected = Either::left(new Redirection(
+                    $start,
+                    Response::of(
+                        $statusCode,
+                        $protocol,
+                        Headers::of(
+                            Location::of($newUrl),
                         ),
-                    )));
+                    ),
+                ));
+                $inner = new class($expected) implements Transport {
+                    public function __construct(
+                        private $expected,
+                    ) {
+                    }
+
+                    public function __invoke(Request $request): Either
+                    {
+                        return $this->expected;
+                    }
+                };
                 $fulfill = FollowRedirections::of($inner);
 
                 $result = $fulfill($start);

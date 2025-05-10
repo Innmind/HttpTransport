@@ -8,7 +8,7 @@ use Innmind\HttpTransport\{
     Failure,
     Success,
 };
-use Innmind\TimeContinuum\ElapsedPeriod;
+use Innmind\TimeContinuum\Period;
 use Innmind\Immutable\{
     Sequence,
     Map,
@@ -34,7 +34,7 @@ final class Concurrency
      *
      * @param ?positive-int $maxConcurrency
      */
-    private function __construct(int $maxConcurrency = null)
+    private function __construct(?int $maxConcurrency = null)
     {
         $this->scheduled = Sequence::of();
         /** @var \WeakMap<Scheduled, Either<Errors, Success>> */
@@ -47,7 +47,7 @@ final class Concurrency
      *
      * @param ?positive-int $maxConcurrency
      */
-    public static function new(int $maxConcurrency = null): self
+    public static function new(?int $maxConcurrency = null): self
     {
         return new self($maxConcurrency);
     }
@@ -60,7 +60,7 @@ final class Concurrency
     /**
      * @param callable(): void $heartbeat
      */
-    public function run(ElapsedPeriod $timeout, callable $heartbeat): void
+    public function run(Period $timeout, callable $heartbeat): void
     {
         // remove dead references
         $stillScheduled = $this
@@ -113,7 +113,7 @@ final class Concurrency
      * @param Sequence<Scheduled> $toStart
      */
     private function batch(
-        ElapsedPeriod $timeout,
+        Period $timeout,
         callable $heartbeat,
         Sequence $toStart,
     ): void {
@@ -138,7 +138,7 @@ final class Concurrency
             if ($stillActive) {
                 $heartbeat();
                 // Wait a short time for more activity
-                \curl_multi_select($multiHandle, $timeout->milliseconds() / 1000);
+                \curl_multi_select($multiHandle, $timeout->seconds());
             }
         } while ($stillActive && $status === \CURLM_OK);
 
