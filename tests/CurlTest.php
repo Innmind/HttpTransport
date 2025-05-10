@@ -276,33 +276,38 @@ class CurlTest extends TestCase
 
     public function testPostLargeContent()
     {
-        $data = Filesystem::mount(Path::of(__DIR__.'/../data/'));
-
-        $memory = \memory_get_peak_usage();
-        $success = ($this->curl)(Request::of(
-            Url::of('https://httpbin.org/post'),
-            Method::post,
-            ProtocolVersion::v11,
-            null,
-            $data->get(Name::of('screenshot.png'))->match(
-                static fn($file) => $file->content(),
-                static fn() => throw new \Exception,
-            ),
-        ))->match(
-            static fn($success) => $success,
-            static fn($error) => $error,
-        );
-
-        // we allow server errors as we don't control the stability of the server
-        $this->assertContains(
-            $success::class,
-            [Success::class, ServerError::class],
-        );
         // The file is a bit more than 2Mo, so if everything was kept in memory
         // the peak memory would be above 4Mo so we check that it is less than
         // 3Mo. It can't be less than 2Mo because the streams used have a memory
         // buffer of 2Mo before writing to disk
-        $this->assertLessThan(3_698_688, \memory_get_peak_usage() - $memory);
+        $this
+            ->assert()
+            ->memory(function() {
+                $data = Filesystem::mount(Path::of(__DIR__.'/../data/'));
+
+                $memory = \memory_get_peak_usage();
+                $success = ($this->curl)(Request::of(
+                    Url::of('https://httpbin.org/post'),
+                    Method::post,
+                    ProtocolVersion::v11,
+                    null,
+                    $data->get(Name::of('screenshot.png'))->match(
+                        static fn($file) => $file->content(),
+                        static fn() => throw new \Exception,
+                    ),
+                ))->match(
+                    static fn($success) => $success,
+                    static fn($error) => $error,
+                );
+
+                // we allow server errors as we don't control the stability of the server
+                $this->assertContains(
+                    $success::class,
+                    [Success::class, ServerError::class],
+                );
+            })
+            ->inLessThan()
+            ->megaBytes(3);
     }
 
     public function testMinorVersionOfProtocolMayNotBePresent()
@@ -336,20 +341,24 @@ class CurlTest extends TestCase
         );
         $forOneRequest = \microtime(true) - $start;
 
-        $start = \microtime(true);
-        $responses = Maybe::all(
-            ($this->curl)($request)->maybe(),
-            ($this->curl)($request)->maybe(),
-        )
-            ->map(Sequence::of(...))
-            ->match(
-                static fn($responses) => $responses,
-                static fn() => Sequence::of(),
-            )
-            ->map(\get_class(...))
-            ->toList();
-        $this->assertSame([Success::class, Success::class], $responses);
-        $this->assertLessThan(2 * $forOneRequest, \microtime(true) - $start);
+        $this
+            ->assert()
+            ->time(function() use ($request) {
+                $responses = Maybe::all(
+                    ($this->curl)($request)->maybe(),
+                    ($this->curl)($request)->maybe(),
+                )
+                    ->map(Sequence::of(...))
+                    ->match(
+                        static fn($responses) => $responses,
+                        static fn() => Sequence::of(),
+                    )
+                    ->map(\get_class(...))
+                    ->toList();
+                $this->assertSame([Success::class, Success::class], $responses);
+            })
+            ->inLessThan()
+            ->seconds((int) \ceil(2 * $forOneRequest));
     }
 
     public function testMaxConcurrency()
@@ -368,24 +377,28 @@ class CurlTest extends TestCase
         );
         $forOneRequest = \microtime(true) - $start;
 
-        $start = \microtime(true);
-        $responses = Maybe::all(
-            $curl($request)->maybe(),
-            $curl($request)->maybe(),
-            $curl($request)->maybe(),
-        )
-            ->map(Sequence::of(...))
-            ->match(
-                static fn($responses) => $responses,
-                static fn() => Sequence::of(),
-            )
-            ->map(\get_class(...))
-            ->toList();
-        $this->assertSame([Success::class, Success::class, Success::class], $responses);
         // even though there are 3 request we check it takes more than 2 times
         // because depending on speed the 2 request could be faster than the
         // initial one
-        $this->assertGreaterThanOrEqual(2 * $forOneRequest, \microtime(true) - $start);
+        $this
+            ->assert()
+            ->time(function() use ($curl, $request) {
+                $responses = Maybe::all(
+                    $curl($request)->maybe(),
+                    $curl($request)->maybe(),
+                    $curl($request)->maybe(),
+                )
+                    ->map(Sequence::of(...))
+                    ->match(
+                        static fn($responses) => $responses,
+                        static fn() => Sequence::of(),
+                    )
+                    ->map(\get_class(...))
+                    ->toList();
+                $this->assertSame([Success::class, Success::class, Success::class], $responses);
+            })
+            ->inMoreThan()
+            ->seconds((int) (2 * $forOneRequest));
     }
 
     public function testHeartbeat()
