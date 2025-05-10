@@ -28,22 +28,15 @@ use Innmind\Immutable\{
  */
 final class CircuitBreaker implements Transport
 {
-    private Transport $fulfill;
-    private Clock $clock;
-    private Period $delayBeforeRetry;
-    /** @var Map<string , PointInTime> */
-    private Map $openedCircuits;
-
+    /**
+     * @param Map<string , PointInTime> $openedCircuits
+     */
     private function __construct(
-        Transport $fulfill,
-        Clock $clock,
-        Period $delayBeforeRetry,
+        private Transport $fulfill,
+        private Clock $clock,
+        private Period $delayBeforeRetry,
+        private Map $openedCircuits,
     ) {
-        $this->fulfill = $fulfill;
-        $this->clock = $clock;
-        $this->delayBeforeRetry = $delayBeforeRetry;
-        /** @var Map<string , PointInTime> */
-        $this->openedCircuits = Map::of();
     }
 
     #[\Override]
@@ -65,7 +58,12 @@ final class CircuitBreaker implements Transport
         Clock $clock,
         Period $delayBeforeRetry,
     ): self {
-        return new self($fulfill, $clock, $delayBeforeRetry);
+        return new self(
+            $fulfill,
+            $clock,
+            $delayBeforeRetry,
+            Map::of(),
+        );
     }
 
     private function open(

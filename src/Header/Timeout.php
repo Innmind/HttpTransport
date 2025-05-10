@@ -16,15 +16,12 @@ use Innmind\Http\{
  */
 final class Timeout implements Custom
 {
-    /** @var positive-int */
-    private int $seconds;
-
     /**
      * @param positive-int $seconds
      */
-    private function __construct(int $seconds)
-    {
-        $this->seconds = $seconds;
+    private function __construct(
+        private int $seconds,
+    ) {
     }
 
     /**

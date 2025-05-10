@@ -21,13 +21,10 @@ use Ramsey\Uuid\Uuid;
  */
 final class Logger implements Transport
 {
-    private Transport $fulfill;
-    private LoggerInterface $logger;
-
-    private function __construct(Transport $fulfill, LoggerInterface $logger)
-    {
-        $this->fulfill = $fulfill;
-        $this->logger = $logger;
+    private function __construct(
+        private Transport $fulfill,
+        private LoggerInterface $logger,
+    ) {
     }
 
     #[\Override]

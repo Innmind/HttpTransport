@@ -17,20 +17,14 @@ use Innmind\Immutable\{
  */
 final class ExponentialBackoff implements Transport
 {
-    private Transport $fulfill;
-    private Halt $halt;
-    /** @var Sequence<Period> */
-    private Sequence $retries;
-
+    /**
+     * @param Sequence<Period> $retries
+     */
     private function __construct(
-        Transport $fulfill,
-        Halt $halt,
-        Period $retry,
-        Period ...$retries,
+        private Transport $fulfill,
+        private Halt $halt,
+        private Sequence $retries,
     ) {
-        $this->fulfill = $fulfill;
-        $this->halt = $halt;
-        $this->retries = Sequence::of($retry, ...$retries);
     }
 
     #[\Override]
@@ -49,11 +43,13 @@ final class ExponentialBackoff implements Transport
         return new self(
             $fulfill,
             $halt,
-            Period::millisecond((int) (\exp(0) * 100.0)),
-            Period::millisecond((int) (\exp(1) * 100.0)),
-            Period::millisecond((int) (\exp(2) * 100.0)),
-            Period::millisecond((int) (\exp(3) * 100.0)),
-            Period::millisecond((int) (\exp(4) * 100.0)),
+            Sequence::of(
+                Period::millisecond((int) (\exp(0) * 100.0)),
+                Period::millisecond((int) (\exp(1) * 100.0)),
+                Period::millisecond((int) (\exp(2) * 100.0)),
+                Period::millisecond((int) (\exp(3) * 100.0)),
+                Period::millisecond((int) (\exp(4) * 100.0)),
+            ),
         );
     }
 
