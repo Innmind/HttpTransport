@@ -13,7 +13,6 @@ use Innmind\Http\{
 };
 use Innmind\TimeContinuum\{
     Clock,
-    ElapsedPeriod,
     Period,
 };
 use Innmind\IO\IO;
@@ -31,7 +30,7 @@ final class Curl implements Transport
         private Factory $headerFactory,
         private IO $io,
         private Concurrency $concurrency,
-        private ElapsedPeriod $timeout,
+        private Period $timeout,
         private \Closure $heartbeat,
         private bool $disableSSLVerification,
     ) {
@@ -65,7 +64,7 @@ final class Curl implements Transport
             Factory::new($clock),
             $io,
             Concurrency::new(),
-            Period::second(1)->asElapsedPeriod(),
+            Period::second(1),
             static fn() => null,
             false,
         );
@@ -91,9 +90,10 @@ final class Curl implements Transport
     /**
      * @psalm-mutation-free
      *
+     * @param Period $timeout Only seconds are allowed
      * @param callable(): void $heartbeat
      */
-    public function heartbeat(ElapsedPeriod $timeout, ?callable $heartbeat = null): self
+    public function heartbeat(Period $timeout, ?callable $heartbeat = null): self
     {
         return new self(
             $this->headerFactory,

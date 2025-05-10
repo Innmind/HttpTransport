@@ -11,6 +11,7 @@
 - Requires `innmind/immutable:~5.14`
 - Requires `innmind/io:~3.2`
 - `Innmind\HttpTransport\ExponentialBackoff::of()` halt function must now be an instance of `Innmind\TimeWarp\Halt`
+- `Innmind\HttpTransport\Curl::heartbeat()` timeout is now expressed via `Innmind\TimeContinuum\Period`
 
 ### Fixed
 
