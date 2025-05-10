@@ -51,7 +51,7 @@ class FollowRedirectionsTest extends TestCase
         );
     }
 
-    public function testDoesntModifyNonRedirectionResults()
+    public function testDoesntModifyNonRedirectionResults(): BlackBox\Proof
     {
         $request = Request::of(
             Url::of('/'),
@@ -59,7 +59,7 @@ class FollowRedirectionsTest extends TestCase
             ProtocolVersion::v11,
         );
 
-        $this
+        return $this
             ->forAll(Set\Elements::of(
                 Either::right(new Success(
                     $request,
@@ -101,7 +101,7 @@ class FollowRedirectionsTest extends TestCase
                     '',
                 )),
             ))
-            ->then(function($result) use ($request) {
+            ->prove(function($result) use ($request) {
                 $inner = new class($result) implements Transport {
                     public function __construct(
                         private $result,
@@ -119,9 +119,9 @@ class FollowRedirectionsTest extends TestCase
             });
     }
 
-    public function testRedirectMaximum5Times()
+    public function testRedirectMaximum5Times(): BlackBox\Proof
     {
-        $this
+        return $this
             ->forAll(
                 FUrl::any(),
                 FUrl::any(),
@@ -139,7 +139,7 @@ class FollowRedirectionsTest extends TestCase
                     ProtocolVersion::v20,
                 ),
             )
-            ->then(function($firstUrl, $newUrl, $method, $statusCode, $protocol) {
+            ->prove(function($firstUrl, $newUrl, $method, $statusCode, $protocol) {
                 $start = Request::of(
                     $firstUrl,
                     $method,
@@ -187,9 +187,9 @@ class FollowRedirectionsTest extends TestCase
             });
     }
 
-    public function testDoesntRedirectWhenNoLocationHeader()
+    public function testDoesntRedirectWhenNoLocationHeader(): BlackBox\Proof
     {
-        $this
+        return $this
             ->forAll(
                 FUrl::any(),
                 Set\Elements::of(...Method::cases()),
@@ -206,7 +206,7 @@ class FollowRedirectionsTest extends TestCase
                     ProtocolVersion::v20,
                 ),
             )
-            ->then(function($firstUrl, $method, $statusCode, $protocol) {
+            ->prove(function($firstUrl, $method, $statusCode, $protocol) {
                 $start = Request::of(
                     $firstUrl,
                     $method,
@@ -238,9 +238,9 @@ class FollowRedirectionsTest extends TestCase
             });
     }
 
-    public function testRedirectSeeOther()
+    public function testRedirectSeeOther(): BlackBox\Proof
     {
-        $this
+        return $this
             ->forAll(
                 FUrl::any()
                     ->filter(static fn($url) => !$url->authority()->equals(Authority::none()))
@@ -254,7 +254,7 @@ class FollowRedirectionsTest extends TestCase
                 ),
                 Set\Unicode::strings(),
             )
-            ->then(function($firstUrl, $newUrl, $method, $protocol, $body) {
+            ->prove(function($firstUrl, $newUrl, $method, $protocol, $body) {
                 $start = Request::of(
                     $firstUrl,
                     $method,
@@ -324,9 +324,9 @@ class FollowRedirectionsTest extends TestCase
             });
     }
 
-    public function testRedirect()
+    public function testRedirect(): BlackBox\Proof
     {
-        $this
+        return $this
             ->forAll(
                 FUrl::any()
                     ->filter(static fn($url) => !$url->authority()->equals(Authority::none()))
@@ -346,7 +346,7 @@ class FollowRedirectionsTest extends TestCase
                 ),
                 Set\Unicode::strings(),
             )
-            ->then(function($firstUrl, $newUrl, $method, $statusCode, $protocol, $body) {
+            ->prove(function($firstUrl, $newUrl, $method, $statusCode, $protocol, $body) {
                 $start = Request::of(
                     $firstUrl,
                     $method,
@@ -417,9 +417,9 @@ class FollowRedirectionsTest extends TestCase
             });
     }
 
-    public function testDoesntRedirectUnsafeMethods()
+    public function testDoesntRedirectUnsafeMethods(): BlackBox\Proof
     {
-        $this
+        return $this
             ->forAll(
                 FUrl::any(),
                 FUrl::any(),
@@ -439,7 +439,7 @@ class FollowRedirectionsTest extends TestCase
                 ),
                 Set\Unicode::strings(),
             )
-            ->then(function($firstUrl, $newUrl, $method, $statusCode, $protocol, $body) {
+            ->prove(function($firstUrl, $newUrl, $method, $statusCode, $protocol, $body) {
                 $start = Request::of(
                     $firstUrl,
                     $method,
