@@ -8,7 +8,7 @@ use Innmind\HttpTransport\{
     Failure,
     Success,
 };
-use Innmind\TimeContinuum\ElapsedPeriod;
+use Innmind\TimeContinuum\Period;
 use Innmind\Immutable\{
     Sequence,
     Map,
@@ -60,7 +60,7 @@ final class Concurrency
     /**
      * @param callable(): void $heartbeat
      */
-    public function run(ElapsedPeriod $timeout, callable $heartbeat): void
+    public function run(Period $timeout, callable $heartbeat): void
     {
         // remove dead references
         $stillScheduled = $this
@@ -113,7 +113,7 @@ final class Concurrency
      * @param Sequence<Scheduled> $toStart
      */
     private function batch(
-        ElapsedPeriod $timeout,
+        Period $timeout,
         callable $heartbeat,
         Sequence $toStart,
     ): void {
@@ -138,7 +138,7 @@ final class Concurrency
             if ($stillActive) {
                 $heartbeat();
                 // Wait a short time for more activity
-                \curl_multi_select($multiHandle, $timeout->asPeriod()->seconds());
+                \curl_multi_select($multiHandle, $timeout->seconds());
             }
         } while ($stillActive && $status === \CURLM_OK);
 

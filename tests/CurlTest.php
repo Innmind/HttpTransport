@@ -405,7 +405,7 @@ class CurlTest extends TestCase
     {
         $heartbeat = 0;
         $curl = $this->curl->heartbeat(
-            Period::second(1)->asElapsedPeriod(),
+            Period::second(1),
             static function() use (&$heartbeat) {
                 ++$heartbeat;
             },
