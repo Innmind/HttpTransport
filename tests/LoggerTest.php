@@ -20,7 +20,7 @@ use Innmind\Http\{
 };
 use Innmind\Url\Url;
 use Psr\Log\NullLogger;
-use PHPUnit\Framework\TestCase;
+use Innmind\BlackBox\PHPUnit\Framework\TestCase;
 
 class LoggerTest extends TestCase
 {

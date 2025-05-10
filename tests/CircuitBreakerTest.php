@@ -26,7 +26,7 @@ use Innmind\TimeContinuum\{
     Period,
 };
 use Innmind\Immutable\Either;
-use PHPUnit\Framework\TestCase;
+use Innmind\BlackBox\PHPUnit\Framework\TestCase;
 
 class CircuitBreakerTest extends TestCase
 {
