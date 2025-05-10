@@ -5,6 +5,7 @@ namespace Tests\Innmind\HttpTransport;
 
 use Innmind\HttpTransport\{
     ExponentialBackoff,
+    Curl,
     Transport,
     ServerError,
     Success,
@@ -23,14 +24,17 @@ use Innmind\Http\{
     Response\StatusCode,
 };
 use Innmind\TimeWarp\Halt;
-use Innmind\TimeContinuum\Period;
+use Innmind\TimeContinuum\{
+    Clock,
+    Period,
+};
 use Innmind\Url\Url;
 use Innmind\Immutable\{
     Either,
     Attempt,
     SideEffect,
 };
-use PHPUnit\Framework\TestCase;
+use Innmind\BlackBox\PHPUnit\Framework\TestCase;
 
 class ExponentialBackoffTest extends TestCase
 {
@@ -39,18 +43,14 @@ class ExponentialBackoffTest extends TestCase
         $this->assertInstanceOf(
             Transport::class,
             ExponentialBackoff::of(
-                $this->createMock(Transport::class),
-                $this->createMock(Halt::class),
+                Curl::of(Clock::live()),
+                Halt\Usleep::new(),
             ),
         );
     }
 
     public function testDoesntRetryWhenInformationResponseOnFirstCall()
     {
-        $fulfill = ExponentialBackoff::of(
-            $inner = $this->createMock(Transport::class),
-            $halt = $this->createMock(Halt::class),
-        );
         $request = Request::of(
             Url::of('/'),
             Method::get,
@@ -60,24 +60,33 @@ class ExponentialBackoffTest extends TestCase
             StatusCode::continue,
             $request->protocolVersion(),
         );
-        $inner
-            ->expects($this->once())
-            ->method('__invoke')
-            ->with($request)
-            ->willReturn($expected = Either::left(new Information($request, $response)));
-        $halt
-            ->expects($this->never())
-            ->method('__invoke');
+        $expected = Either::left(new Information($request, $response));
+
+        $fulfill = ExponentialBackoff::of(
+            new class($expected) implements Transport {
+                public function __construct(
+                    private $expected,
+                ) {
+                }
+
+                public function __invoke(Request $request): Either
+                {
+                    return $this->expected;
+                }
+            },
+            new class implements Halt {
+                public function __invoke(Period $period): Attempt
+                {
+                    return Attempt::error(new \Exception);
+                }
+            },
+        );
 
         $this->assertEquals($expected, $fulfill($request));
     }
 
     public function testDoesntRetryWhenSuccessfulResponseOnFirstCall()
     {
-        $fulfill = ExponentialBackoff::of(
-            $inner = $this->createMock(Transport::class),
-            $halt = $this->createMock(Halt::class),
-        );
         $request = Request::of(
             Url::of('/'),
             Method::get,
@@ -87,24 +96,33 @@ class ExponentialBackoffTest extends TestCase
             StatusCode::ok,
             $request->protocolVersion(),
         );
-        $inner
-            ->expects($this->once())
-            ->method('__invoke')
-            ->with($request)
-            ->willReturn($expected = Either::right(new Success($request, $response)));
-        $halt
-            ->expects($this->never())
-            ->method('__invoke');
+        $expected = Either::right(new Success($request, $response));
+
+        $fulfill = ExponentialBackoff::of(
+            new class($expected) implements Transport {
+                public function __construct(
+                    private $expected,
+                ) {
+                }
+
+                public function __invoke(Request $request): Either
+                {
+                    return $this->expected;
+                }
+            },
+            new class implements Halt {
+                public function __invoke(Period $period): Attempt
+                {
+                    return Attempt::error(new \Exception);
+                }
+            },
+        );
 
         $this->assertEquals($expected, $fulfill($request));
     }
 
     public function testDoesntRetryWhenRedirectionResponseOnFirstCall()
     {
-        $fulfill = ExponentialBackoff::of(
-            $inner = $this->createMock(Transport::class),
-            $halt = $this->createMock(Halt::class),
-        );
         $request = Request::of(
             Url::of('/'),
             Method::get,
@@ -114,24 +132,33 @@ class ExponentialBackoffTest extends TestCase
             StatusCode::movedPermanently,
             $request->protocolVersion(),
         );
-        $inner
-            ->expects($this->once())
-            ->method('__invoke')
-            ->with($request)
-            ->willReturn($expected = Either::left(new Redirection($request, $response)));
-        $halt
-            ->expects($this->never())
-            ->method('__invoke');
+        $expected = Either::left(new Redirection($request, $response));
+
+        $fulfill = ExponentialBackoff::of(
+            new class($expected) implements Transport {
+                public function __construct(
+                    private $expected,
+                ) {
+                }
+
+                public function __invoke(Request $request): Either
+                {
+                    return $this->expected;
+                }
+            },
+            new class implements Halt {
+                public function __invoke(Period $period): Attempt
+                {
+                    return Attempt::error(new \Exception);
+                }
+            },
+        );
 
         $this->assertEquals($expected, $fulfill($request));
     }
 
     public function testDoesntRetryWhenClientErrorResponseOnFirstCall()
     {
-        $fulfill = ExponentialBackoff::of(
-            $inner = $this->createMock(Transport::class),
-            $halt = $this->createMock(Halt::class),
-        );
         $request = Request::of(
             Url::of('/'),
             Method::get,
@@ -141,70 +168,97 @@ class ExponentialBackoffTest extends TestCase
             StatusCode::notFound,
             $request->protocolVersion(),
         );
-        $inner
-            ->expects($this->once())
-            ->method('__invoke')
-            ->with($request)
-            ->willReturn($expected = Either::left(new ClientError($request, $response)));
-        $halt
-            ->expects($this->never())
-            ->method('__invoke');
+        $expected = Either::left(new ClientError($request, $response));
+
+        $fulfill = ExponentialBackoff::of(
+            new class($expected) implements Transport {
+                public function __construct(
+                    private $expected,
+                ) {
+                }
+
+                public function __invoke(Request $request): Either
+                {
+                    return $this->expected;
+                }
+            },
+            new class implements Halt {
+                public function __invoke(Period $period): Attempt
+                {
+                    return Attempt::error(new \Exception);
+                }
+            },
+        );
 
         $this->assertEquals($expected, $fulfill($request));
     }
 
     public function testDoesntRetryWhenMalformedResponseOnFirstCall()
     {
-        $fulfill = ExponentialBackoff::of(
-            $inner = $this->createMock(Transport::class),
-            $halt = $this->createMock(Halt::class),
-        );
         $request = Request::of(
             Url::of('/'),
             Method::get,
             ProtocolVersion::v11,
         );
-        $inner
-            ->expects($this->once())
-            ->method('__invoke')
-            ->with($request)
-            ->willReturn($expected = Either::left(new MalformedResponse($request)));
-        $halt
-            ->expects($this->never())
-            ->method('__invoke');
+        $expected = Either::left(new MalformedResponse($request));
+
+        $fulfill = ExponentialBackoff::of(
+            new class($expected) implements Transport {
+                public function __construct(
+                    private $expected,
+                ) {
+                }
+
+                public function __invoke(Request $request): Either
+                {
+                    return $this->expected;
+                }
+            },
+            new class implements Halt {
+                public function __invoke(Period $period): Attempt
+                {
+                    return Attempt::error(new \Exception);
+                }
+            },
+        );
 
         $this->assertEquals($expected, $fulfill($request));
     }
 
     public function testDoesntRetryWhenFailureOnFirstCall()
     {
-        $fulfill = ExponentialBackoff::of(
-            $inner = $this->createMock(Transport::class),
-            $halt = $this->createMock(Halt::class),
-        );
         $request = Request::of(
             Url::of('/'),
             Method::get,
             ProtocolVersion::v11,
         );
-        $inner
-            ->expects($this->once())
-            ->method('__invoke')
-            ->with($request)
-            ->willReturn($expected = Either::left(new Failure($request, 'whatever')));
-        $halt
-            ->expects($this->never())
-            ->method('__invoke');
+        $expected = Either::left(new Failure($request, 'whatever'));
+
+        $fulfill = ExponentialBackoff::of(
+            new class($expected) implements Transport {
+                public function __construct(
+                    private $expected,
+                ) {
+                }
+
+                public function __invoke(Request $request): Either
+                {
+                    return $this->expected;
+                }
+            },
+            new class implements Halt {
+                public function __invoke(Period $period): Attempt
+                {
+                    return Attempt::error(new \Exception);
+                }
+            },
+        );
 
         $this->assertEquals($expected, $fulfill($request));
     }
 
     public function testRetryWhileThereIsStillATooManyRequestsError()
     {
-        $fulfill = ExponentialBackoff::of(
-            $inner = $this->createMock(Transport::class),
-            $halt = $this->createMock(Halt::class),
-        );
         $request = Request::of(
             Url::of('/'),
             Method::get,
@@ -214,42 +268,55 @@ class ExponentialBackoffTest extends TestCase
             StatusCode::tooManyRequests,
             $request->protocolVersion(),
         );
-        $inner
-            ->expects($this->exactly(12))
-            ->method('__invoke')
-            ->with($request)
-            ->willReturn($expected = Either::left(new ClientError($request, $response)));
-        $halt
-            ->expects($matcher = $this->exactly(10))
-            ->method('__invoke')
-            ->willReturnCallback(function($period) use ($matcher) {
-                match ($matcher->numberOfInvocations()) {
-                    1 => $this->assertEquals(Period::millisecond(100), $period),
-                    2 => $this->assertEquals(Period::millisecond(271), $period),
-                    3 => $this->assertEquals(Period::millisecond(738), $period),
-                    4 => $this->assertEquals(Period::millisecond(2008), $period),
-                    5 => $this->assertEquals(Period::millisecond(5459), $period),
-                    6 => $this->assertEquals(Period::millisecond(100), $period),
-                    7 => $this->assertEquals(Period::millisecond(271), $period),
-                    8 => $this->assertEquals(Period::millisecond(738), $period),
-                    9 => $this->assertEquals(Period::millisecond(2008), $period),
-                    10 => $this->assertEquals(Period::millisecond(5459), $period),
-                };
+        $expected = Either::left(new ClientError($request, $response));
 
-                return Attempt::result(SideEffect::identity());
-            });
+        $fulfill = ExponentialBackoff::of(
+            $inner = new class($expected) implements Transport {
+                public function __construct(
+                    private $expected,
+                    public int $calls = 0,
+                ) {
+                }
+
+                public function __invoke(Request $request): Either
+                {
+                    ++$this->calls;
+
+                    return $this->expected;
+                }
+            },
+            new class($this) implements Halt {
+                public function __construct(
+                    private $test,
+                    private int $calls = 0,
+                ) {
+                }
+
+                public function __invoke(Period $period): Attempt
+                {
+                    ++$this->calls;
+
+                    match ($this->calls) {
+                        1, 6 => $this->test->assertEquals(Period::millisecond(100), $period),
+                        2, 7 => $this->test->assertEquals(Period::millisecond(271), $period),
+                        3, 8 => $this->test->assertEquals(Period::millisecond(738), $period),
+                        4, 9 => $this->test->assertEquals(Period::millisecond(2008), $period),
+                        5, 10 => $this->test->assertEquals(Period::millisecond(5459), $period),
+                    };
+
+                    return Attempt::result(SideEffect::identity());
+                }
+            },
+        );
 
         $this->assertEquals($expected, $fulfill($request));
         // to make sure halt periods are kept between requests
         $this->assertEquals($expected, $fulfill($request));
+        $this->assertSame(12, $inner->calls);
     }
 
     public function testRetryWhileThereIsStillAServerError()
     {
-        $fulfill = ExponentialBackoff::of(
-            $inner = $this->createMock(Transport::class),
-            $halt = $this->createMock(Halt::class),
-        );
         $request = Request::of(
             Url::of('/'),
             Method::get,
@@ -259,83 +326,109 @@ class ExponentialBackoffTest extends TestCase
             StatusCode::internalServerError,
             $request->protocolVersion(),
         );
-        $inner
-            ->expects($this->exactly(12))
-            ->method('__invoke')
-            ->with($request)
-            ->willReturn($expected = Either::left(new ServerError($request, $response)));
-        $halt
-            ->expects($matcher = $this->exactly(10))
-            ->method('__invoke')
-            ->willReturnCallback(function($period) use ($matcher) {
-                match ($matcher->numberOfInvocations()) {
-                    1 => $this->assertEquals(Period::millisecond(100), $period),
-                    2 => $this->assertEquals(Period::millisecond(271), $period),
-                    3 => $this->assertEquals(Period::millisecond(738), $period),
-                    4 => $this->assertEquals(Period::millisecond(2008), $period),
-                    5 => $this->assertEquals(Period::millisecond(5459), $period),
-                    6 => $this->assertEquals(Period::millisecond(100), $period),
-                    7 => $this->assertEquals(Period::millisecond(271), $period),
-                    8 => $this->assertEquals(Period::millisecond(738), $period),
-                    9 => $this->assertEquals(Period::millisecond(2008), $period),
-                    10 => $this->assertEquals(Period::millisecond(5459), $period),
-                };
+        $expected = Either::left(new ServerError($request, $response));
 
-                return Attempt::result(SideEffect::identity());
-            });
+        $fulfill = ExponentialBackoff::of(
+            $inner = new class($expected) implements Transport {
+                public function __construct(
+                    private $expected,
+                    public int $calls = 0,
+                ) {
+                }
+
+                public function __invoke(Request $request): Either
+                {
+                    ++$this->calls;
+
+                    return $this->expected;
+                }
+            },
+            new class($this) implements Halt {
+                public function __construct(
+                    private $test,
+                    private int $calls = 0,
+                ) {
+                }
+
+                public function __invoke(Period $period): Attempt
+                {
+                    ++$this->calls;
+
+                    match ($this->calls) {
+                        1, 6 => $this->test->assertEquals(Period::millisecond(100), $period),
+                        2, 7 => $this->test->assertEquals(Period::millisecond(271), $period),
+                        3, 8 => $this->test->assertEquals(Period::millisecond(738), $period),
+                        4, 9 => $this->test->assertEquals(Period::millisecond(2008), $period),
+                        5, 10 => $this->test->assertEquals(Period::millisecond(5459), $period),
+                    };
+
+                    return Attempt::result(SideEffect::identity());
+                }
+            },
+        );
 
         $this->assertEquals($expected, $fulfill($request));
         // to make sure halt periods are kept between requests
         $this->assertEquals($expected, $fulfill($request));
+        $this->assertSame(12, $inner->calls);
     }
 
     public function testRetryWhileThereIsStillAConnectionFailure()
     {
-        $fulfill = ExponentialBackoff::of(
-            $inner = $this->createMock(Transport::class),
-            $halt = $this->createMock(Halt::class),
-        );
         $request = Request::of(
             Url::of('/'),
             Method::get,
             ProtocolVersion::v11,
         );
-        $inner
-            ->expects($this->exactly(12))
-            ->method('__invoke')
-            ->with($request)
-            ->willReturn($expected = Either::left(new ConnectionFailed($request, '')));
-        $halt
-            ->expects($matcher = $this->exactly(10))
-            ->method('__invoke')
-            ->willReturnCallback(function($period) use ($matcher) {
-                match ($matcher->numberOfInvocations()) {
-                    1 => $this->assertEquals(Period::millisecond(100), $period),
-                    2 => $this->assertEquals(Period::millisecond(271), $period),
-                    3 => $this->assertEquals(Period::millisecond(738), $period),
-                    4 => $this->assertEquals(Period::millisecond(2008), $period),
-                    5 => $this->assertEquals(Period::millisecond(5459), $period),
-                    6 => $this->assertEquals(Period::millisecond(100), $period),
-                    7 => $this->assertEquals(Period::millisecond(271), $period),
-                    8 => $this->assertEquals(Period::millisecond(738), $period),
-                    9 => $this->assertEquals(Period::millisecond(2008), $period),
-                    10 => $this->assertEquals(Period::millisecond(5459), $period),
-                };
+        $expected = Either::left(new ConnectionFailed($request, ''));
 
-                return Attempt::result(SideEffect::identity());
-            });
+        $fulfill = ExponentialBackoff::of(
+            $inner = new class($expected) implements Transport {
+                public function __construct(
+                    private $expected,
+                    public int $calls = 0,
+                ) {
+                }
+
+                public function __invoke(Request $request): Either
+                {
+                    ++$this->calls;
+
+                    return $this->expected;
+                }
+            },
+            new class($this) implements Halt {
+                public function __construct(
+                    private $test,
+                    private int $calls = 0,
+                ) {
+                }
+
+                public function __invoke(Period $period): Attempt
+                {
+                    ++$this->calls;
+
+                    match ($this->calls) {
+                        1, 6 => $this->test->assertEquals(Period::millisecond(100), $period),
+                        2, 7 => $this->test->assertEquals(Period::millisecond(271), $period),
+                        3, 8 => $this->test->assertEquals(Period::millisecond(738), $period),
+                        4, 9 => $this->test->assertEquals(Period::millisecond(2008), $period),
+                        5, 10 => $this->test->assertEquals(Period::millisecond(5459), $period),
+                    };
+
+                    return Attempt::result(SideEffect::identity());
+                }
+            },
+        );
 
         $this->assertEquals($expected, $fulfill($request));
         // to make sure halt periods are kept between requests
         $this->assertEquals($expected, $fulfill($request));
+        $this->assertSame(12, $inner->calls);
     }
 
     public function testStopRetryingWhenNoLongerReceivingAServerError()
     {
-        $fulfill = ExponentialBackoff::of(
-            $inner = $this->createMock(Transport::class),
-            $halt = $this->createMock(Halt::class),
-        );
         $request = Request::of(
             Url::of('/'),
             Method::get,
@@ -349,29 +442,50 @@ class ExponentialBackoffTest extends TestCase
             StatusCode::ok,
             $request->protocolVersion(),
         );
-        $inner
-            ->expects($this->exactly(2))
-            ->method('__invoke')
-            ->with($request)
-            ->will($this->onConsecutiveCalls(
-                Either::left(new ServerError($request, $response1)),
-                $expected = Either::right(new Success($request, $response2)),
-            ));
-        $halt
-            ->expects($this->once())
-            ->method('__invoke')
-            ->with(Period::millisecond(100))
-            ->willReturn(Attempt::result(SideEffect::identity()));
+        $error = Either::left(new ServerError($request, $response1));
+        $expected = Either::right(new Success($request, $response2));
+
+        $fulfill = ExponentialBackoff::of(
+            $inner = new class([$error, $expected]) implements Transport {
+                public function __construct(
+                    private $expected,
+                    public int $calls = 0,
+                ) {
+                }
+
+                public function __invoke(Request $request): Either
+                {
+                    ++$this->calls;
+
+                    return \array_shift($this->expected);
+                }
+            },
+            new class($this) implements Halt {
+                public function __construct(
+                    private $test,
+                    private int $calls = 0,
+                ) {
+                }
+
+                public function __invoke(Period $period): Attempt
+                {
+                    ++$this->calls;
+
+                    match ($this->calls) {
+                        1 => $this->test->assertEquals(Period::millisecond(100), $period),
+                    };
+
+                    return Attempt::result(SideEffect::identity());
+                }
+            },
+        );
 
         $this->assertEquals($expected, $fulfill($request));
+        $this->assertSame(2, $inner->calls);
     }
 
     public function testByDefaultRetriesFiveTimesByUsingAPowerOfE()
     {
-        $fulfill = ExponentialBackoff::of(
-            $inner = $this->createMock(Transport::class),
-            $halt = $this->createMock(Halt::class),
-        );
         $request = Request::of(
             Url::of('/'),
             Method::get,
@@ -381,26 +495,48 @@ class ExponentialBackoffTest extends TestCase
             StatusCode::internalServerError,
             $request->protocolVersion(),
         );
-        $inner
-            ->expects($this->exactly(6))
-            ->method('__invoke')
-            ->with($request)
-            ->willReturn($expected = Either::left(new ServerError($request, $response)));
-        $halt
-            ->expects($matcher = $this->exactly(5))
-            ->method('__invoke')
-            ->willReturnCallback(function($period) use ($matcher) {
-                match ($matcher->numberOfInvocations()) {
-                    1 => $this->assertEquals(Period::millisecond(100), $period),
-                    2 => $this->assertEquals(Period::millisecond(271), $period),
-                    3 => $this->assertEquals(Period::millisecond(738), $period),
-                    4 => $this->assertEquals(Period::millisecond(2008), $period),
-                    5 => $this->assertEquals(Period::millisecond(5459), $period),
-                };
+        $expected = Either::left(new ServerError($request, $response));
 
-                return Attempt::result(SideEffect::identity());
-            });
+        $fulfill = ExponentialBackoff::of(
+            $inner = new class($expected) implements Transport {
+                public function __construct(
+                    private $expected,
+                    public int $calls = 0,
+                ) {
+                }
+
+                public function __invoke(Request $request): Either
+                {
+                    ++$this->calls;
+
+                    return $this->expected;
+                }
+            },
+            new class($this) implements Halt {
+                public function __construct(
+                    private $test,
+                    private int $calls = 0,
+                ) {
+                }
+
+                public function __invoke(Period $period): Attempt
+                {
+                    ++$this->calls;
+
+                    match ($this->calls) {
+                        1 => $this->test->assertEquals(Period::millisecond(100), $period),
+                        2 => $this->test->assertEquals(Period::millisecond(271), $period),
+                        3 => $this->test->assertEquals(Period::millisecond(738), $period),
+                        4 => $this->test->assertEquals(Period::millisecond(2008), $period),
+                        5 => $this->test->assertEquals(Period::millisecond(5459), $period),
+                    };
+
+                    return Attempt::result(SideEffect::identity());
+                }
+            },
+        );
 
         $this->assertEquals($expected, $fulfill($request));
+        $this->assertSame(6, $inner->calls);
     }
 }

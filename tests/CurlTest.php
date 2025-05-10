@@ -41,8 +41,8 @@ use Innmind\Immutable\{
     Maybe,
     Sequence,
 };
-use PHPUnit\Framework\TestCase;
 use Innmind\BlackBox\{
+    PHPUnit\Framework\TestCase,
     PHPUnit\BlackBox,
     Set,
 };
@@ -254,17 +254,11 @@ class CurlTest extends TestCase
 
                 // we allow server errors as we don't control the stability of
                 // the server
-                $this->assertThat(
-                    $success,
-                    $this->logicalOr(
-                        $this->isInstanceOf(Success::class),
-                        $this->isInstanceOf(ServerError::class),
-                    ),
-                );
-
                 if ($success instanceof ServerError) {
                     return;
                 }
+
+                $this->assertInstanceOf(Success::class, $success);
 
                 $response = \json_decode(
                     $success->response()->body()->toString(),
@@ -300,12 +294,9 @@ class CurlTest extends TestCase
         );
 
         // we allow server errors as we don't control the stability of the server
-        $this->assertThat(
-            $success,
-            $this->logicalOr(
-                $this->isInstanceOf(Success::class),
-                $this->isInstanceOf(ServerError::class),
-            ),
+        $this->assertContains(
+            $success::class,
+            [Success::class, ServerError::class],
         );
         // The file is a bit more than 2Mo, so if everything was kept in memory
         // the peak memory would be above 4Mo so we check that it is less than
