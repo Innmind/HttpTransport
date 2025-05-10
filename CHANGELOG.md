@@ -1,6 +1,6 @@
 # Changelog
 
-## [Unreleased]
+## 8.0.0 - 2025-05-10
 
 ### Changed
 
