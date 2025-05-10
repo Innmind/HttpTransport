@@ -31,21 +31,12 @@ use Innmind\Immutable\{
  */
 final class Scheduled
 {
-    private Factory $headerFactory;
-    private IO $io;
-    private Request $request;
-    private bool $disableSSLVerification;
-
     private function __construct(
-        Factory $headerFactory,
-        IO $io,
-        Request $request,
-        bool $disableSSLVerification,
+        private Factory $headerFactory,
+        private IO $io,
+        private Request $request,
+        private bool $disableSSLVerification,
     ) {
-        $this->headerFactory = $headerFactory;
-        $this->io = $io;
-        $this->request = $request;
-        $this->disableSSLVerification = $disableSSLVerification;
     }
 
     public static function of(

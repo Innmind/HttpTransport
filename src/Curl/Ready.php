@@ -176,31 +176,31 @@ final class Ready
      */
     private function decode(int $errorCode): Either
     {
-        $error = $this->inFile->close()->match(
-            static fn() => null,
-            static fn($error) => $error,
-        );
-
-        if ($error) {
-            /** @var Either<Failure|ConnectionFailed|MalformedResponse, Response> */
-            return Either::left(new Failure($this->request, $error::class));
-        }
-
-        /**
-         * @psalm-suppress MixedArgument Due to the reference on $status and $headers above
-         * @var Either<Failure|ConnectionFailed|MalformedResponse, Response>
-         */
-        return match ($errorCode) {
-            \CURLE_OK => $this->buildResponse(),
-            \CURLE_COULDNT_RESOLVE_PROXY, \CURLE_COULDNT_RESOLVE_HOST, \CURLE_COULDNT_CONNECT, \CURLE_SSL_CONNECT_ERROR => Either::left(new ConnectionFailed(
+        return $this
+            ->inFile
+            ->close()
+            ->either()
+            ->leftMap(fn($error) => new Failure(
                 $this->request,
-                \curl_strerror($errorCode) ?? '',
-            )),
-            default => Either::left(new Failure(
-                $this->request,
-                \curl_strerror($errorCode) ?? '',
-            )),
-        };
+                $error::class,
+            ))
+            ->flatMap(function() use ($errorCode) {
+                /** @var Either<Failure|ConnectionFailed|MalformedResponse, Response> */
+                return match ($errorCode) {
+                    \CURLE_OK => $this->buildResponse(),
+                    \CURLE_COULDNT_RESOLVE_PROXY,
+                    \CURLE_COULDNT_RESOLVE_HOST,
+                    \CURLE_COULDNT_CONNECT,
+                    \CURLE_SSL_CONNECT_ERROR => Either::left(new ConnectionFailed(
+                        $this->request,
+                        \curl_strerror($errorCode) ?? '',
+                    )),
+                    default => Either::left(new Failure(
+                        $this->request,
+                        \curl_strerror($errorCode) ?? '',
+                    )),
+                };
+            });
     }
 
     /**
@@ -241,12 +241,8 @@ final class Ready
             ->filter(static fn($header) => !$header->empty())
             ->map(static fn($header) => $header->capture('~^(?<name>[a-zA-Z0-9\-\_\.]+): (?<value>.*)$~'))
             ->map(fn($captured) => $this->createHeader($captured))
-            ->match(
-                static fn($first, $rest) => Maybe::all($first, ...$rest->toList())->map(
-                    static fn(Header|Header\Custom ...$headers) => Headers::of(...$headers),
-                ),
-                static fn() => Maybe::just(Headers::of()),
-            );
+            ->sink(Headers::of())
+            ->maybe(static fn($headers, $header) => $header->map($headers));
 
         /** @var Either<MalformedResponse, Response> */
         return Maybe::all($statusCode, $protocolVersion, $headers)
@@ -256,14 +252,12 @@ final class Ready
                 $headers,
                 Content::io($this->body->read()),
             ))
-            ->match(
-                static fn($response) => Either::right($response),
-                fn() => Either::left(new MalformedResponse($this->request, Raw::of(
-                    $this->status,
-                    $this->headers->map(Str::of(...)),
-                    Content::io($this->body->read()),
-                ))),
-            );
+            ->either()
+            ->leftMap(fn() => new MalformedResponse($this->request, Raw::of(
+                $this->status,
+                $this->headers->map(Str::of(...)),
+                Content::io($this->body->read()),
+            )));
     }
 
     /**

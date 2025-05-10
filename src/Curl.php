@@ -24,31 +24,17 @@ use Innmind\Immutable\Either;
  */
 final class Curl implements Transport
 {
-    private Factory $headerFactory;
-    private IO $io;
-    private Concurrency $concurrency;
-    private ElapsedPeriod $timeout;
-    /** @var callable(): void */
-    private $heartbeat;
-    private bool $disableSSLVerification;
-
     /**
-     * @param callable(): void $heartbeat
+     * @param \Closure(): void $heartbeat
      */
     private function __construct(
-        Factory $headerFactory,
-        IO $io,
-        Concurrency $concurrency,
-        ElapsedPeriod $timeout,
-        callable $heartbeat,
-        bool $disableSSLVerification,
+        private Factory $headerFactory,
+        private IO $io,
+        private Concurrency $concurrency,
+        private ElapsedPeriod $timeout,
+        private \Closure $heartbeat,
+        private bool $disableSSLVerification,
     ) {
-        $this->headerFactory = $headerFactory;
-        $this->io = $io;
-        $this->concurrency = $concurrency;
-        $this->timeout = $timeout;
-        $this->heartbeat = $heartbeat;
-        $this->disableSSLVerification = $disableSSLVerification;
     }
 
     #[\Override]
@@ -114,7 +100,10 @@ final class Curl implements Transport
             $this->io,
             $this->concurrency,
             $timeout,
-            $heartbeat ?? static fn() => null,
+            match ($heartbeat) {
+                null => static fn() => null,
+                default => \Closure::fromCallable($heartbeat),
+            },
             $this->disableSSLVerification,
         );
     }
