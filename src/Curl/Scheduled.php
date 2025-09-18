@@ -15,7 +15,11 @@ use Innmind\Http\{
     Headers,
     Factory\Header\Factory,
 };
-use Innmind\Url\Authority\UserInformation\User;
+use Innmind\Url\{
+    Url,
+    Authority\UserInformation,
+    Authority\UserInformation\User,
+};
 use Innmind\IO\{
     IO,
     Files\Temporary,
@@ -36,6 +40,7 @@ final class Scheduled
         private IO $io,
         private Request $request,
         private bool $disableSSLVerification,
+        private ?Url $proxy,
     ) {
     }
 
@@ -44,12 +49,14 @@ final class Scheduled
         IO $io,
         Request $request,
         bool $disableSSLVerification,
+        ?Url $proxy,
     ): self {
         return new self(
             $headerFactory,
             $io,
             $request,
             $disableSSLVerification,
+            $proxy,
         );
     }
 
@@ -141,6 +148,42 @@ final class Scheduled
 
         if ($this->disableSSLVerification) {
             $options[] = [\CURLOPT_SSL_VERIFYPEER, false];
+        }
+
+        if ($this->proxy) {
+            $options[] = [
+                \CURLOPT_PROXY,
+                $this
+                    ->proxy
+                    ->withAuthority(
+                        $this->proxy->authority()->withoutUserInformation(),
+                    )
+                    ->withoutPath()
+                    ->withoutQuery()
+                    ->withoutFragment()
+                    ->toString(),
+            ];
+
+            if (!$this->proxy->authority()->userInformation()->equals(UserInformation::none())) {
+                $options[] = [
+                    \CURLOPT_PROXYUSERNAME,
+                    $this
+                        ->proxy
+                        ->authority()
+                        ->userInformation()
+                        ->user()
+                        ->toString(),
+                ];
+                $options[] = [
+                    \CURLOPT_PROXYPASSWORD,
+                    $this
+                        ->proxy
+                        ->authority()
+                        ->userInformation()
+                        ->password()
+                        ->toString(),
+                ];
+            }
         }
 
         $header = match ($this->request->method()) {
