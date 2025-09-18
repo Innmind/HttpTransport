@@ -542,4 +542,7 @@ class CurlTest extends TestCase
     }
 
     // Don't know how to test MalformedResponse, ConnectionFailed, Information and ServerError
+
+    // Proxies are not tested due to unreliable results on free proxies such as
+    // https://github.com/proxifly/free-proxy-list?tab=readme-ov-file
 }
