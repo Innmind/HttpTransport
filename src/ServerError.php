@@ -8,6 +8,9 @@ use Innmind\Http\{
     Response,
 };
 
+/**
+ * @psalm-immutable
+ */
 final class ServerError
 {
     private Request $request;

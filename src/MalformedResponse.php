@@ -6,6 +6,9 @@ namespace Innmind\HttpTransport;
 use Innmind\HttpTransport\MalformedResponse\Raw;
 use Innmind\Http\Request;
 
+/**
+ * @psalm-immutable
+ */
 final class MalformedResponse
 {
     private Request $request;

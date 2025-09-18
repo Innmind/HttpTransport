@@ -5,6 +5,9 @@ namespace Innmind\HttpTransport;
 
 use Innmind\Http\Request;
 
+/**
+ * @psalm-immutable
+ */
 final class Failure
 {
     public function __construct(
