@@ -17,11 +17,13 @@ final class MalformedResponse
         $this->raw = $raw ?? Raw::none();
     }
 
+    #[\NoDiscard]
     public function request(): Request
     {
         return $this->request;
     }
 
+    #[\NoDiscard]
     public function raw(): Raw
     {
         return $this->raw;

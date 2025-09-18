@@ -13,11 +13,13 @@ final class Failure
     ) {
     }
 
+    #[\NoDiscard]
     public function request(): Request
     {
         return $this->request;
     }
 
+    #[\NoDiscard]
     public function reason(): string
     {
         return $this->reason;

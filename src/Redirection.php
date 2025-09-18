@@ -23,11 +23,13 @@ final class Redirection
         $this->response = $response;
     }
 
+    #[\NoDiscard]
     public function request(): Request
     {
         return $this->request;
     }
 
+    #[\NoDiscard]
     public function response(): Response
     {
         return $this->response;
