@@ -42,6 +42,7 @@ final class Raw
         return new self(Str::of(''), Sequence::of(), Content::none());
     }
 
+    #[\NoDiscard]
     public function statusLine(): Str
     {
         return $this->statusLine;
@@ -50,11 +51,13 @@ final class Raw
     /**
      * @return Sequence<Str>
      */
+    #[\NoDiscard]
     public function headers(): Sequence
     {
         return $this->headers;
     }
 
+    #[\NoDiscard]
     public function body(): Content
     {
         return $this->body;

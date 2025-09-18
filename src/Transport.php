@@ -14,5 +14,6 @@ interface Transport
     /**
      * @return Either<Errors, Success>
      */
+    #[\NoDiscard]
     public function __invoke(Request $request): Either;
 }

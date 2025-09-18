@@ -8,6 +8,9 @@ use Innmind\Http\{
     Response,
 };
 
+/**
+ * @psalm-immutable
+ */
 final class ClientError
 {
     private Request $request;
@@ -23,11 +26,13 @@ final class ClientError
         $this->response = $response;
     }
 
+    #[\NoDiscard]
     public function request(): Request
     {
         return $this->request;
     }
 
+    #[\NoDiscard]
     public function response(): Response
     {
         return $this->response;

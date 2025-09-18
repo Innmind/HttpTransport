@@ -5,6 +5,9 @@ namespace Innmind\HttpTransport;
 
 use Innmind\Http\Request;
 
+/**
+ * @psalm-immutable
+ */
 final class ConnectionFailed
 {
     public function __construct(
@@ -13,11 +16,13 @@ final class ConnectionFailed
     ) {
     }
 
+    #[\NoDiscard]
     public function request(): Request
     {
         return $this->request;
     }
 
+    #[\NoDiscard]
     public function reason(): string
     {
         return $this->reason;

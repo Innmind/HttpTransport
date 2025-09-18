@@ -79,6 +79,7 @@ final class Curl implements Transport
      *
      * @param positive-int $max
      */
+    #[\NoDiscard]
     public function maxConcurrency(int $max): self
     {
         return new self(
@@ -98,6 +99,7 @@ final class Curl implements Transport
      * @param Period $timeout Only seconds are allowed
      * @param callable(): void $heartbeat
      */
+    #[\NoDiscard]
     public function heartbeat(Period $timeout, ?callable $heartbeat = null): self
     {
         return new self(
@@ -120,6 +122,7 @@ final class Curl implements Transport
      *
      * @psalm-mutation-free
      */
+    #[\NoDiscard]
     public function disableSSLVerification(): self
     {
         return new self(
@@ -136,6 +139,7 @@ final class Curl implements Transport
     /**
      * @psalm-mutation-free
      */
+    #[\NoDiscard]
     public function proxy(Url $proxy): self
     {
         return new self(
