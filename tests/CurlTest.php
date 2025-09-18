@@ -543,37 +543,6 @@ class CurlTest extends TestCase
 
     // Don't know how to test MalformedResponse, ConnectionFailed, Information and ServerError
 
-    public function testProxy()
-    {
-        $request = Request::of(
-            Url::of('http://httpbun.org/ip'),
-            Method::get,
-            ProtocolVersion::v11,
-        );
-
-        $result = ($this->curl)($request)->match(
-            static fn($success) => $success,
-            static fn() => null,
-        );
-
-        $this->assertInstanceOf(Success::class, $result);
-        $body = $result->response()->body()->toString();
-        $ip = \json_decode($body, true)['origin'];
-
-        // Proxy taken from https://github.com/proxifly/free-proxy-list?tab=readme-ov-file
-        $curl = $this->curl->proxy(Url::of('http://108.161.135.118:80'));
-
-        $result = ($curl)($request)->match(
-            static fn($success) => $success,
-            static fn() => null,
-        );
-
-        $this->assertInstanceOf(Success::class, $result);
-        $body = $result->response()->body()->toString();
-        $proxiedIp = \json_decode($body, true)['origin'];
-        $this->assertNotSame(
-            $ip,
-            $proxiedIp,
-        );
-    }
+    // Proxies are not tested due to unreliable results on free proxies such as
+    // https://github.com/proxifly/free-proxy-list?tab=readme-ov-file
 }
