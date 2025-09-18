@@ -11,6 +11,7 @@ use Innmind\Http\{
     Request,
     Factory\Header\Factory,
 };
+use Innmind\Url\Url;
 use Innmind\TimeContinuum\{
     Clock,
     Period,
@@ -33,6 +34,7 @@ final class Curl implements Transport
         private Period $timeout,
         private \Closure $heartbeat,
         private bool $disableSSLVerification,
+        private ?Url $proxy,
     ) {
     }
 
@@ -44,6 +46,7 @@ final class Curl implements Transport
             $this->io,
             $request,
             $this->disableSSLVerification,
+            $this->proxy,
         );
         $this->concurrency->add($scheduled);
 
@@ -67,6 +70,7 @@ final class Curl implements Transport
             Period::second(1),
             static fn() => null,
             false,
+            null,
         );
     }
 
@@ -75,6 +79,7 @@ final class Curl implements Transport
      *
      * @param positive-int $max
      */
+    #[\NoDiscard]
     public function maxConcurrency(int $max): self
     {
         return new self(
@@ -84,6 +89,7 @@ final class Curl implements Transport
             $this->timeout,
             $this->heartbeat,
             $this->disableSSLVerification,
+            $this->proxy,
         );
     }
 
@@ -93,6 +99,7 @@ final class Curl implements Transport
      * @param Period $timeout Only seconds are allowed
      * @param callable(): void $heartbeat
      */
+    #[\NoDiscard]
     public function heartbeat(Period $timeout, ?callable $heartbeat = null): self
     {
         return new self(
@@ -105,6 +112,7 @@ final class Curl implements Transport
                 default => \Closure::fromCallable($heartbeat),
             },
             $this->disableSSLVerification,
+            $this->proxy,
         );
     }
 
@@ -114,6 +122,7 @@ final class Curl implements Transport
      *
      * @psalm-mutation-free
      */
+    #[\NoDiscard]
     public function disableSSLVerification(): self
     {
         return new self(
@@ -123,6 +132,24 @@ final class Curl implements Transport
             $this->timeout,
             $this->heartbeat,
             true,
+            $this->proxy,
+        );
+    }
+
+    /**
+     * @psalm-mutation-free
+     */
+    #[\NoDiscard]
+    public function proxy(Url $proxy): self
+    {
+        return new self(
+            $this->headerFactory,
+            $this->io,
+            $this->concurrency,
+            $this->timeout,
+            $this->heartbeat,
+            $this->disableSSLVerification,
+            $proxy,
         );
     }
 }

@@ -6,6 +6,9 @@ namespace Innmind\HttpTransport;
 use Innmind\HttpTransport\MalformedResponse\Raw;
 use Innmind\Http\Request;
 
+/**
+ * @psalm-immutable
+ */
 final class MalformedResponse
 {
     private Request $request;
@@ -17,11 +20,13 @@ final class MalformedResponse
         $this->raw = $raw ?? Raw::none();
     }
 
+    #[\NoDiscard]
     public function request(): Request
     {
         return $this->request;
     }
 
+    #[\NoDiscard]
     public function raw(): Raw
     {
         return $this->raw;

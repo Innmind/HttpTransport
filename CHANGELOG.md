@@ -1,5 +1,11 @@
 # Changelog
 
+## 8.1.0 - 2025-09-18
+
+### Added
+
+- `Innmind\HttpTransport\Curl::proxy()`
+
 ## 8.0.0 - 2025-05-10
 
 ### Changed
