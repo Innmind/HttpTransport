@@ -26,13 +26,13 @@ use Innmind\Immutable\{
 /**
  * @psalm-import-type Errors from Transport
  */
-final class CircuitBreaker implements Transport
+final class CircuitBreaker implements Implementation
 {
     /**
      * @param Map<string , PointInTime> $openedCircuits
      */
     private function __construct(
-        private Transport $fulfill,
+        private Implementation $fulfill,
         private Clock $clock,
         private Period $delayBeforeRetry,
         private Map $openedCircuits,
@@ -54,7 +54,7 @@ final class CircuitBreaker implements Transport
     }
 
     public static function of(
-        Transport $fulfill,
+        Implementation $fulfill,
         Clock $clock,
         Period $delayBeforeRetry,
     ): self {

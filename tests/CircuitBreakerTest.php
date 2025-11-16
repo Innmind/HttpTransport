@@ -7,6 +7,7 @@ use Innmind\HttpTransport\{
     CircuitBreaker,
     Curl,
     Transport,
+    Implementation,
     Success,
     ServerError,
     ClientError,
@@ -56,7 +57,7 @@ class CircuitBreakerTest extends TestCase
         $expected = Either::right(new Success($request, $response));
 
         $fulfill = CircuitBreaker::of(
-            new class($expected) implements Transport {
+            new class($expected) implements Implementation {
                 public function __construct(
                     private $expected,
                 ) {
@@ -89,7 +90,7 @@ class CircuitBreakerTest extends TestCase
         $expected = Either::left(new Redirection($request, $response));
 
         $fulfill = CircuitBreaker::of(
-            new class($expected) implements Transport {
+            new class($expected) implements Implementation {
                 public function __construct(
                     private $expected,
                 ) {
@@ -122,7 +123,7 @@ class CircuitBreakerTest extends TestCase
         $expected = Either::left(new ClientError($request, $response));
 
         $fulfill = CircuitBreaker::of(
-            new class($expected) implements Transport {
+            new class($expected) implements Implementation {
                 public function __construct(
                     private $expected,
                 ) {
@@ -155,7 +156,7 @@ class CircuitBreakerTest extends TestCase
         $expected = Either::left(new ServerError($request, $response));
 
         $fulfill = CircuitBreaker::of(
-            new class($expected) implements Transport {
+            new class($expected) implements Implementation {
                 public function __construct(
                     private $expected,
                 ) {
@@ -189,7 +190,7 @@ class CircuitBreakerTest extends TestCase
         $expected = Either::left(new ConnectionFailed($request, ''));
 
         $fulfill = CircuitBreaker::of(
-            new class($expected) implements Transport {
+            new class($expected) implements Implementation {
                 public function __construct(
                     private $expected,
                 ) {
@@ -237,7 +238,7 @@ class CircuitBreakerTest extends TestCase
         $expected2 = Either::right(new Success($request2, $response2));
 
         $fulfill = CircuitBreaker::of(
-            new class([$expected1, $expected2]) implements Transport {
+            new class([$expected1, $expected2]) implements Implementation {
                 public function __construct(
                     private array $expected,
                 ) {
@@ -275,7 +276,7 @@ class CircuitBreakerTest extends TestCase
         $expected2 = Either::right(new Success($request, $response2));
 
         $fulfill = CircuitBreaker::of(
-            new class([$expected1, $expected2]) implements Transport {
+            new class([$expected1, $expected2]) implements Implementation {
                 public function __construct(
                     private array $expected,
                 ) {

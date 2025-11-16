@@ -7,6 +7,7 @@ use Innmind\HttpTransport\{
     ExponentialBackoff,
     Curl,
     Transport,
+    Implementation,
     ServerError,
     Success,
     ClientError,
@@ -63,7 +64,7 @@ class ExponentialBackoffTest extends TestCase
         $expected = Either::left(new Information($request, $response));
 
         $fulfill = ExponentialBackoff::of(
-            new class($expected) implements Transport {
+            new class($expected) implements Implementation {
                 public function __construct(
                     private $expected,
                 ) {
@@ -99,7 +100,7 @@ class ExponentialBackoffTest extends TestCase
         $expected = Either::right(new Success($request, $response));
 
         $fulfill = ExponentialBackoff::of(
-            new class($expected) implements Transport {
+            new class($expected) implements Implementation {
                 public function __construct(
                     private $expected,
                 ) {
@@ -135,7 +136,7 @@ class ExponentialBackoffTest extends TestCase
         $expected = Either::left(new Redirection($request, $response));
 
         $fulfill = ExponentialBackoff::of(
-            new class($expected) implements Transport {
+            new class($expected) implements Implementation {
                 public function __construct(
                     private $expected,
                 ) {
@@ -171,7 +172,7 @@ class ExponentialBackoffTest extends TestCase
         $expected = Either::left(new ClientError($request, $response));
 
         $fulfill = ExponentialBackoff::of(
-            new class($expected) implements Transport {
+            new class($expected) implements Implementation {
                 public function __construct(
                     private $expected,
                 ) {
@@ -203,7 +204,7 @@ class ExponentialBackoffTest extends TestCase
         $expected = Either::left(new MalformedResponse($request));
 
         $fulfill = ExponentialBackoff::of(
-            new class($expected) implements Transport {
+            new class($expected) implements Implementation {
                 public function __construct(
                     private $expected,
                 ) {
@@ -235,7 +236,7 @@ class ExponentialBackoffTest extends TestCase
         $expected = Either::left(new Failure($request, 'whatever'));
 
         $fulfill = ExponentialBackoff::of(
-            new class($expected) implements Transport {
+            new class($expected) implements Implementation {
                 public function __construct(
                     private $expected,
                 ) {
@@ -271,7 +272,7 @@ class ExponentialBackoffTest extends TestCase
         $expected = Either::left(new ClientError($request, $response));
 
         $fulfill = ExponentialBackoff::of(
-            $inner = new class($expected) implements Transport {
+            $inner = new class($expected) implements Implementation {
                 public function __construct(
                     private $expected,
                     public int $calls = 0,
@@ -329,7 +330,7 @@ class ExponentialBackoffTest extends TestCase
         $expected = Either::left(new ServerError($request, $response));
 
         $fulfill = ExponentialBackoff::of(
-            $inner = new class($expected) implements Transport {
+            $inner = new class($expected) implements Implementation {
                 public function __construct(
                     private $expected,
                     public int $calls = 0,
@@ -383,7 +384,7 @@ class ExponentialBackoffTest extends TestCase
         $expected = Either::left(new ConnectionFailed($request, ''));
 
         $fulfill = ExponentialBackoff::of(
-            $inner = new class($expected) implements Transport {
+            $inner = new class($expected) implements Implementation {
                 public function __construct(
                     private $expected,
                     public int $calls = 0,
@@ -446,7 +447,7 @@ class ExponentialBackoffTest extends TestCase
         $expected = Either::right(new Success($request, $response2));
 
         $fulfill = ExponentialBackoff::of(
-            $inner = new class([$error, $expected]) implements Transport {
+            $inner = new class([$error, $expected]) implements Implementation {
                 public function __construct(
                     private $expected,
                     public int $calls = 0,
@@ -498,7 +499,7 @@ class ExponentialBackoffTest extends TestCase
         $expected = Either::left(new ServerError($request, $response));
 
         $fulfill = ExponentialBackoff::of(
-            $inner = new class($expected) implements Transport {
+            $inner = new class($expected) implements Implementation {
                 public function __construct(
                     private $expected,
                     public int $calls = 0,

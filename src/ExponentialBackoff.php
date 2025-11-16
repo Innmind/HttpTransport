@@ -15,13 +15,13 @@ use Innmind\Immutable\{
 /**
  * @psalm-import-type Errors from Transport
  */
-final class ExponentialBackoff implements Transport
+final class ExponentialBackoff implements Implementation
 {
     /**
      * @param Sequence<Period> $retries
      */
     private function __construct(
-        private Transport $fulfill,
+        private Implementation $fulfill,
         private Halt $halt,
         private Sequence $retries,
     ) {
@@ -33,7 +33,7 @@ final class ExponentialBackoff implements Transport
         return $this->fulfill($request, $this->retries);
     }
 
-    public static function of(Transport $fulfill, Halt $halt): self
+    public static function of(Implementation $fulfill, Halt $halt): self
     {
         /** @psalm-suppress ArgumentTypeCoercion Periods are necessarily positive */
         return new self(

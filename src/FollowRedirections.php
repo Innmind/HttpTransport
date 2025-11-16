@@ -18,13 +18,13 @@ use Innmind\Immutable\Either;
 /**
  * @psalm-import-type Errors from Transport
  */
-final class FollowRedirections implements Transport
+final class FollowRedirections implements Implementation
 {
     /**
      * @param int<1, max> $hops
      */
     private function __construct(
-        private Transport $fulfill,
+        private Implementation $fulfill,
         private int $hops,
     ) {
     }
@@ -35,7 +35,7 @@ final class FollowRedirections implements Transport
         return $this->fulfill($request, $this->hops);
     }
 
-    public static function of(Transport $fulfill): self
+    public static function of(Implementation $fulfill): self
     {
         return new self($fulfill, 5);
     }

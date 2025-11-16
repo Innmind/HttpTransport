@@ -22,7 +22,7 @@ use Innmind\Immutable\Either;
 /**
  * @psalm-import-type Errors from Transport
  */
-final class Curl implements Transport
+final class Curl implements Implementation
 {
     /**
      * @param \Closure(): void $heartbeat

@@ -7,6 +7,7 @@ use Innmind\HttpTransport\{
     FollowRedirections,
     Curl,
     Transport,
+    Implementation,
     Information,
     Success,
     Redirection,
@@ -102,7 +103,7 @@ class FollowRedirectionsTest extends TestCase
                 )),
             ))
             ->prove(function($result) use ($request) {
-                $inner = new class($result) implements Transport {
+                $inner = new class($result) implements Implementation {
                     public function __construct(
                         private $result,
                     ) {
@@ -155,7 +156,7 @@ class FollowRedirectionsTest extends TestCase
                         ),
                     ),
                 ));
-                $inner = new class($this, $firstUrl, $expected) implements Transport {
+                $inner = new class($this, $firstUrl, $expected) implements Implementation {
                     public function __construct(
                         private $test,
                         private $firstUrl,
@@ -219,7 +220,7 @@ class FollowRedirectionsTest extends TestCase
                         $protocol,
                     ),
                 ));
-                $inner = new class($expected) implements Transport {
+                $inner = new class($expected) implements Implementation {
                     public function __construct(
                         private $expected,
                     ) {
@@ -269,7 +270,7 @@ class FollowRedirectionsTest extends TestCase
                         $protocol,
                     ),
                 ));
-                $inner = new class($this, $start, $newUrl, $protocol, $expected) implements Transport {
+                $inner = new class($this, $start, $newUrl, $protocol, $expected) implements Implementation {
                     public function __construct(
                         private $test,
                         private $start,
@@ -361,7 +362,7 @@ class FollowRedirectionsTest extends TestCase
                         $protocol,
                     ),
                 ));
-                $inner = new class($this, $start, $newUrl, $statusCode, $protocol, $expected) implements Transport {
+                $inner = new class($this, $start, $newUrl, $statusCode, $protocol, $expected) implements Implementation {
                     public function __construct(
                         private $test,
                         private $start,
@@ -457,7 +458,7 @@ class FollowRedirectionsTest extends TestCase
                         ),
                     ),
                 ));
-                $inner = new class($expected) implements Transport {
+                $inner = new class($expected) implements Implementation {
                     public function __construct(
                         private $expected,
                     ) {
