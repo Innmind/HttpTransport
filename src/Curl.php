@@ -97,25 +97,6 @@ final class Curl implements Implementation
     /**
      * @psalm-mutation-free
      *
-     * @param positive-int $max
-     */
-    #[\NoDiscard]
-    public function maxConcurrency(int $max): self
-    {
-        return new self(
-            $this->headerFactory,
-            $this->io,
-            Concurrency::new($max),
-            $this->timeout,
-            $this->heartbeat,
-            $this->disableSSLVerification,
-            $this->proxy,
-        );
-    }
-
-    /**
-     * @psalm-mutation-free
-     *
      * @param Period $timeout Only seconds are allowed
      * @param callable(): void $heartbeat
      */

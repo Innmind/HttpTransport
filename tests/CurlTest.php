@@ -13,6 +13,7 @@ use Innmind\HttpTransport\{
     ServerError,
     Failure,
     Header\Timeout,
+    Config,
 };
 use Innmind\Http\{
     Request,
@@ -365,7 +366,7 @@ class CurlTest extends TestCase
 
     public function testMaxConcurrency()
     {
-        $curl = $this->curl->maxConcurrency(1);
+        $curl = $this->curl->map(Config::new()->limitConcurrencyTo(1));
         $request = Request::of(
             Url::of('https://github.com'),
             Method::get,
@@ -427,7 +428,7 @@ class CurlTest extends TestCase
 
     public function testOutOfOrderUnwrapWithMaxConcurrency()
     {
-        $curl = $this->curl->maxConcurrency(2);
+        $curl = $this->curl->map(Config::new()->limitConcurrencyTo(2));
         $request = Request::of(
             Url::of('https://github.com'),
             Method::get,
@@ -452,7 +453,7 @@ class CurlTest extends TestCase
 
     public function testSubsequentRequestsAreCalledCorrectlyInsideFlatMaps()
     {
-        $curl = $this->curl->maxConcurrency(2);
+        $curl = $this->curl->map(Config::new()->limitConcurrencyTo(2));
         $request = Request::of(
             Url::of('https://github.com'),
             Method::get,
