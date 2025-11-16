@@ -48,12 +48,7 @@ class ExponentialBackoffTest extends TestCase
 
         $fulfill = Transport::exponentialBackoff(
             Transport::via(static fn() => $expected),
-            new class implements Halt {
-                public function __invoke(Period $period): Attempt
-                {
-                    return Attempt::error(new \Exception);
-                }
-            },
+            Halt::via(static fn() => Attempt::error(new \Exception)),
         );
 
         $this->assertEquals($expected, $fulfill($request));
@@ -74,12 +69,7 @@ class ExponentialBackoffTest extends TestCase
 
         $fulfill = Transport::exponentialBackoff(
             Transport::via(static fn() => $expected),
-            new class implements Halt {
-                public function __invoke(Period $period): Attempt
-                {
-                    return Attempt::error(new \Exception);
-                }
-            },
+            Halt::via(static fn() => Attempt::error(new \Exception)),
         );
 
         $this->assertEquals($expected, $fulfill($request));
@@ -100,12 +90,7 @@ class ExponentialBackoffTest extends TestCase
 
         $fulfill = Transport::exponentialBackoff(
             Transport::via(static fn() => $expected),
-            new class implements Halt {
-                public function __invoke(Period $period): Attempt
-                {
-                    return Attempt::error(new \Exception);
-                }
-            },
+            Halt::via(static fn() => Attempt::error(new \Exception)),
         );
 
         $this->assertEquals($expected, $fulfill($request));
@@ -126,12 +111,7 @@ class ExponentialBackoffTest extends TestCase
 
         $fulfill = Transport::exponentialBackoff(
             Transport::via(static fn() => $expected),
-            new class implements Halt {
-                public function __invoke(Period $period): Attempt
-                {
-                    return Attempt::error(new \Exception);
-                }
-            },
+            Halt::via(static fn() => Attempt::error(new \Exception)),
         );
 
         $this->assertEquals($expected, $fulfill($request));
@@ -148,12 +128,7 @@ class ExponentialBackoffTest extends TestCase
 
         $fulfill = Transport::exponentialBackoff(
             Transport::via(static fn() => $expected),
-            new class implements Halt {
-                public function __invoke(Period $period): Attempt
-                {
-                    return Attempt::error(new \Exception);
-                }
-            },
+            Halt::via(static fn() => Attempt::error(new \Exception)),
         );
 
         $this->assertEquals($expected, $fulfill($request));
@@ -170,12 +145,7 @@ class ExponentialBackoffTest extends TestCase
 
         $fulfill = Transport::exponentialBackoff(
             Transport::via(static fn() => $expected),
-            new class implements Halt {
-                public function __invoke(Period $period): Attempt
-                {
-                    return Attempt::error(new \Exception);
-                }
-            },
+            Halt::via(static fn() => Attempt::error(new \Exception)),
         );
 
         $this->assertEquals($expected, $fulfill($request));
@@ -201,28 +171,20 @@ class ExponentialBackoffTest extends TestCase
 
                 return $expected;
             }),
-            new class($this) implements Halt {
-                public function __construct(
-                    private $test,
-                    private int $calls = 0,
-                ) {
-                }
+            Halt::via(function($period) {
+                static $calls = 0;
+                ++$calls;
 
-                public function __invoke(Period $period): Attempt
-                {
-                    ++$this->calls;
+                match ($calls) {
+                    1, 6 => $this->assertEquals(Period::millisecond(100), $period),
+                    2, 7 => $this->assertEquals(Period::millisecond(271), $period),
+                    3, 8 => $this->assertEquals(Period::millisecond(738), $period),
+                    4, 9 => $this->assertEquals(Period::millisecond(2008), $period),
+                    5, 10 => $this->assertEquals(Period::millisecond(5459), $period),
+                };
 
-                    match ($this->calls) {
-                        1, 6 => $this->test->assertEquals(Period::millisecond(100), $period),
-                        2, 7 => $this->test->assertEquals(Period::millisecond(271), $period),
-                        3, 8 => $this->test->assertEquals(Period::millisecond(738), $period),
-                        4, 9 => $this->test->assertEquals(Period::millisecond(2008), $period),
-                        5, 10 => $this->test->assertEquals(Period::millisecond(5459), $period),
-                    };
-
-                    return Attempt::result(SideEffect::identity());
-                }
-            },
+                return Attempt::result(SideEffect::identity);
+            }),
         );
 
         $this->assertEquals($expected, $fulfill($request));
@@ -251,28 +213,20 @@ class ExponentialBackoffTest extends TestCase
 
                 return $expected;
             }),
-            new class($this) implements Halt {
-                public function __construct(
-                    private $test,
-                    private int $calls = 0,
-                ) {
-                }
+            Halt::via(function($period) {
+                static $calls = 0;
+                ++$calls;
 
-                public function __invoke(Period $period): Attempt
-                {
-                    ++$this->calls;
+                match ($calls) {
+                    1, 6 => $this->assertEquals(Period::millisecond(100), $period),
+                    2, 7 => $this->assertEquals(Period::millisecond(271), $period),
+                    3, 8 => $this->assertEquals(Period::millisecond(738), $period),
+                    4, 9 => $this->assertEquals(Period::millisecond(2008), $period),
+                    5, 10 => $this->assertEquals(Period::millisecond(5459), $period),
+                };
 
-                    match ($this->calls) {
-                        1, 6 => $this->test->assertEquals(Period::millisecond(100), $period),
-                        2, 7 => $this->test->assertEquals(Period::millisecond(271), $period),
-                        3, 8 => $this->test->assertEquals(Period::millisecond(738), $period),
-                        4, 9 => $this->test->assertEquals(Period::millisecond(2008), $period),
-                        5, 10 => $this->test->assertEquals(Period::millisecond(5459), $period),
-                    };
-
-                    return Attempt::result(SideEffect::identity());
-                }
-            },
+                return Attempt::result(SideEffect::identity);
+            }),
         );
 
         $this->assertEquals($expected, $fulfill($request));
@@ -297,28 +251,20 @@ class ExponentialBackoffTest extends TestCase
 
                 return $expected;
             }),
-            new class($this) implements Halt {
-                public function __construct(
-                    private $test,
-                    private int $calls = 0,
-                ) {
-                }
+            Halt::via(function($period) {
+                static $calls = 0;
+                ++$calls;
 
-                public function __invoke(Period $period): Attempt
-                {
-                    ++$this->calls;
+                match ($calls) {
+                    1, 6 => $this->assertEquals(Period::millisecond(100), $period),
+                    2, 7 => $this->assertEquals(Period::millisecond(271), $period),
+                    3, 8 => $this->assertEquals(Period::millisecond(738), $period),
+                    4, 9 => $this->assertEquals(Period::millisecond(2008), $period),
+                    5, 10 => $this->assertEquals(Period::millisecond(5459), $period),
+                };
 
-                    match ($this->calls) {
-                        1, 6 => $this->test->assertEquals(Period::millisecond(100), $period),
-                        2, 7 => $this->test->assertEquals(Period::millisecond(271), $period),
-                        3, 8 => $this->test->assertEquals(Period::millisecond(738), $period),
-                        4, 9 => $this->test->assertEquals(Period::millisecond(2008), $period),
-                        5, 10 => $this->test->assertEquals(Period::millisecond(5459), $period),
-                    };
-
-                    return Attempt::result(SideEffect::identity());
-                }
-            },
+                return Attempt::result(SideEffect::identity);
+            }),
         );
 
         $this->assertEquals($expected, $fulfill($request));
@@ -353,24 +299,16 @@ class ExponentialBackoffTest extends TestCase
 
                 return \array_shift($all);
             }),
-            new class($this) implements Halt {
-                public function __construct(
-                    private $test,
-                    private int $calls = 0,
-                ) {
-                }
+            Halt::via(function($period) {
+                static $calls = 0;
+                ++$calls;
 
-                public function __invoke(Period $period): Attempt
-                {
-                    ++$this->calls;
+                match ($calls) {
+                    1 => $this->assertEquals(Period::millisecond(100), $period),
+                };
 
-                    match ($this->calls) {
-                        1 => $this->test->assertEquals(Period::millisecond(100), $period),
-                    };
-
-                    return Attempt::result(SideEffect::identity());
-                }
-            },
+                return Attempt::result(SideEffect::identity);
+            }),
         );
 
         $this->assertEquals($expected, $fulfill($request));
@@ -397,28 +335,20 @@ class ExponentialBackoffTest extends TestCase
 
                 return $expected;
             }),
-            new class($this) implements Halt {
-                public function __construct(
-                    private $test,
-                    private int $calls = 0,
-                ) {
-                }
+            Halt::via(function($period) {
+                static $calls = 0;
+                ++$calls;
 
-                public function __invoke(Period $period): Attempt
-                {
-                    ++$this->calls;
+                match ($calls) {
+                    1=> $this->assertEquals(Period::millisecond(100), $period),
+                    2=> $this->assertEquals(Period::millisecond(271), $period),
+                    3=> $this->assertEquals(Period::millisecond(738), $period),
+                    4=> $this->assertEquals(Period::millisecond(2008), $period),
+                    5=> $this->assertEquals(Period::millisecond(5459), $period),
+                };
 
-                    match ($this->calls) {
-                        1 => $this->test->assertEquals(Period::millisecond(100), $period),
-                        2 => $this->test->assertEquals(Period::millisecond(271), $period),
-                        3 => $this->test->assertEquals(Period::millisecond(738), $period),
-                        4 => $this->test->assertEquals(Period::millisecond(2008), $period),
-                        5 => $this->test->assertEquals(Period::millisecond(5459), $period),
-                    };
-
-                    return Attempt::result(SideEffect::identity());
-                }
-            },
+                return Attempt::result(SideEffect::identity);
+            }),
         );
 
         $this->assertEquals($expected, $fulfill($request));

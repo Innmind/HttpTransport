@@ -23,7 +23,7 @@ use Innmind\Http\{
     Header\Location,
 };
 use Innmind\Filesystem\{
-    Adapter\Filesystem,
+    Adapter,
     File\Content,
     Name,
 };
@@ -277,7 +277,7 @@ class CurlTest extends TestCase
         $this
             ->assert()
             ->memory(function() {
-                $data = Filesystem::mount(Path::of(__DIR__.'/../data/'));
+                $data = Adapter::mount(Path::of(__DIR__.'/../data/'))->unwrap();
 
                 $memory = \memory_get_peak_usage();
                 $success = ($this->curl)(Request::of(
