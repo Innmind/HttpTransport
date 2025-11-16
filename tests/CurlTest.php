@@ -4,7 +4,7 @@ declare(strict_types = 1);
 namespace Tests\Innmind\HttpTransport;
 
 use Innmind\HttpTransport\{
-    Curl,
+    Transport,
     Success,
     Redirection,
     ClientError,
@@ -55,7 +55,7 @@ class CurlTest extends TestCase
 
     public function setUp(): void
     {
-        $this->curl = Curl::of(Clock::live());
+        $this->curl = Transport::curl(Clock::live());
     }
 
     public function testOkResponse()
@@ -398,7 +398,7 @@ class CurlTest extends TestCase
     public function testHeartbeat()
     {
         $heartbeat = 0;
-        $curl = Curl::async(
+        $curl = Transport::async(
             Clock::live(),
             IO::fromAmbientAuthority(),
             Period::second(1),

@@ -4,8 +4,7 @@ declare(strict_types = 1);
 namespace Tests\Innmind\HttpTransport;
 
 use Innmind\HttpTransport\{
-    ExponentialBackoff,
-    Implementation,
+    Transport,
     ServerError,
     Success,
     ClientError,
@@ -47,23 +46,8 @@ class ExponentialBackoffTest extends TestCase
         );
         $expected = Either::left(new Information($request, $response));
 
-        $fulfill = ExponentialBackoff::of(
-            new class($expected) implements Implementation {
-                public function __construct(
-                    private $expected,
-                ) {
-                }
-
-                public function __invoke(Request $request): Either
-                {
-                    return $this->expected;
-                }
-
-                public function map(callable $map): self
-                {
-                    return $this;
-                }
-            },
+        $fulfill = Transport::exponentialBackoff(
+            Transport::via(static fn() => $expected),
             new class implements Halt {
                 public function __invoke(Period $period): Attempt
                 {
@@ -88,23 +72,8 @@ class ExponentialBackoffTest extends TestCase
         );
         $expected = Either::right(new Success($request, $response));
 
-        $fulfill = ExponentialBackoff::of(
-            new class($expected) implements Implementation {
-                public function __construct(
-                    private $expected,
-                ) {
-                }
-
-                public function __invoke(Request $request): Either
-                {
-                    return $this->expected;
-                }
-
-                public function map(callable $map): self
-                {
-                    return $this;
-                }
-            },
+        $fulfill = Transport::exponentialBackoff(
+            Transport::via(static fn() => $expected),
             new class implements Halt {
                 public function __invoke(Period $period): Attempt
                 {
@@ -129,23 +98,8 @@ class ExponentialBackoffTest extends TestCase
         );
         $expected = Either::left(new Redirection($request, $response));
 
-        $fulfill = ExponentialBackoff::of(
-            new class($expected) implements Implementation {
-                public function __construct(
-                    private $expected,
-                ) {
-                }
-
-                public function __invoke(Request $request): Either
-                {
-                    return $this->expected;
-                }
-
-                public function map(callable $map): self
-                {
-                    return $this;
-                }
-            },
+        $fulfill = Transport::exponentialBackoff(
+            Transport::via(static fn() => $expected),
             new class implements Halt {
                 public function __invoke(Period $period): Attempt
                 {
@@ -170,23 +124,8 @@ class ExponentialBackoffTest extends TestCase
         );
         $expected = Either::left(new ClientError($request, $response));
 
-        $fulfill = ExponentialBackoff::of(
-            new class($expected) implements Implementation {
-                public function __construct(
-                    private $expected,
-                ) {
-                }
-
-                public function __invoke(Request $request): Either
-                {
-                    return $this->expected;
-                }
-
-                public function map(callable $map): self
-                {
-                    return $this;
-                }
-            },
+        $fulfill = Transport::exponentialBackoff(
+            Transport::via(static fn() => $expected),
             new class implements Halt {
                 public function __invoke(Period $period): Attempt
                 {
@@ -207,23 +146,8 @@ class ExponentialBackoffTest extends TestCase
         );
         $expected = Either::left(new MalformedResponse($request));
 
-        $fulfill = ExponentialBackoff::of(
-            new class($expected) implements Implementation {
-                public function __construct(
-                    private $expected,
-                ) {
-                }
-
-                public function __invoke(Request $request): Either
-                {
-                    return $this->expected;
-                }
-
-                public function map(callable $map): self
-                {
-                    return $this;
-                }
-            },
+        $fulfill = Transport::exponentialBackoff(
+            Transport::via(static fn() => $expected),
             new class implements Halt {
                 public function __invoke(Period $period): Attempt
                 {
@@ -244,23 +168,8 @@ class ExponentialBackoffTest extends TestCase
         );
         $expected = Either::left(new Failure($request, 'whatever'));
 
-        $fulfill = ExponentialBackoff::of(
-            new class($expected) implements Implementation {
-                public function __construct(
-                    private $expected,
-                ) {
-                }
-
-                public function __invoke(Request $request): Either
-                {
-                    return $this->expected;
-                }
-
-                public function map(callable $map): self
-                {
-                    return $this;
-                }
-            },
+        $fulfill = Transport::exponentialBackoff(
+            Transport::via(static fn() => $expected),
             new class implements Halt {
                 public function __invoke(Period $period): Attempt
                 {
@@ -284,27 +193,14 @@ class ExponentialBackoffTest extends TestCase
             $request->protocolVersion(),
         );
         $expected = Either::left(new ClientError($request, $response));
+        $calls = 0;
 
-        $fulfill = ExponentialBackoff::of(
-            $inner = new class($expected) implements Implementation {
-                public function __construct(
-                    private $expected,
-                    public int $calls = 0,
-                ) {
-                }
+        $fulfill = Transport::exponentialBackoff(
+            Transport::via(static function() use (&$calls, $expected) {
+                ++$calls;
 
-                public function __invoke(Request $request): Either
-                {
-                    ++$this->calls;
-
-                    return $this->expected;
-                }
-
-                public function map(callable $map): self
-                {
-                    return $this;
-                }
-            },
+                return $expected;
+            }),
             new class($this) implements Halt {
                 public function __construct(
                     private $test,
@@ -332,7 +228,7 @@ class ExponentialBackoffTest extends TestCase
         $this->assertEquals($expected, $fulfill($request));
         // to make sure halt periods are kept between requests
         $this->assertEquals($expected, $fulfill($request));
-        $this->assertSame(12, $inner->calls);
+        $this->assertSame(12, $calls);
     }
 
     public function testRetryWhileThereIsStillAServerError()
@@ -347,27 +243,14 @@ class ExponentialBackoffTest extends TestCase
             $request->protocolVersion(),
         );
         $expected = Either::left(new ServerError($request, $response));
+        $calls = 0;
 
-        $fulfill = ExponentialBackoff::of(
-            $inner = new class($expected) implements Implementation {
-                public function __construct(
-                    private $expected,
-                    public int $calls = 0,
-                ) {
-                }
+        $fulfill = Transport::exponentialBackoff(
+            Transport::via(static function() use (&$calls, $expected) {
+                ++$calls;
 
-                public function __invoke(Request $request): Either
-                {
-                    ++$this->calls;
-
-                    return $this->expected;
-                }
-
-                public function map(callable $map): self
-                {
-                    return $this;
-                }
-            },
+                return $expected;
+            }),
             new class($this) implements Halt {
                 public function __construct(
                     private $test,
@@ -395,7 +278,7 @@ class ExponentialBackoffTest extends TestCase
         $this->assertEquals($expected, $fulfill($request));
         // to make sure halt periods are kept between requests
         $this->assertEquals($expected, $fulfill($request));
-        $this->assertSame(12, $inner->calls);
+        $this->assertSame(12, $calls);
     }
 
     public function testRetryWhileThereIsStillAConnectionFailure()
@@ -406,27 +289,14 @@ class ExponentialBackoffTest extends TestCase
             ProtocolVersion::v11,
         );
         $expected = Either::left(new ConnectionFailed($request, ''));
+        $calls = 0;
 
-        $fulfill = ExponentialBackoff::of(
-            $inner = new class($expected) implements Implementation {
-                public function __construct(
-                    private $expected,
-                    public int $calls = 0,
-                ) {
-                }
+        $fulfill = Transport::exponentialBackoff(
+            Transport::via(static function() use (&$calls, $expected) {
+                ++$calls;
 
-                public function __invoke(Request $request): Either
-                {
-                    ++$this->calls;
-
-                    return $this->expected;
-                }
-
-                public function map(callable $map): self
-                {
-                    return $this;
-                }
-            },
+                return $expected;
+            }),
             new class($this) implements Halt {
                 public function __construct(
                     private $test,
@@ -454,7 +324,7 @@ class ExponentialBackoffTest extends TestCase
         $this->assertEquals($expected, $fulfill($request));
         // to make sure halt periods are kept between requests
         $this->assertEquals($expected, $fulfill($request));
-        $this->assertSame(12, $inner->calls);
+        $this->assertSame(12, $calls);
     }
 
     public function testStopRetryingWhenNoLongerReceivingAServerError()
@@ -474,27 +344,15 @@ class ExponentialBackoffTest extends TestCase
         );
         $error = Either::left(new ServerError($request, $response1));
         $expected = Either::right(new Success($request, $response2));
+        $all = [$error, $expected];
+        $calls = 0;
 
-        $fulfill = ExponentialBackoff::of(
-            $inner = new class([$error, $expected]) implements Implementation {
-                public function __construct(
-                    private $expected,
-                    public int $calls = 0,
-                ) {
-                }
+        $fulfill = Transport::exponentialBackoff(
+            Transport::via(static function() use (&$calls, &$all) {
+                ++$calls;
 
-                public function __invoke(Request $request): Either
-                {
-                    ++$this->calls;
-
-                    return \array_shift($this->expected);
-                }
-
-                public function map(callable $map): self
-                {
-                    return $this;
-                }
-            },
+                return \array_shift($all);
+            }),
             new class($this) implements Halt {
                 public function __construct(
                     private $test,
@@ -516,7 +374,7 @@ class ExponentialBackoffTest extends TestCase
         );
 
         $this->assertEquals($expected, $fulfill($request));
-        $this->assertSame(2, $inner->calls);
+        $this->assertSame(2, $calls);
     }
 
     public function testByDefaultRetriesFiveTimesByUsingAPowerOfE()
@@ -531,27 +389,14 @@ class ExponentialBackoffTest extends TestCase
             $request->protocolVersion(),
         );
         $expected = Either::left(new ServerError($request, $response));
+        $calls = 0;
 
-        $fulfill = ExponentialBackoff::of(
-            $inner = new class($expected) implements Implementation {
-                public function __construct(
-                    private $expected,
-                    public int $calls = 0,
-                ) {
-                }
+        $fulfill = Transport::exponentialBackoff(
+            Transport::via(static function() use (&$calls, $expected) {
+                ++$calls;
 
-                public function __invoke(Request $request): Either
-                {
-                    ++$this->calls;
-
-                    return $this->expected;
-                }
-
-                public function map(callable $map): self
-                {
-                    return $this;
-                }
-            },
+                return $expected;
+            }),
             new class($this) implements Halt {
                 public function __construct(
                     private $test,
@@ -577,6 +422,6 @@ class ExponentialBackoffTest extends TestCase
         );
 
         $this->assertEquals($expected, $fulfill($request));
-        $this->assertSame(6, $inner->calls);
+        $this->assertSame(6, $calls);
     }
 }

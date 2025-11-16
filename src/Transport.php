@@ -96,6 +96,16 @@ final class Transport
     }
 
     /**
+     * @internal
+     *
+     * @param callable(Request): Either<Errors, Success> $via
+     */
+    public static function via(callable $via): self
+    {
+        return new self(Via::of($via));
+    }
+
+    /**
      * @psalm-mutation-free
      *
      * @param callable(Config): Config $map
