@@ -5,8 +5,6 @@ namespace Tests\Innmind\HttpTransport;
 
 use Innmind\HttpTransport\{
     CircuitBreaker,
-    Curl,
-    Transport,
     Implementation,
     Success,
     ServerError,
@@ -31,18 +29,6 @@ use Innmind\BlackBox\PHPUnit\Framework\TestCase;
 
 class CircuitBreakerTest extends TestCase
 {
-    public function testInterface()
-    {
-        $this->assertInstanceOf(
-            Transport::class,
-            CircuitBreaker::of(
-                Curl::of(Clock::live()),
-                Clock::live(),
-                Period::millisecond(1),
-            ),
-        );
-    }
-
     public function testDoesntOpenCircuitOnSuccessfulResponse()
     {
         $request = Request::of(

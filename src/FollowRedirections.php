@@ -16,7 +16,8 @@ use Innmind\Url\{
 use Innmind\Immutable\Either;
 
 /**
- * @psalm-import-type Errors from Transport
+ * @internal
+ * @psalm-import-type Errors from Implementation
  */
 final class FollowRedirections implements Implementation
 {

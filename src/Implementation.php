@@ -10,13 +10,12 @@ use Innmind\Immutable\Either;
  * @internal
  * @psalm-type Errors = Failure|ConnectionFailed|MalformedResponse|Information|Redirection|ClientError|ServerError
  */
-interface Implementation extends Transport
+interface Implementation
 {
     /**
      * @return Either<Errors, Success>
      */
     #[\NoDiscard]
-    #[\Override]
     public function __invoke(Request $request): Either;
 
     /**
@@ -25,6 +24,5 @@ interface Implementation extends Transport
      * @param callable(Config): Config $map
      */
     #[\NoDiscard]
-    #[\Override]
     public function map(callable $map): self;
 }

@@ -17,7 +17,8 @@ use Psr\Log\LoggerInterface;
 use Ramsey\Uuid\Uuid;
 
 /**
- * @psalm-import-type Errors from Transport
+ * @internal
+ * @psalm-import-type Errors from Implementation
  */
 final class Logger implements Implementation
 {

@@ -5,7 +5,6 @@ namespace Tests\Innmind\HttpTransport;
 
 use Innmind\HttpTransport\{
     Curl,
-    Transport,
     Success,
     Redirection,
     ClientError,
@@ -57,14 +56,6 @@ class CurlTest extends TestCase
     public function setUp(): void
     {
         $this->curl = Curl::of(Clock::live());
-    }
-
-    public function testInterface()
-    {
-        $this->assertInstanceOf(
-            Transport::class,
-            $this->curl,
-        );
     }
 
     public function testOkResponse()

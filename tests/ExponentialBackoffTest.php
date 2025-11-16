@@ -5,8 +5,6 @@ namespace Tests\Innmind\HttpTransport;
 
 use Innmind\HttpTransport\{
     ExponentialBackoff,
-    Curl,
-    Transport,
     Implementation,
     ServerError,
     Success,
@@ -25,10 +23,7 @@ use Innmind\Http\{
     Response\StatusCode,
 };
 use Innmind\TimeWarp\Halt;
-use Innmind\TimeContinuum\{
-    Clock,
-    Period,
-};
+use Innmind\TimeContinuum\Period;
 use Innmind\Url\Url;
 use Innmind\Immutable\{
     Either,
@@ -39,17 +34,6 @@ use Innmind\BlackBox\PHPUnit\Framework\TestCase;
 
 class ExponentialBackoffTest extends TestCase
 {
-    public function testInterface()
-    {
-        $this->assertInstanceOf(
-            Transport::class,
-            ExponentialBackoff::of(
-                Curl::of(Clock::live()),
-                Halt\Usleep::new(),
-            ),
-        );
-    }
-
     public function testDoesntRetryWhenInformationResponseOnFirstCall()
     {
         $request = Request::of(

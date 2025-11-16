@@ -20,7 +20,8 @@ use Innmind\IO\IO;
 use Innmind\Immutable\Either;
 
 /**
- * @psalm-import-type Errors from Transport
+ * @internal
+ * @psalm-import-type Errors from Implementation
  */
 final class Curl implements Implementation
 {

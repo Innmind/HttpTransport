@@ -5,8 +5,6 @@ namespace Tests\Innmind\HttpTransport;
 
 use Innmind\HttpTransport\{
     FollowRedirections,
-    Curl,
-    Transport,
     Implementation,
     Information,
     Success,
@@ -17,7 +15,6 @@ use Innmind\HttpTransport\{
     ConnectionFailed,
     Failure,
 };
-use Innmind\TimeContinuum\Clock;
 use Innmind\Http\{
     Request,
     Response,
@@ -43,14 +40,6 @@ use Fixtures\Innmind\Url\Url as FUrl;
 class FollowRedirectionsTest extends TestCase
 {
     use BlackBox;
-
-    public function testInterface()
-    {
-        $this->assertInstanceOf(
-            Transport::class,
-            FollowRedirections::of(Curl::of(Clock::live())),
-        );
-    }
 
     public function testDoesntModifyNonRedirectionResults(): BlackBox\Proof
     {

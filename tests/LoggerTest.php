@@ -6,7 +6,6 @@ namespace Tests\Innmind\HttpTransport;
 use Innmind\HttpTransport\{
     Logger,
     Curl,
-    Transport,
     Success,
 };
 use Innmind\TimeContinuum\Clock;
@@ -31,14 +30,6 @@ class LoggerTest extends TestCase
         $this->fulfill = Logger::psr(
             Curl::of(Clock::live()),
             new NullLogger,
-        );
-    }
-
-    public function testInterface()
-    {
-        $this->assertInstanceOf(
-            Transport::class,
-            $this->fulfill,
         );
     }
 

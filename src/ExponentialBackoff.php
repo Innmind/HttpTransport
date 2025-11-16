@@ -13,7 +13,8 @@ use Innmind\Immutable\{
 };
 
 /**
- * @psalm-import-type Errors from Transport
+ * @internal
+ * @psalm-import-type Errors from Implementation
  */
 final class ExponentialBackoff implements Implementation
 {
