@@ -116,21 +116,4 @@ final class Curl implements Implementation
             $this->proxy,
         );
     }
-
-    /**
-     * @psalm-mutation-free
-     */
-    #[\NoDiscard]
-    public function proxy(Url $proxy): self
-    {
-        return new self(
-            $this->headerFactory,
-            $this->io,
-            $this->concurrency,
-            $this->timeout,
-            $this->heartbeat,
-            $this->disableSSLVerification,
-            $proxy,
-        );
-    }
 }
