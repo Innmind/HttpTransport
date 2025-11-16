@@ -118,26 +118,6 @@ final class Curl implements Implementation
     }
 
     /**
-     * You should use this method only when trying to call a server you own that
-     * uses a self signed certificate that will fail the verification.
-     *
-     * @psalm-mutation-free
-     */
-    #[\NoDiscard]
-    public function disableSSLVerification(): self
-    {
-        return new self(
-            $this->headerFactory,
-            $this->io,
-            $this->concurrency,
-            $this->timeout,
-            $this->heartbeat,
-            true,
-            $this->proxy,
-        );
-    }
-
-    /**
      * @psalm-mutation-free
      */
     #[\NoDiscard]

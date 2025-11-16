@@ -52,6 +52,10 @@ final class Config
         );
     }
 
+    /**
+     * You should use this method only when trying to call a server you own that
+     * uses a self signed certificate that will fail the verification.
+     */
     #[\NoDiscard]
     public function disableSSLVerification(): self
     {

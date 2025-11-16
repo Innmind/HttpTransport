@@ -14,6 +14,7 @@
 ### Removed
 
 - `Innmind\HttpTransport\Curl::maxConcurrency()` use `::map()` instead
+- `Innmind\HttpTransport\Curl::disableSSLVerification()` use `::map()` instead
 
 ## 8.1.0 - 2025-09-18
 
