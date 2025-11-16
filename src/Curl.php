@@ -74,6 +74,29 @@ final class Curl implements Implementation
         );
     }
 
+    /**
+     * @internal
+     *
+     * @param Period $timeout Only seconds are allowed
+     * @param callable(): void $heartbeat
+     */
+    public static function async(
+        Clock $clock,
+        IO $io,
+        Period $timeout,
+        callable $heartbeat,
+    ): self {
+        return new self(
+            Factory::new($clock),
+            $io,
+            Concurrency::new(),
+            $timeout,
+            \Closure::fromCallable($heartbeat),
+            false,
+            null,
+        );
+    }
+
     #[\Override]
     public function map(Config $config): self
     {
@@ -91,29 +114,6 @@ final class Curl implements Implementation
                 static fn($proxy) => $proxy,
                 static fn() => null,
             ),
-        );
-    }
-
-    /**
-     * @psalm-mutation-free
-     *
-     * @param Period $timeout Only seconds are allowed
-     * @param callable(): void $heartbeat
-     */
-    #[\NoDiscard]
-    public function heartbeat(Period $timeout, ?callable $heartbeat = null): self
-    {
-        return new self(
-            $this->headerFactory,
-            $this->io,
-            $this->concurrency,
-            $timeout,
-            match ($heartbeat) {
-                null => static fn() => null,
-                default => \Closure::fromCallable($heartbeat),
-            },
-            $this->disableSSLVerification,
-            $this->proxy,
         );
     }
 }

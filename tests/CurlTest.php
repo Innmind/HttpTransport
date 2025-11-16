@@ -29,6 +29,7 @@ use Innmind\Filesystem\{
     File\Content,
     Name,
 };
+use Innmind\IO\IO;
 use Innmind\TimeContinuum\{
     Clock,
     Period,
@@ -407,7 +408,9 @@ class CurlTest extends TestCase
     public function testHeartbeat()
     {
         $heartbeat = 0;
-        $curl = $this->curl->heartbeat(
+        $curl = Curl::async(
+            Clock::live(),
+            IO::fromAmbientAuthority(),
             Period::second(1),
             static function() use (&$heartbeat) {
                 ++$heartbeat;
