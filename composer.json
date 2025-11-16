@@ -15,7 +15,7 @@
         "issues": "http://github.com/Innmind/HttpTransport/issues"
     },
     "require": {
-        "php": "~8.2",
+        "php": "~8.4",
         "ext-curl": "*",
         "innmind/http": "~8.0",
         "innmind/filesystem": "~8.1",
