@@ -16,6 +16,7 @@ use Innmind\HttpTransport\{
     Information,
     MalformedResponse,
     Failure,
+    Config,
 };
 use Innmind\Http\{
     Request,
@@ -74,6 +75,11 @@ class ExponentialBackoffTest extends TestCase
                 {
                     return $this->expected;
                 }
+
+                public function map(Config $config): self
+                {
+                    return $this;
+                }
             },
             new class implements Halt {
                 public function __invoke(Period $period): Attempt
@@ -109,6 +115,11 @@ class ExponentialBackoffTest extends TestCase
                 public function __invoke(Request $request): Either
                 {
                     return $this->expected;
+                }
+
+                public function map(Config $config): self
+                {
+                    return $this;
                 }
             },
             new class implements Halt {
@@ -146,6 +157,11 @@ class ExponentialBackoffTest extends TestCase
                 {
                     return $this->expected;
                 }
+
+                public function map(Config $config): self
+                {
+                    return $this;
+                }
             },
             new class implements Halt {
                 public function __invoke(Period $period): Attempt
@@ -182,6 +198,11 @@ class ExponentialBackoffTest extends TestCase
                 {
                     return $this->expected;
                 }
+
+                public function map(Config $config): self
+                {
+                    return $this;
+                }
             },
             new class implements Halt {
                 public function __invoke(Period $period): Attempt
@@ -214,6 +235,11 @@ class ExponentialBackoffTest extends TestCase
                 {
                     return $this->expected;
                 }
+
+                public function map(Config $config): self
+                {
+                    return $this;
+                }
             },
             new class implements Halt {
                 public function __invoke(Period $period): Attempt
@@ -245,6 +271,11 @@ class ExponentialBackoffTest extends TestCase
                 public function __invoke(Request $request): Either
                 {
                     return $this->expected;
+                }
+
+                public function map(Config $config): self
+                {
+                    return $this;
                 }
             },
             new class implements Halt {
@@ -284,6 +315,11 @@ class ExponentialBackoffTest extends TestCase
                     ++$this->calls;
 
                     return $this->expected;
+                }
+
+                public function map(Config $config): self
+                {
+                    return $this;
                 }
             },
             new class($this) implements Halt {
@@ -343,6 +379,11 @@ class ExponentialBackoffTest extends TestCase
 
                     return $this->expected;
                 }
+
+                public function map(Config $config): self
+                {
+                    return $this;
+                }
             },
             new class($this) implements Halt {
                 public function __construct(
@@ -396,6 +437,11 @@ class ExponentialBackoffTest extends TestCase
                     ++$this->calls;
 
                     return $this->expected;
+                }
+
+                public function map(Config $config): self
+                {
+                    return $this;
                 }
             },
             new class($this) implements Halt {
@@ -460,6 +506,11 @@ class ExponentialBackoffTest extends TestCase
 
                     return \array_shift($this->expected);
                 }
+
+                public function map(Config $config): self
+                {
+                    return $this;
+                }
             },
             new class($this) implements Halt {
                 public function __construct(
@@ -511,6 +562,11 @@ class ExponentialBackoffTest extends TestCase
                     ++$this->calls;
 
                     return $this->expected;
+                }
+
+                public function map(Config $config): self
+                {
+                    return $this;
                 }
             },
             new class($this) implements Halt {

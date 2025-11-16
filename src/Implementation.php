@@ -18,4 +18,8 @@ interface Implementation extends Transport
     #[\NoDiscard]
     #[\Override]
     public function __invoke(Request $request): Either;
+
+    #[\NoDiscard]
+    #[\Override]
+    public function map(Config $config): self;
 }

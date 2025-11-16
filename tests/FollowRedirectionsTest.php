@@ -16,6 +16,7 @@ use Innmind\HttpTransport\{
     MalformedResponse,
     ConnectionFailed,
     Failure,
+    Config,
 };
 use Innmind\TimeContinuum\Clock;
 use Innmind\Http\{
@@ -113,6 +114,11 @@ class FollowRedirectionsTest extends TestCase
                     {
                         return $this->result;
                     }
+
+                    public function map(Config $config): self
+                    {
+                        return $this;
+                    }
                 };
                 $fulfill = FollowRedirections::of($inner);
 
@@ -178,6 +184,11 @@ class FollowRedirectionsTest extends TestCase
 
                         return $this->expected;
                     }
+
+                    public function map(Config $config): self
+                    {
+                        return $this;
+                    }
                 };
                 $fulfill = FollowRedirections::of($inner);
 
@@ -229,6 +240,11 @@ class FollowRedirectionsTest extends TestCase
                     public function __invoke(Request $request): Either
                     {
                         return $this->expected;
+                    }
+
+                    public function map(Config $config): self
+                    {
+                        return $this;
                     }
                 };
                 $fulfill = FollowRedirections::of($inner);
@@ -314,6 +330,11 @@ class FollowRedirectionsTest extends TestCase
                         $this->test->assertSame('', $request->body()->toString());
 
                         return $this->expected;
+                    }
+
+                    public function map(Config $config): self
+                    {
+                        return $this;
                     }
                 };
                 $fulfill = FollowRedirections::of($inner);
@@ -408,6 +429,11 @@ class FollowRedirectionsTest extends TestCase
 
                         return $this->expected;
                     }
+
+                    public function map(Config $config): self
+                    {
+                        return $this;
+                    }
                 };
                 $fulfill = FollowRedirections::of($inner);
 
@@ -467,6 +493,11 @@ class FollowRedirectionsTest extends TestCase
                     public function __invoke(Request $request): Either
                     {
                         return $this->expected;
+                    }
+
+                    public function map(Config $config): self
+                    {
+                        return $this;
                     }
                 };
                 $fulfill = FollowRedirections::of($inner);

@@ -40,6 +40,12 @@ final class FollowRedirections implements Implementation
         return new self($fulfill, 5);
     }
 
+    #[\Override]
+    public function map(Config $config): self
+    {
+        return self::of($this->fulfill->map($config));
+    }
+
     /**
      * @param int<0, max> $hops
      *

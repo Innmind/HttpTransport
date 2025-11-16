@@ -66,6 +66,17 @@ final class CircuitBreaker implements Implementation
         );
     }
 
+    #[\Override]
+    public function map(Config $config): self
+    {
+        return new self(
+            $this->fulfill->map($config),
+            $this->clock,
+            $this->delayBeforeRetry,
+            Map::of(),
+        );
+    }
+
     private function open(
         Request $request,
         ServerError|ConnectionFailed $error,

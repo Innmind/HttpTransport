@@ -42,6 +42,15 @@ final class Logger implements Implementation
         return new self($fulfill, $logger);
     }
 
+    #[\Override]
+    public function map(Config $config): self
+    {
+        return new self(
+            $this->fulfill->map($config),
+            $this->logger,
+        );
+    }
+
     private function logRequest(Request $request): string
     {
         $this->logger->debug(

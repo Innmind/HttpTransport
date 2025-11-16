@@ -49,6 +49,15 @@ final class ExponentialBackoff implements Implementation
         );
     }
 
+    #[\Override]
+    public function map(Config $config): self
+    {
+        return self::of(
+            $this->fulfill->map($config),
+            $this->halt,
+        );
+    }
+
     /**
      * @param Sequence<Period> $retries
      *

@@ -74,6 +74,26 @@ final class Curl implements Implementation
         );
     }
 
+    #[\Override]
+    public function map(Config $config): self
+    {
+        return new self(
+            $this->headerFactory,
+            $this->io,
+            Concurrency::new($config->maxConcurrency()->match(
+                static fn($max) => $max,
+                static fn() => null,
+            )),
+            $this->timeout,
+            $this->heartbeat,
+            !$config->verifySSL(),
+            $config->proxy()->match(
+                static fn($proxy) => $proxy,
+                static fn() => null,
+            ),
+        );
+    }
+
     /**
      * @psalm-mutation-free
      *

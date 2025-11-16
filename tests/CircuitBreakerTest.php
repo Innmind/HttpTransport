@@ -13,6 +13,7 @@ use Innmind\HttpTransport\{
     ClientError,
     Redirection,
     ConnectionFailed,
+    Config,
 };
 use Innmind\Http\{
     Request,
@@ -67,6 +68,11 @@ class CircuitBreakerTest extends TestCase
                 {
                     return $this->expected;
                 }
+
+                public function map(Config $config): self
+                {
+                    return $this;
+                }
             },
             Clock::live(),
             Period::hour(1),
@@ -99,6 +105,11 @@ class CircuitBreakerTest extends TestCase
                 public function __invoke(Request $_): Either
                 {
                     return $this->expected;
+                }
+
+                public function map(Config $config): self
+                {
+                    return $this;
                 }
             },
             Clock::live(),
@@ -133,6 +144,11 @@ class CircuitBreakerTest extends TestCase
                 {
                     return $this->expected;
                 }
+
+                public function map(Config $config): self
+                {
+                    return $this;
+                }
             },
             Clock::live(),
             Period::hour(1),
@@ -165,6 +181,11 @@ class CircuitBreakerTest extends TestCase
                 public function __invoke(Request $_): Either
                 {
                     return $this->expected;
+                }
+
+                public function map(Config $config): self
+                {
+                    return $this;
                 }
             },
             Clock::live(),
@@ -199,6 +220,11 @@ class CircuitBreakerTest extends TestCase
                 public function __invoke(Request $_): Either
                 {
                     return $this->expected;
+                }
+
+                public function map(Config $config): self
+                {
+                    return $this;
                 }
             },
             Clock::live(),
@@ -248,6 +274,11 @@ class CircuitBreakerTest extends TestCase
                 {
                     return \array_shift($this->expected);
                 }
+
+                public function map(Config $config): self
+                {
+                    return $this;
+                }
             },
             Clock::live(),
             Period::hour(1),
@@ -285,6 +316,11 @@ class CircuitBreakerTest extends TestCase
                 public function __invoke(Request $_): Either
                 {
                     return \array_shift($this->expected);
+                }
+
+                public function map(Config $config): self
+                {
+                    return $this;
                 }
             },
             Clock::live(),

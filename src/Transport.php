@@ -16,4 +16,7 @@ interface Transport
      */
     #[\NoDiscard]
     public function __invoke(Request $request): Either;
+
+    #[\NoDiscard]
+    public function map(Config $config): self;
 }

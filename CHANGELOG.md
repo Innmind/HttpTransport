@@ -2,6 +2,11 @@
 
 ## [Unreleased]
 
+### Added
+
+- `Innmind\HttpTransport\Config`
+- `Innmind\HttpTransport\Transport::map()`
+
 ### Changed
 
 - Requires PHP `8.4`
