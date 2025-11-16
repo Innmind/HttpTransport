@@ -18,6 +18,8 @@ use Innmind\Immutable\{
 final class ExponentialBackoff implements Implementation
 {
     /**
+     * @psalm-mutation-free
+     *
      * @param Sequence<Period> $retries
      */
     private function __construct(
@@ -33,6 +35,9 @@ final class ExponentialBackoff implements Implementation
         return $this->fulfill($request, $this->retries);
     }
 
+    /**
+     * @psalm-pure
+     */
     public static function of(Implementation $fulfill, Halt $halt): self
     {
         /** @psalm-suppress ArgumentTypeCoercion Periods are necessarily positive */
@@ -49,11 +54,14 @@ final class ExponentialBackoff implements Implementation
         );
     }
 
+    /**
+     * @psalm-mutation-free
+     */
     #[\Override]
-    public function map(Config $config): self
+    public function map(callable $map): self
     {
         return self::of(
-            $this->fulfill->map($config),
+            $this->fulfill->map($map),
             $this->halt,
         );
     }

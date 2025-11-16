@@ -28,6 +28,7 @@ final class Curl implements Implementation
      * @param \Closure(): void $heartbeat
      */
     private function __construct(
+        private Config $config,
         private Factory $headerFactory,
         private IO $io,
         private Concurrency $concurrency,
@@ -64,6 +65,7 @@ final class Curl implements Implementation
         $io ??= IO::fromAmbientAuthority();
 
         return new self(
+            Config::new(),
             Factory::new($clock),
             $io,
             Concurrency::new(),
@@ -87,6 +89,7 @@ final class Curl implements Implementation
         callable $heartbeat,
     ): self {
         return new self(
+            Config::new(),
             Factory::new($clock),
             $io,
             Concurrency::new(),
@@ -97,10 +100,17 @@ final class Curl implements Implementation
         );
     }
 
+    /**
+     * @psalm-mutation-free
+     */
     #[\Override]
-    public function map(Config $config): self
+    public function map(callable $map): self
     {
+        /** @psalm-suppress ImpureFunctionCall */
+        $config = $map($this->config);
+
         return new self(
+            $config,
             $this->headerFactory,
             $this->io,
             Concurrency::new($config->maxConcurrency()->match(

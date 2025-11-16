@@ -16,7 +16,6 @@ use Innmind\HttpTransport\{
     MalformedResponse,
     ConnectionFailed,
     Failure,
-    Config,
 };
 use Innmind\TimeContinuum\Clock;
 use Innmind\Http\{
@@ -115,7 +114,7 @@ class FollowRedirectionsTest extends TestCase
                         return $this->result;
                     }
 
-                    public function map(Config $config): self
+                    public function map(callable $map): self
                     {
                         return $this;
                     }
@@ -185,7 +184,7 @@ class FollowRedirectionsTest extends TestCase
                         return $this->expected;
                     }
 
-                    public function map(Config $config): self
+                    public function map(callable $map): self
                     {
                         return $this;
                     }
@@ -242,7 +241,7 @@ class FollowRedirectionsTest extends TestCase
                         return $this->expected;
                     }
 
-                    public function map(Config $config): self
+                    public function map(callable $map): self
                     {
                         return $this;
                     }
@@ -332,7 +331,7 @@ class FollowRedirectionsTest extends TestCase
                         return $this->expected;
                     }
 
-                    public function map(Config $config): self
+                    public function map(callable $map): self
                     {
                         return $this;
                     }
@@ -430,7 +429,7 @@ class FollowRedirectionsTest extends TestCase
                         return $this->expected;
                     }
 
-                    public function map(Config $config): self
+                    public function map(callable $map): self
                     {
                         return $this;
                     }
@@ -495,7 +494,7 @@ class FollowRedirectionsTest extends TestCase
                         return $this->expected;
                     }
 
-                    public function map(Config $config): self
+                    public function map(callable $map): self
                     {
                         return $this;
                     }

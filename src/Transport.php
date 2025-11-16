@@ -17,6 +17,11 @@ interface Transport
     #[\NoDiscard]
     public function __invoke(Request $request): Either;
 
+    /**
+     * @psalm-mutation-free
+     *
+     * @param callable(Config): Config $map
+     */
     #[\NoDiscard]
-    public function map(Config $config): self;
+    public function map(callable $map): self;
 }

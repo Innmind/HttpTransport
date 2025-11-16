@@ -21,6 +21,8 @@ use Innmind\Immutable\Either;
 final class FollowRedirections implements Implementation
 {
     /**
+     * @psalm-mutation-free
+     *
      * @param int<1, max> $hops
      */
     private function __construct(
@@ -35,15 +37,21 @@ final class FollowRedirections implements Implementation
         return $this->fulfill($request, $this->hops);
     }
 
+    /**
+     * @psalm-pure
+     */
     public static function of(Implementation $fulfill): self
     {
         return new self($fulfill, 5);
     }
 
+    /**
+     * @psalm-mutation-free
+     */
     #[\Override]
-    public function map(Config $config): self
+    public function map(callable $map): self
     {
-        return self::of($this->fulfill->map($config));
+        return self::of($this->fulfill->map($map));
     }
 
     /**

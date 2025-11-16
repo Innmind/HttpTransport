@@ -13,7 +13,6 @@ use Innmind\HttpTransport\{
     ClientError,
     Redirection,
     ConnectionFailed,
-    Config,
 };
 use Innmind\Http\{
     Request,
@@ -69,7 +68,7 @@ class CircuitBreakerTest extends TestCase
                     return $this->expected;
                 }
 
-                public function map(Config $config): self
+                public function map(callable $map): self
                 {
                     return $this;
                 }
@@ -107,7 +106,7 @@ class CircuitBreakerTest extends TestCase
                     return $this->expected;
                 }
 
-                public function map(Config $config): self
+                public function map(callable $map): self
                 {
                     return $this;
                 }
@@ -145,7 +144,7 @@ class CircuitBreakerTest extends TestCase
                     return $this->expected;
                 }
 
-                public function map(Config $config): self
+                public function map(callable $map): self
                 {
                     return $this;
                 }
@@ -183,7 +182,7 @@ class CircuitBreakerTest extends TestCase
                     return $this->expected;
                 }
 
-                public function map(Config $config): self
+                public function map(callable $map): self
                 {
                     return $this;
                 }
@@ -222,7 +221,7 @@ class CircuitBreakerTest extends TestCase
                     return $this->expected;
                 }
 
-                public function map(Config $config): self
+                public function map(callable $map): self
                 {
                     return $this;
                 }
@@ -275,7 +274,7 @@ class CircuitBreakerTest extends TestCase
                     return \array_shift($this->expected);
                 }
 
-                public function map(Config $config): self
+                public function map(callable $map): self
                 {
                     return $this;
                 }
@@ -318,7 +317,7 @@ class CircuitBreakerTest extends TestCase
                     return \array_shift($this->expected);
                 }
 
-                public function map(Config $config): self
+                public function map(callable $map): self
                 {
                     return $this;
                 }

@@ -66,11 +66,14 @@ final class CircuitBreaker implements Implementation
         );
     }
 
+    /**
+     * @psalm-mutation-free
+     */
     #[\Override]
-    public function map(Config $config): self
+    public function map(callable $map): self
     {
         return new self(
-            $this->fulfill->map($config),
+            $this->fulfill->map($map),
             $this->clock,
             $this->delayBeforeRetry,
             Map::of(),

@@ -16,7 +16,6 @@ use Innmind\HttpTransport\{
     Information,
     MalformedResponse,
     Failure,
-    Config,
 };
 use Innmind\Http\{
     Request,
@@ -76,7 +75,7 @@ class ExponentialBackoffTest extends TestCase
                     return $this->expected;
                 }
 
-                public function map(Config $config): self
+                public function map(callable $map): self
                 {
                     return $this;
                 }
@@ -117,7 +116,7 @@ class ExponentialBackoffTest extends TestCase
                     return $this->expected;
                 }
 
-                public function map(Config $config): self
+                public function map(callable $map): self
                 {
                     return $this;
                 }
@@ -158,7 +157,7 @@ class ExponentialBackoffTest extends TestCase
                     return $this->expected;
                 }
 
-                public function map(Config $config): self
+                public function map(callable $map): self
                 {
                     return $this;
                 }
@@ -199,7 +198,7 @@ class ExponentialBackoffTest extends TestCase
                     return $this->expected;
                 }
 
-                public function map(Config $config): self
+                public function map(callable $map): self
                 {
                     return $this;
                 }
@@ -236,7 +235,7 @@ class ExponentialBackoffTest extends TestCase
                     return $this->expected;
                 }
 
-                public function map(Config $config): self
+                public function map(callable $map): self
                 {
                     return $this;
                 }
@@ -273,7 +272,7 @@ class ExponentialBackoffTest extends TestCase
                     return $this->expected;
                 }
 
-                public function map(Config $config): self
+                public function map(callable $map): self
                 {
                     return $this;
                 }
@@ -317,7 +316,7 @@ class ExponentialBackoffTest extends TestCase
                     return $this->expected;
                 }
 
-                public function map(Config $config): self
+                public function map(callable $map): self
                 {
                     return $this;
                 }
@@ -380,7 +379,7 @@ class ExponentialBackoffTest extends TestCase
                     return $this->expected;
                 }
 
-                public function map(Config $config): self
+                public function map(callable $map): self
                 {
                     return $this;
                 }
@@ -439,7 +438,7 @@ class ExponentialBackoffTest extends TestCase
                     return $this->expected;
                 }
 
-                public function map(Config $config): self
+                public function map(callable $map): self
                 {
                     return $this;
                 }
@@ -507,7 +506,7 @@ class ExponentialBackoffTest extends TestCase
                     return \array_shift($this->expected);
                 }
 
-                public function map(Config $config): self
+                public function map(callable $map): self
                 {
                     return $this;
                 }
@@ -564,7 +563,7 @@ class ExponentialBackoffTest extends TestCase
                     return $this->expected;
                 }
 
-                public function map(Config $config): self
+                public function map(callable $map): self
                 {
                     return $this;
                 }

@@ -42,11 +42,14 @@ final class Logger implements Implementation
         return new self($fulfill, $logger);
     }
 
+    /**
+     * @psalm-mutation-free
+     */
     #[\Override]
-    public function map(Config $config): self
+    public function map(callable $map): self
     {
         return new self(
-            $this->fulfill->map($config),
+            $this->fulfill->map($map),
             $this->logger,
         );
     }
