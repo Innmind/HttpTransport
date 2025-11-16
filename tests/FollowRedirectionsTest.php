@@ -49,7 +49,7 @@ class FollowRedirectionsTest extends TestCase
         );
 
         return $this
-            ->forAll(Set\Elements::of(
+            ->forAll(Set::of(
                 Either::right(new Success(
                     $request,
                     Response::of(
@@ -104,15 +104,15 @@ class FollowRedirectionsTest extends TestCase
             ->forAll(
                 FUrl::any(),
                 FUrl::any(),
-                Set\Elements::of(Method::get, Method::head), // unsafe methods are not redirected
-                Set\Elements::of(
+                Set::of(Method::get, Method::head), // unsafe methods are not redirected
+                Set::of(
                     StatusCode::movedPermanently,
                     StatusCode::found,
                     StatusCode::seeOther,
                     StatusCode::temporaryRedirect,
                     StatusCode::permanentlyRedirect,
                 ),
-                Set\Elements::of(
+                Set::of(
                     ProtocolVersion::v10,
                     ProtocolVersion::v11,
                     ProtocolVersion::v20,
@@ -160,15 +160,15 @@ class FollowRedirectionsTest extends TestCase
         return $this
             ->forAll(
                 FUrl::any(),
-                Set\Elements::of(...Method::cases()),
-                Set\Elements::of(
+                Set::of(...Method::cases()),
+                Set::of(
                     StatusCode::movedPermanently,
                     StatusCode::found,
                     StatusCode::seeOther,
                     StatusCode::temporaryRedirect,
                     StatusCode::permanentlyRedirect,
                 ),
-                Set\Elements::of(
+                Set::of(
                     ProtocolVersion::v10,
                     ProtocolVersion::v11,
                     ProtocolVersion::v20,
@@ -204,13 +204,13 @@ class FollowRedirectionsTest extends TestCase
                     ->filter(static fn($url) => !$url->authority()->equals(Authority::none()))
                     ->filter(static fn($url) => $url->path()->absolute()),
                 FUrl::any(),
-                Set\Elements::of(...Method::cases()),
-                Set\Elements::of(
+                Set::of(...Method::cases()),
+                Set::of(
                     ProtocolVersion::v10,
                     ProtocolVersion::v11,
                     ProtocolVersion::v20,
                 ),
-                Set\Unicode::strings(),
+                Set::strings()->unicode(),
             )
             ->prove(function($firstUrl, $newUrl, $method, $protocol, $body) {
                 $start = Request::of(
@@ -278,19 +278,19 @@ class FollowRedirectionsTest extends TestCase
                     ->filter(static fn($url) => !$url->authority()->equals(Authority::none()))
                     ->filter(static fn($url) => $url->path()->absolute()),
                 FUrl::any(),
-                Set\Elements::of(Method::get, Method::head), // unsafe methods are not redirected
-                Set\Elements::of(
+                Set::of(Method::get, Method::head), // unsafe methods are not redirected
+                Set::of(
                     StatusCode::movedPermanently,
                     StatusCode::found,
                     StatusCode::temporaryRedirect,
                     StatusCode::permanentlyRedirect,
                 ),
-                Set\Elements::of(
+                Set::of(
                     ProtocolVersion::v10,
                     ProtocolVersion::v11,
                     ProtocolVersion::v20,
                 ),
-                Set\Unicode::strings(),
+                Set::strings()->unicode(),
             )
             ->prove(function($firstUrl, $newUrl, $method, $statusCode, $protocol, $body) {
                 $start = Request::of(
@@ -356,21 +356,21 @@ class FollowRedirectionsTest extends TestCase
             ->forAll(
                 FUrl::any(),
                 FUrl::any(),
-                Set\Elements::of(...Method::cases())->filter(
+                Set::of(...Method::cases())->filter(
                     static fn($method) => $method !== Method::get && $method !== Method::head,
                 ),
-                Set\Elements::of(
+                Set::of(
                     StatusCode::movedPermanently,
                     StatusCode::found,
                     StatusCode::temporaryRedirect,
                     StatusCode::permanentlyRedirect,
                 ),
-                Set\Elements::of(
+                Set::of(
                     ProtocolVersion::v10,
                     ProtocolVersion::v11,
                     ProtocolVersion::v20,
                 ),
-                Set\Unicode::strings(),
+                Set::strings()->unicode(),
             )
             ->prove(function($firstUrl, $newUrl, $method, $statusCode, $protocol, $body) {
                 $start = Request::of(

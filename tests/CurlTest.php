@@ -230,7 +230,7 @@ class CurlTest extends TestCase
     public function testPost(): BlackBox\Proof
     {
         return $this
-            ->forAll(Set\Unicode::strings())
+            ->forAll(Set::strings()->unicode())
             ->prove(function($body) {
                 $success = ($this->curl)(Request::of(
                     Url::of('https://httpbin.org/post'),
