@@ -19,6 +19,10 @@
 - `Innmind\HttpTransport\Curl::proxy()` use `::map()` instead
 - `Innmind\HttpTransport\Curl::heartbeat()` (as it was intended for internal use)
 
+### Fixed
+
+- PHP `8.5` deprecation
+
 ## 8.1.0 - 2025-09-18
 
 ### Added
