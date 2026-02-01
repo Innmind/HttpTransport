@@ -13,10 +13,10 @@ use Innmind\Http\{
     Header\Value,
 };
 use Innmind\Url\Url;
-use Innmind\TimeContinuum\{
+use Innmind\Time\{
     Clock,
     Period,
-    PointInTime,
+    Point,
 };
 use Innmind\Immutable\{
     Map,
@@ -24,15 +24,16 @@ use Innmind\Immutable\{
 };
 
 /**
- * @psalm-import-type Errors from Transport
+ * @internal
+ * @psalm-import-type Errors from Implementation
  */
-final class CircuitBreaker implements Transport
+final class CircuitBreaker implements Implementation
 {
     /**
-     * @param Map<string , PointInTime> $openedCircuits
+     * @param Map<string, Point> $openedCircuits
      */
     private function __construct(
-        private Transport $fulfill,
+        private Implementation $fulfill,
         private Clock $clock,
         private Period $delayBeforeRetry,
         private Map $openedCircuits,
@@ -54,7 +55,7 @@ final class CircuitBreaker implements Transport
     }
 
     public static function of(
-        Transport $fulfill,
+        Implementation $fulfill,
         Clock $clock,
         Period $delayBeforeRetry,
     ): self {
@@ -62,6 +63,20 @@ final class CircuitBreaker implements Transport
             $fulfill,
             $clock,
             $delayBeforeRetry,
+            Map::of(),
+        );
+    }
+
+    /**
+     * @psalm-mutation-free
+     */
+    #[\Override]
+    public function map(callable $map): self
+    {
+        return new self(
+            $this->fulfill->map($map),
+            $this->clock,
+            $this->delayBeforeRetry,
             Map::of(),
         );
     }

@@ -4,7 +4,6 @@ declare(strict_types = 1);
 namespace Tests\Innmind\HttpTransport;
 
 use Innmind\HttpTransport\{
-    Curl,
     Transport,
     Success,
     Redirection,
@@ -24,11 +23,12 @@ use Innmind\Http\{
     Header\Location,
 };
 use Innmind\Filesystem\{
-    Adapter\Filesystem,
+    Adapter,
     File\Content,
     Name,
 };
-use Innmind\TimeContinuum\{
+use Innmind\IO\IO;
+use Innmind\Time\{
     Clock,
     Period,
 };
@@ -55,15 +55,7 @@ class CurlTest extends TestCase
 
     public function setUp(): void
     {
-        $this->curl = Curl::of(Clock::live());
-    }
-
-    public function testInterface()
-    {
-        $this->assertInstanceOf(
-            Transport::class,
-            $this->curl,
-        );
+        $this->curl = Transport::curl(Clock::live());
     }
 
     public function testOkResponse()
@@ -238,7 +230,7 @@ class CurlTest extends TestCase
     public function testPost(): BlackBox\Proof
     {
         return $this
-            ->forAll(Set\Unicode::strings())
+            ->forAll(Set::strings()->unicode())
             ->prove(function($body) {
                 $success = ($this->curl)(Request::of(
                     Url::of('https://httpbin.org/post'),
@@ -285,7 +277,7 @@ class CurlTest extends TestCase
         $this
             ->assert()
             ->memory(function() {
-                $data = Filesystem::mount(Path::of(__DIR__.'/../data/'));
+                $data = Adapter::mount(Path::of(__DIR__.'/../data/'))->unwrap();
 
                 $memory = \memory_get_peak_usage();
                 $success = ($this->curl)(Request::of(
@@ -365,7 +357,7 @@ class CurlTest extends TestCase
 
     public function testMaxConcurrency()
     {
-        $curl = $this->curl->maxConcurrency(1);
+        $curl = $this->curl->map(static fn($config) => $config->limitConcurrencyTo(1));
         $request = Request::of(
             Url::of('https://github.com'),
             Method::get,
@@ -406,7 +398,9 @@ class CurlTest extends TestCase
     public function testHeartbeat()
     {
         $heartbeat = 0;
-        $curl = $this->curl->heartbeat(
+        $curl = Transport::async(
+            Clock::live(),
+            IO::fromAmbientAuthority(),
             Period::second(1),
             static function() use (&$heartbeat) {
                 ++$heartbeat;
@@ -427,7 +421,7 @@ class CurlTest extends TestCase
 
     public function testOutOfOrderUnwrapWithMaxConcurrency()
     {
-        $curl = $this->curl->maxConcurrency(2);
+        $curl = $this->curl->map(static fn($config) => $config->limitConcurrencyTo(2));
         $request = Request::of(
             Url::of('https://github.com'),
             Method::get,
@@ -452,7 +446,7 @@ class CurlTest extends TestCase
 
     public function testSubsequentRequestsAreCalledCorrectlyInsideFlatMaps()
     {
-        $curl = $this->curl->maxConcurrency(2);
+        $curl = $this->curl->map(static fn($config) => $config->limitConcurrencyTo(2));
         $request = Request::of(
             Url::of('https://github.com'),
             Method::get,

@@ -15,17 +15,16 @@
         "issues": "http://github.com/Innmind/HttpTransport/issues"
     },
     "require": {
-        "php": "~8.2",
+        "php": "~8.4",
         "ext-curl": "*",
-        "innmind/http": "~8.0",
-        "innmind/filesystem": "~8.1",
+        "innmind/http": "~9.0",
+        "innmind/filesystem": "~9.0",
         "psr/log": "~3.0",
         "ramsey/uuid": "^4.7",
-        "innmind/time-warp": "~4.0",
-        "innmind/time-continuum": "^4.1.1",
-        "innmind/immutable": "~5.14",
-        "innmind/url": "~4.0",
-        "innmind/io": "~3.2"
+        "innmind/time": "~1.0",
+        "innmind/immutable": "~6.0",
+        "innmind/url": "~5.0",
+        "innmind/io": "~4.0"
     },
     "autoload": {
         "psr-4": {
@@ -38,8 +37,8 @@
         }
     },
     "require-dev": {
-        "innmind/static-analysis": "^1.2.1",
+        "innmind/static-analysis": "~1.3",
         "innmind/coding-standard": "~2.0",
-        "innmind/black-box": "~6.2"
+        "innmind/black-box": "~6.5"
     }
 }

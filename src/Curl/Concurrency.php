@@ -8,7 +8,7 @@ use Innmind\HttpTransport\{
     Failure,
     Success,
 };
-use Innmind\TimeContinuum\Period;
+use Innmind\Time\Period;
 use Innmind\Immutable\{
     Sequence,
     Map,

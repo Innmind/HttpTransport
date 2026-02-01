@@ -16,15 +16,18 @@ use Innmind\Url\{
 use Innmind\Immutable\Either;
 
 /**
- * @psalm-import-type Errors from Transport
+ * @internal
+ * @psalm-import-type Errors from Implementation
  */
-final class FollowRedirections implements Transport
+final class FollowRedirections implements Implementation
 {
     /**
+     * @psalm-mutation-free
+     *
      * @param int<1, max> $hops
      */
     private function __construct(
-        private Transport $fulfill,
+        private Implementation $fulfill,
         private int $hops,
     ) {
     }
@@ -35,9 +38,21 @@ final class FollowRedirections implements Transport
         return $this->fulfill($request, $this->hops);
     }
 
-    public static function of(Transport $fulfill): self
+    /**
+     * @psalm-pure
+     */
+    public static function of(Implementation $fulfill): self
     {
         return new self($fulfill, 5);
+    }
+
+    /**
+     * @psalm-mutation-free
+     */
+    #[\Override]
+    public function map(callable $map): self
+    {
+        return self::of($this->fulfill->map($map));
     }
 
     /**

@@ -4,8 +4,6 @@ declare(strict_types = 1);
 namespace Tests\Innmind\HttpTransport;
 
 use Innmind\HttpTransport\{
-    FollowRedirections,
-    Curl,
     Transport,
     Information,
     Success,
@@ -16,7 +14,6 @@ use Innmind\HttpTransport\{
     ConnectionFailed,
     Failure,
 };
-use Innmind\TimeContinuum\Clock;
 use Innmind\Http\{
     Request,
     Response,
@@ -43,14 +40,6 @@ class FollowRedirectionsTest extends TestCase
 {
     use BlackBox;
 
-    public function testInterface()
-    {
-        $this->assertInstanceOf(
-            Transport::class,
-            FollowRedirections::of(Curl::of(Clock::live())),
-        );
-    }
-
     public function testDoesntModifyNonRedirectionResults(): BlackBox\Proof
     {
         $request = Request::of(
@@ -60,7 +49,7 @@ class FollowRedirectionsTest extends TestCase
         );
 
         return $this
-            ->forAll(Set\Elements::of(
+            ->forAll(Set::of(
                 Either::right(new Success(
                     $request,
                     Response::of(
@@ -102,18 +91,8 @@ class FollowRedirectionsTest extends TestCase
                 )),
             ))
             ->prove(function($result) use ($request) {
-                $inner = new class($result) implements Transport {
-                    public function __construct(
-                        private $result,
-                    ) {
-                    }
-
-                    public function __invoke(Request $request): Either
-                    {
-                        return $this->result;
-                    }
-                };
-                $fulfill = FollowRedirections::of($inner);
+                $inner = Transport::via(static fn() => $result);
+                $fulfill = Transport::followRedirections($inner);
 
                 $this->assertEquals($result, $fulfill($request));
             });
@@ -125,15 +104,15 @@ class FollowRedirectionsTest extends TestCase
             ->forAll(
                 FUrl::any(),
                 FUrl::any(),
-                Set\Elements::of(Method::get, Method::head), // unsafe methods are not redirected
-                Set\Elements::of(
+                Set::of(Method::get, Method::head), // unsafe methods are not redirected
+                Set::of(
                     StatusCode::movedPermanently,
                     StatusCode::found,
                     StatusCode::seeOther,
                     StatusCode::temporaryRedirect,
                     StatusCode::permanentlyRedirect,
                 ),
-                Set\Elements::of(
+                Set::of(
                     ProtocolVersion::v10,
                     ProtocolVersion::v11,
                     ProtocolVersion::v20,
@@ -155,35 +134,24 @@ class FollowRedirectionsTest extends TestCase
                         ),
                     ),
                 ));
-                $inner = new class($this, $firstUrl, $expected) implements Transport {
-                    public function __construct(
-                        private $test,
-                        private $firstUrl,
-                        private $expected,
-                        public int $calls = 0,
-                    ) {
+                $calls = 0;
+                $inner = Transport::via(function($request) use (&$calls, $firstUrl, $expected) {
+                    ++$calls;
+
+                    if ($calls === 1) {
+                        $this->assertSame($firstUrl, $request->url());
+                    } else {
+                        $this->assertNotSame($firstUrl, $request->url());
                     }
 
-                    public function __invoke(Request $request): Either
-                    {
-                        ++$this->calls;
-
-                        if ($this->firstUrl) {
-                            $this->test->assertSame($this->firstUrl, $request->url());
-                            $this->firstUrl = null;
-                        } else {
-                            $this->test->assertNotSame($this->firstUrl, $request->url());
-                        }
-
-                        return $this->expected;
-                    }
-                };
-                $fulfill = FollowRedirections::of($inner);
+                    return $expected;
+                });
+                $fulfill = Transport::followRedirections($inner);
 
                 $result = $fulfill($start);
 
                 $this->assertEquals($expected, $result);
-                $this->assertSame(6, $inner->calls);
+                $this->assertSame(6, $calls);
             });
     }
 
@@ -192,15 +160,15 @@ class FollowRedirectionsTest extends TestCase
         return $this
             ->forAll(
                 FUrl::any(),
-                Set\Elements::of(...Method::cases()),
-                Set\Elements::of(
+                Set::of(...Method::cases()),
+                Set::of(
                     StatusCode::movedPermanently,
                     StatusCode::found,
                     StatusCode::seeOther,
                     StatusCode::temporaryRedirect,
                     StatusCode::permanentlyRedirect,
                 ),
-                Set\Elements::of(
+                Set::of(
                     ProtocolVersion::v10,
                     ProtocolVersion::v11,
                     ProtocolVersion::v20,
@@ -219,18 +187,8 @@ class FollowRedirectionsTest extends TestCase
                         $protocol,
                     ),
                 ));
-                $inner = new class($expected) implements Transport {
-                    public function __construct(
-                        private $expected,
-                    ) {
-                    }
-
-                    public function __invoke(Request $request): Either
-                    {
-                        return $this->expected;
-                    }
-                };
-                $fulfill = FollowRedirections::of($inner);
+                $inner = Transport::via(static fn() => $expected);
+                $fulfill = Transport::followRedirections($inner);
 
                 $result = $fulfill($start);
 
@@ -246,13 +204,13 @@ class FollowRedirectionsTest extends TestCase
                     ->filter(static fn($url) => !$url->authority()->equals(Authority::none()))
                     ->filter(static fn($url) => $url->path()->absolute()),
                 FUrl::any(),
-                Set\Elements::of(...Method::cases()),
-                Set\Elements::of(
+                Set::of(...Method::cases()),
+                Set::of(
                     ProtocolVersion::v10,
                     ProtocolVersion::v11,
                     ProtocolVersion::v20,
                 ),
-                Set\Unicode::strings(),
+                Set::strings()->unicode(),
             )
             ->prove(function($firstUrl, $newUrl, $method, $protocol, $body) {
                 $start = Request::of(
@@ -269,58 +227,46 @@ class FollowRedirectionsTest extends TestCase
                         $protocol,
                     ),
                 ));
-                $inner = new class($this, $start, $newUrl, $protocol, $expected) implements Transport {
-                    public function __construct(
-                        private $test,
-                        private $start,
-                        private $newUrl,
-                        private $protocol,
-                        private $expected,
-                        public int $calls = 0,
-                    ) {
-                    }
+                $calls = 0;
+                $inner = Transport::via(function($request) use (&$calls, $start, $newUrl, $protocol, $expected) {
+                    ++$calls;
 
-                    public function __invoke(Request $request): Either
-                    {
-                        ++$this->calls;
+                    if ($calls === 1) {
+                        $this->assertSame($start, $request);
 
-                        if ($this->calls === 1) {
-                            $this->test->assertSame($this->start, $request);
-
-                            return Either::left(new Redirection(
-                                $this->start,
-                                Response::of(
-                                    StatusCode::seeOther,
-                                    $this->protocol,
-                                    Headers::of(
-                                        Location::of($this->newUrl),
-                                    ),
+                        return Either::left(new Redirection(
+                            $start,
+                            Response::of(
+                                StatusCode::seeOther,
+                                $protocol,
+                                Headers::of(
+                                    Location::of($newUrl),
                                 ),
-                            ));
-                        }
-
-                        $this->test->assertSame(Method::get, $request->method());
-                        $this->test->assertFalse($request->url()->authority()->equals(Authority::none()));
-                        $this->test->assertTrue($request->url()->path()->absolute());
-                        // not a direct comparison as new url might be a relative path
-                        $this->test->assertStringEndsWith(
-                            $this->newUrl->path()->toString(),
-                            $request->url()->path()->toString(),
-                        );
-                        $this->test->assertSame($this->newUrl->query(), $request->url()->query());
-                        $this->test->assertSame($this->newUrl->fragment(), $request->url()->fragment());
-                        $this->test->assertSame($this->start->headers(), $request->headers());
-                        $this->test->assertSame('', $request->body()->toString());
-
-                        return $this->expected;
+                            ),
+                        ));
                     }
-                };
-                $fulfill = FollowRedirections::of($inner);
+
+                    $this->assertSame(Method::get, $request->method());
+                    $this->assertFalse($request->url()->authority()->equals(Authority::none()));
+                    $this->assertTrue($request->url()->path()->absolute());
+                    // not a direct comparison as new url might be a relative path
+                    $this->assertStringEndsWith(
+                        $newUrl->path()->toString(),
+                        $request->url()->path()->toString(),
+                    );
+                    $this->assertSame($newUrl->query(), $request->url()->query());
+                    $this->assertSame($newUrl->fragment(), $request->url()->fragment());
+                    $this->assertSame($start->headers(), $request->headers());
+                    $this->assertSame('', $request->body()->toString());
+
+                    return $expected;
+                });
+                $fulfill = Transport::followRedirections($inner);
 
                 $result = $fulfill($start);
 
                 $this->assertEquals($expected, $result);
-                $this->assertSame(2, $inner->calls);
+                $this->assertSame(2, $calls);
             });
     }
 
@@ -332,19 +278,19 @@ class FollowRedirectionsTest extends TestCase
                     ->filter(static fn($url) => !$url->authority()->equals(Authority::none()))
                     ->filter(static fn($url) => $url->path()->absolute()),
                 FUrl::any(),
-                Set\Elements::of(Method::get, Method::head), // unsafe methods are not redirected
-                Set\Elements::of(
+                Set::of(Method::get, Method::head), // unsafe methods are not redirected
+                Set::of(
                     StatusCode::movedPermanently,
                     StatusCode::found,
                     StatusCode::temporaryRedirect,
                     StatusCode::permanentlyRedirect,
                 ),
-                Set\Elements::of(
+                Set::of(
                     ProtocolVersion::v10,
                     ProtocolVersion::v11,
                     ProtocolVersion::v20,
                 ),
-                Set\Unicode::strings(),
+                Set::strings()->unicode(),
             )
             ->prove(function($firstUrl, $newUrl, $method, $statusCode, $protocol, $body) {
                 $start = Request::of(
@@ -361,59 +307,46 @@ class FollowRedirectionsTest extends TestCase
                         $protocol,
                     ),
                 ));
-                $inner = new class($this, $start, $newUrl, $statusCode, $protocol, $expected) implements Transport {
-                    public function __construct(
-                        private $test,
-                        private $start,
-                        private $newUrl,
-                        private $statusCode,
-                        private $protocol,
-                        private $expected,
-                        public int $calls = 0,
-                    ) {
-                    }
+                $calls = 0;
+                $inner = Transport::via(function($request) use (&$calls, $start, $newUrl, $statusCode, $protocol, $expected) {
+                    ++$calls;
 
-                    public function __invoke(Request $request): Either
-                    {
-                        ++$this->calls;
+                    if ($calls === 1) {
+                        $this->assertSame($start, $request);
 
-                        if ($this->calls === 1) {
-                            $this->test->assertSame($this->start, $request);
-
-                            return Either::left(new Redirection(
-                                $this->start,
-                                Response::of(
-                                    $this->statusCode,
-                                    $this->protocol,
-                                    Headers::of(
-                                        Location::of($this->newUrl),
-                                    ),
+                        return Either::left(new Redirection(
+                            $start,
+                            Response::of(
+                                $statusCode,
+                                $protocol,
+                                Headers::of(
+                                    Location::of($newUrl),
                                 ),
-                            ));
-                        }
-
-                        $this->test->assertSame($this->start->method(), $request->method());
-                        $this->test->assertFalse($request->url()->authority()->equals(Authority::none()));
-                        $this->test->assertTrue($request->url()->path()->absolute());
-                        // not a direct comparison as new url might be a relative path
-                        $this->test->assertStringEndsWith(
-                            $this->newUrl->path()->toString(),
-                            $request->url()->path()->toString(),
-                        );
-                        $this->test->assertSame($this->newUrl->query(), $request->url()->query());
-                        $this->test->assertSame($this->newUrl->fragment(), $request->url()->fragment());
-                        $this->test->assertSame($this->start->headers(), $request->headers());
-                        $this->test->assertSame($this->start->body(), $request->body());
-
-                        return $this->expected;
+                            ),
+                        ));
                     }
-                };
-                $fulfill = FollowRedirections::of($inner);
+
+                    $this->assertSame($start->method(), $request->method());
+                    $this->assertFalse($request->url()->authority()->equals(Authority::none()));
+                    $this->assertTrue($request->url()->path()->absolute());
+                    // not a direct comparison as new url might be a relative path
+                    $this->assertStringEndsWith(
+                        $newUrl->path()->toString(),
+                        $request->url()->path()->toString(),
+                    );
+                    $this->assertSame($newUrl->query(), $request->url()->query());
+                    $this->assertSame($newUrl->fragment(), $request->url()->fragment());
+                    $this->assertSame($start->headers(), $request->headers());
+                    $this->assertSame($start->body(), $request->body());
+
+                    return $expected;
+                });
+                $fulfill = Transport::followRedirections($inner);
 
                 $result = $fulfill($start);
 
                 $this->assertEquals($expected, $result);
-                $this->assertSame(2, $inner->calls);
+                $this->assertSame(2, $calls);
             });
     }
 
@@ -423,21 +356,21 @@ class FollowRedirectionsTest extends TestCase
             ->forAll(
                 FUrl::any(),
                 FUrl::any(),
-                Set\Elements::of(...Method::cases())->filter(
+                Set::of(...Method::cases())->filter(
                     static fn($method) => $method !== Method::get && $method !== Method::head,
                 ),
-                Set\Elements::of(
+                Set::of(
                     StatusCode::movedPermanently,
                     StatusCode::found,
                     StatusCode::temporaryRedirect,
                     StatusCode::permanentlyRedirect,
                 ),
-                Set\Elements::of(
+                Set::of(
                     ProtocolVersion::v10,
                     ProtocolVersion::v11,
                     ProtocolVersion::v20,
                 ),
-                Set\Unicode::strings(),
+                Set::strings()->unicode(),
             )
             ->prove(function($firstUrl, $newUrl, $method, $statusCode, $protocol, $body) {
                 $start = Request::of(
@@ -457,18 +390,8 @@ class FollowRedirectionsTest extends TestCase
                         ),
                     ),
                 ));
-                $inner = new class($expected) implements Transport {
-                    public function __construct(
-                        private $expected,
-                    ) {
-                    }
-
-                    public function __invoke(Request $request): Either
-                    {
-                        return $this->expected;
-                    }
-                };
-                $fulfill = FollowRedirections::of($inner);
+                $inner = Transport::via(static fn() => $expected);
+                $fulfill = Transport::followRedirections($inner);
 
                 $result = $fulfill($start);
 

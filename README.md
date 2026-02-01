@@ -1,6 +1,6 @@
 # HttpTransport
 
-[![Build Status](https://github.com/innmind/httptransport/workflows/CI/badge.svg?branch=master)](https://github.com/innmind/httptransport/actions?query=workflow%3ACI)
+[![CI](https://github.com/Innmind/HttpTransport/actions/workflows/ci.yml/badge.svg?branch=master)](https://github.com/Innmind/HttpTransport/actions/workflows/ci.yml)
 [![codecov](https://codecov.io/gh/innmind/httptransport/branch/develop/graph/badge.svg)](https://codecov.io/gh/innmind/httptransport)
 [![Type Coverage](https://shepherd.dev/github/innmind/httptransport/coverage.svg)](https://shepherd.dev/github/innmind/httptransport)
 
@@ -20,11 +20,11 @@ composer require innmind/http-transport
 Send a request:
 
 ```php
-use Innmind\HttpTransport\Curl;
-use Innmind\TimeContinuum\Clock;
+use Innmind\HttpTransport\Transport;
+use Innmind\Time\Clock;
 use Innmind\Http\Request;
 
-$fulfill = Curl::of(Clock::live());
+$fulfill = Transport::curl(Clock::live());
 
 $either = $fulfill(
     Request::of(/* initialize your request */),
@@ -41,7 +41,7 @@ $either = $fulfill(
 By default there is no limit of concurrency for the `Curl` transport. But if you call many requests before unwrapping the results you may want to configure the max concurrency like below.
 
 ```php
-use Innmind\HttpTransport\Curl;
+use Innmind\HttpTransport\Transport;
 use Innmind\Http\{
     Request,
     Response,
@@ -51,7 +51,9 @@ use Innmind\Http\{
 use Innmind\Url\Url;
 use Innmind\Immutable\Sequence;
 
-$fulfill = Curl::of(Clock::live())->maxConcurrency(5);
+$fulfill = Transport::curl(Clock::live())->map(
+    static fn($config) => $config->limitConcurrencyTo(5),
+);
 $responses = Sequence::of(
     'https://github.com/user/repo-a',
     'https://github.com/user/repo-b',
@@ -79,10 +81,10 @@ Let's say you have `100` urls to fetch, there will never be more than `5` reques
 You can easily log all your requests like so:
 
 ```php
-use Innmind\HttpTransport\Logger
+use Innmind\HttpTransport\Transport;
 use Psr\Log\LoggerInterface;
 
-$fulfill = Logger::psr(/* an instance of Transport */, /* an instance of LoggerInterface */)
+$fulfill = Transport::logger(/* an instance of Transport */, /* an instance of LoggerInterface */)
 
 $fulfill(/* your request */);
 ```
@@ -94,12 +96,12 @@ Here a message is logged before the request is sent and another one once it's se
 Sometimes when calling an external API it may not be available due to heavy load, in such case you could retry the http call after a certain amount of time leaving time for the API to recover. You can apply this pattern like so:
 
 ```php
-use Innmind\HttpTransport\ExponentialBackoff;
-use Innmind\TimeWarp\Halt\Usleep;
+use Innmind\HttpTransport\Transport;
+use Innmind\Time\Halt;
 
-$fulfill = ExponentialBackoff::of(
+$fulfill = Transport::exponentialBackoff(
     /* an instance of Transport */,
-    Usleep::new(),
+    Halt::new(),
 );
 
 $fulfill(/* your request */);
@@ -112,14 +114,14 @@ By default it will retry 5 times the request if the server is unavailable, follo
 When a call to a certain domain fails you may want to all further calls to that domain to fail immediately as you know it means the host is down. Such pattern is called a circuit breaker.
 
 ```php
-use Innmind\HttpTransport\CircuitBreaker;
-use Innmind\TimeContinuum\{
+use Innmind\HttpTransport\Transport;
+use Innmind\Time\{
     Clock,
     Period,
 };
 
-$fulfill = CircuitBreaker::of(
-    /* an instance of CircuitBreaker */,
+$fulfill = Transport::circuitBreaker(
+    /* an instance of Transport */,
     Clock::live(),
     Period::minute(10),
 );
@@ -134,9 +136,9 @@ This code will _open the circuit_ for a given domain for 10 minutes in case a ca
 By default the transports do not follow redirections to give you full control on what to do. But you can wrap your transport with `FollowRedirections` like this:
 
 ```php
-use Innmind\HttpTransport\FollowRedirections;
+use Innmind\HttpTransport\Transport;
 
-$fulfill = FollowRedirections::of(/* an instance of Transport */);
+$fulfill = Transport::followRedirections(/* an instance of Transport */);
 
 $fulfill(/* your request */);
 ```
