@@ -3,25 +3,32 @@ declare(strict_types = 1);
 
 namespace Innmind\HttpTransport;
 
-use Innmind\Http\Request;
-use Innmind\Http\Response\StatusCode;
-use Innmind\TimeWarp\Halt;
-use Innmind\TimeContinuum\Period;
+use Innmind\Http\{
+    Request,
+    Response\StatusCode,
+};
+use Innmind\Time\{
+    Halt,
+    Period,
+};
 use Innmind\Immutable\{
     Sequence,
     Either,
 };
 
 /**
- * @psalm-import-type Errors from Transport
+ * @internal
+ * @psalm-import-type Errors from Implementation
  */
-final class ExponentialBackoff implements Transport
+final class ExponentialBackoff implements Implementation
 {
     /**
+     * @psalm-mutation-free
+     *
      * @param Sequence<Period> $retries
      */
     private function __construct(
-        private Transport $fulfill,
+        private Implementation $fulfill,
         private Halt $halt,
         private Sequence $retries,
     ) {
@@ -33,7 +40,10 @@ final class ExponentialBackoff implements Transport
         return $this->fulfill($request, $this->retries);
     }
 
-    public static function of(Transport $fulfill, Halt $halt): self
+    /**
+     * @psalm-pure
+     */
+    public static function of(Implementation $fulfill, Halt $halt): self
     {
         /** @psalm-suppress ArgumentTypeCoercion Periods are necessarily positive */
         return new self(
@@ -46,6 +56,18 @@ final class ExponentialBackoff implements Transport
                 Period::millisecond((int) (\exp(3) * 100.0)),
                 Period::millisecond((int) (\exp(4) * 100.0)),
             ),
+        );
+    }
+
+    /**
+     * @psalm-mutation-free
+     */
+    #[\Override]
+    public function map(callable $map): self
+    {
+        return self::of(
+            $this->fulfill->map($map),
+            $this->halt,
         );
     }
 

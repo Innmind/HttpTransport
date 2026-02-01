@@ -1,5 +1,30 @@
 # Changelog
 
+## [Unreleased]
+
+### Added
+
+- `Innmind\HttpTransport\Config`
+- `Innmind\HttpTransport\Transport::map()`
+
+### Changed
+
+- Requires PHP `8.4`
+- `Innmind\HttpTransport\Transport` is now a final class, all previous implementations are now flagged as internal
+- Requires `innmind/http:~9.0`
+- Requires `innmind/time:~1.0`
+
+### Removed
+
+- `Innmind\HttpTransport\Curl::maxConcurrency()` use `::map()` instead
+- `Innmind\HttpTransport\Curl::disableSSLVerification()` use `::map()` instead
+- `Innmind\HttpTransport\Curl::proxy()` use `::map()` instead
+- `Innmind\HttpTransport\Curl::heartbeat()` (as it was intended for internal use)
+
+### Fixed
+
+- PHP `8.5` deprecation
+
 ## 8.1.0 - 2025-09-18
 
 ### Added

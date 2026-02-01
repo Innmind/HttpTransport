@@ -17,12 +17,13 @@ use Psr\Log\LoggerInterface;
 use Ramsey\Uuid\Uuid;
 
 /**
- * @psalm-import-type Errors from Transport
+ * @internal
+ * @psalm-import-type Errors from Implementation
  */
-final class Logger implements Transport
+final class Logger implements Implementation
 {
     private function __construct(
-        private Transport $fulfill,
+        private Implementation $fulfill,
         private LoggerInterface $logger,
     ) {
     }
@@ -37,9 +38,21 @@ final class Logger implements Transport
             ->leftMap(fn($error) => $this->logError($error, $reference));
     }
 
-    public static function psr(Transport $fulfill, LoggerInterface $logger): self
+    public static function psr(Implementation $fulfill, LoggerInterface $logger): self
     {
         return new self($fulfill, $logger);
+    }
+
+    /**
+     * @psalm-mutation-free
+     */
+    #[\Override]
+    public function map(callable $map): self
+    {
+        return new self(
+            $this->fulfill->map($map),
+            $this->logger,
+        );
     }
 
     private function logRequest(Request $request): string

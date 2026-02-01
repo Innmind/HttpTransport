@@ -167,7 +167,6 @@ final class Ready
                     ->toEncoding(Str\Encoding::ascii)
                     ->length(),
             );
-            \curl_close($this->handle);
         }
     }
 

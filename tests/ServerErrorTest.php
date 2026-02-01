@@ -19,7 +19,7 @@ class ServerErrorTest extends TestCase
 {
     public function testAcceptServerErrorfulResponses()
     {
-        Sequence::of(...StatusCode::cases())
+        $_ = Sequence::of(...StatusCode::cases())
             ->filter(static fn($code) => $code->range() === StatusCode\Range::serverError)
             ->foreach(function($code) {
                 $request = Request::of(
@@ -40,7 +40,7 @@ class ServerErrorTest extends TestCase
 
     public function testRejectOtherKindOfResponse()
     {
-        Sequence::of(...StatusCode::cases())
+        $_ = Sequence::of(...StatusCode::cases())
             ->filter(static fn($code) => $code->range() !== StatusCode\Range::serverError)
             ->foreach(function($code) {
                 $request = Request::of(

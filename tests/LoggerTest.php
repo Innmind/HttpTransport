@@ -4,12 +4,10 @@ declare(strict_types = 1);
 namespace Tests\Innmind\HttpTransport;
 
 use Innmind\HttpTransport\{
-    Logger,
-    Curl,
     Transport,
     Success,
 };
-use Innmind\TimeContinuum\Clock;
+use Innmind\Time\Clock;
 use Innmind\Http\{
     Request,
     Method,
@@ -28,17 +26,9 @@ class LoggerTest extends TestCase
 
     public function setUp(): void
     {
-        $this->fulfill = Logger::psr(
-            Curl::of(Clock::live()),
+        $this->fulfill = Transport::logger(
+            Transport::curl(Clock::live()),
             new NullLogger,
-        );
-    }
-
-    public function testInterface()
-    {
-        $this->assertInstanceOf(
-            Transport::class,
-            $this->fulfill,
         );
     }
 

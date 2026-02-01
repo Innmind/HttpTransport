@@ -12,7 +12,7 @@ use Innmind\Http\{
     Factory\Header\Factory,
 };
 use Innmind\Url\Url;
-use Innmind\TimeContinuum\{
+use Innmind\Time\{
     Clock,
     Period,
 };
@@ -20,14 +20,16 @@ use Innmind\IO\IO;
 use Innmind\Immutable\Either;
 
 /**
- * @psalm-import-type Errors from Transport
+ * @internal
+ * @psalm-import-type Errors from Implementation
  */
-final class Curl implements Transport
+final class Curl implements Implementation
 {
     /**
      * @param \Closure(): void $heartbeat
      */
     private function __construct(
+        private Config $config,
         private Factory $headerFactory,
         private IO $io,
         private Concurrency $concurrency,
@@ -64,6 +66,7 @@ final class Curl implements Transport
         $io ??= IO::fromAmbientAuthority();
 
         return new self(
+            Config::new(),
             Factory::new($clock),
             $io,
             Concurrency::new(),
@@ -75,81 +78,53 @@ final class Curl implements Transport
     }
 
     /**
-     * @psalm-mutation-free
-     *
-     * @param positive-int $max
-     */
-    #[\NoDiscard]
-    public function maxConcurrency(int $max): self
-    {
-        return new self(
-            $this->headerFactory,
-            $this->io,
-            Concurrency::new($max),
-            $this->timeout,
-            $this->heartbeat,
-            $this->disableSSLVerification,
-            $this->proxy,
-        );
-    }
-
-    /**
-     * @psalm-mutation-free
+     * @internal
      *
      * @param Period $timeout Only seconds are allowed
      * @param callable(): void $heartbeat
      */
-    #[\NoDiscard]
-    public function heartbeat(Period $timeout, ?callable $heartbeat = null): self
-    {
+    public static function async(
+        Clock $clock,
+        IO $io,
+        Period $timeout,
+        callable $heartbeat,
+    ): self {
         return new self(
-            $this->headerFactory,
-            $this->io,
-            $this->concurrency,
+            Config::new(),
+            Factory::new($clock),
+            $io,
+            Concurrency::new(),
             $timeout,
-            match ($heartbeat) {
-                null => static fn() => null,
-                default => \Closure::fromCallable($heartbeat),
-            },
-            $this->disableSSLVerification,
-            $this->proxy,
-        );
-    }
-
-    /**
-     * You should use this method only when trying to call a server you own that
-     * uses a self signed certificate that will fail the verification.
-     *
-     * @psalm-mutation-free
-     */
-    #[\NoDiscard]
-    public function disableSSLVerification(): self
-    {
-        return new self(
-            $this->headerFactory,
-            $this->io,
-            $this->concurrency,
-            $this->timeout,
-            $this->heartbeat,
-            true,
-            $this->proxy,
+            \Closure::fromCallable($heartbeat),
+            false,
+            null,
         );
     }
 
     /**
      * @psalm-mutation-free
      */
-    #[\NoDiscard]
-    public function proxy(Url $proxy): self
+    #[\Override]
+    public function map(callable $map): self
     {
+        /** @psalm-suppress ImpureFunctionCall */
+        $config = $map($this->config);
+
         return new self(
+            $config,
             $this->headerFactory,
             $this->io,
-            $this->concurrency,
+            Concurrency::new($config->maxConcurrency()->match(
+                static fn($max) => $max,
+                static fn() => null,
+            )),
             $this->timeout,
             $this->heartbeat,
-            $this->disableSSLVerification,
-            $proxy,
+            !$config->verifySSL(),
+            $config->proxy()->match(
+                static fn($proxy) => $proxy,
+                static fn() => null,
+            ),
         );
     }
 }

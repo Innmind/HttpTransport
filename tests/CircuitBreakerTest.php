@@ -4,8 +4,6 @@ declare(strict_types = 1);
 namespace Tests\Innmind\HttpTransport;
 
 use Innmind\HttpTransport\{
-    CircuitBreaker,
-    Curl,
     Transport,
     Success,
     ServerError,
@@ -21,7 +19,7 @@ use Innmind\Http\{
     ProtocolVersion,
 };
 use Innmind\Url\Url;
-use Innmind\TimeContinuum\{
+use Innmind\Time\{
     Clock,
     Period,
 };
@@ -30,18 +28,6 @@ use Innmind\BlackBox\PHPUnit\Framework\TestCase;
 
 class CircuitBreakerTest extends TestCase
 {
-    public function testInterface()
-    {
-        $this->assertInstanceOf(
-            Transport::class,
-            CircuitBreaker::of(
-                Curl::of(Clock::live()),
-                Clock::live(),
-                Period::millisecond(1),
-            ),
-        );
-    }
-
     public function testDoesntOpenCircuitOnSuccessfulResponse()
     {
         $request = Request::of(
@@ -55,18 +41,8 @@ class CircuitBreakerTest extends TestCase
         );
         $expected = Either::right(new Success($request, $response));
 
-        $fulfill = CircuitBreaker::of(
-            new class($expected) implements Transport {
-                public function __construct(
-                    private $expected,
-                ) {
-                }
-
-                public function __invoke(Request $_): Either
-                {
-                    return $this->expected;
-                }
-            },
+        $fulfill = Transport::circuitBreaker(
+            Transport::via(static fn() => $expected),
             Clock::live(),
             Period::hour(1),
         );
@@ -88,18 +64,8 @@ class CircuitBreakerTest extends TestCase
         );
         $expected = Either::left(new Redirection($request, $response));
 
-        $fulfill = CircuitBreaker::of(
-            new class($expected) implements Transport {
-                public function __construct(
-                    private $expected,
-                ) {
-                }
-
-                public function __invoke(Request $_): Either
-                {
-                    return $this->expected;
-                }
-            },
+        $fulfill = Transport::circuitBreaker(
+            Transport::via(static fn() => $expected),
             Clock::live(),
             Period::hour(1),
         );
@@ -121,18 +87,8 @@ class CircuitBreakerTest extends TestCase
         );
         $expected = Either::left(new ClientError($request, $response));
 
-        $fulfill = CircuitBreaker::of(
-            new class($expected) implements Transport {
-                public function __construct(
-                    private $expected,
-                ) {
-                }
-
-                public function __invoke(Request $_): Either
-                {
-                    return $this->expected;
-                }
-            },
+        $fulfill = Transport::circuitBreaker(
+            Transport::via(static fn() => $expected),
             Clock::live(),
             Period::hour(1),
         );
@@ -154,18 +110,8 @@ class CircuitBreakerTest extends TestCase
         );
         $expected = Either::left(new ServerError($request, $response));
 
-        $fulfill = CircuitBreaker::of(
-            new class($expected) implements Transport {
-                public function __construct(
-                    private $expected,
-                ) {
-                }
-
-                public function __invoke(Request $_): Either
-                {
-                    return $this->expected;
-                }
-            },
+        $fulfill = Transport::circuitBreaker(
+            Transport::via(static fn() => $expected),
             Clock::live(),
             Period::hour(1),
         );
@@ -188,18 +134,8 @@ class CircuitBreakerTest extends TestCase
         );
         $expected = Either::left(new ConnectionFailed($request, ''));
 
-        $fulfill = CircuitBreaker::of(
-            new class($expected) implements Transport {
-                public function __construct(
-                    private $expected,
-                ) {
-                }
-
-                public function __invoke(Request $_): Either
-                {
-                    return $this->expected;
-                }
-            },
+        $fulfill = Transport::circuitBreaker(
+            Transport::via(static fn() => $expected),
             Clock::live(),
             Period::hour(1),
         );
@@ -235,19 +171,12 @@ class CircuitBreakerTest extends TestCase
         );
         $expected1 = Either::left(new ServerError($request1, $response1));
         $expected2 = Either::right(new Success($request2, $response2));
+        $expected = [$expected1, $expected2];
 
-        $fulfill = CircuitBreaker::of(
-            new class([$expected1, $expected2]) implements Transport {
-                public function __construct(
-                    private array $expected,
-                ) {
-                }
-
-                public function __invoke(Request $_): Either
-                {
-                    return \array_shift($this->expected);
-                }
-            },
+        $fulfill = Transport::circuitBreaker(
+            Transport::via(static function() use (&$expected) {
+                return \array_shift($expected);
+            }),
             Clock::live(),
             Period::hour(1),
         );
@@ -273,19 +202,12 @@ class CircuitBreakerTest extends TestCase
         );
         $expected1 = Either::left(new ServerError($request, $response1));
         $expected2 = Either::right(new Success($request, $response2));
+        $expected = [$expected1, $expected2];
 
-        $fulfill = CircuitBreaker::of(
-            new class([$expected1, $expected2]) implements Transport {
-                public function __construct(
-                    private array $expected,
-                ) {
-                }
-
-                public function __invoke(Request $_): Either
-                {
-                    return \array_shift($this->expected);
-                }
-            },
+        $fulfill = Transport::circuitBreaker(
+            Transport::via(static function() use (&$expected) {
+                return \array_shift($expected);
+            }),
             Clock::live(),
             Period::millisecond(1),
         );
