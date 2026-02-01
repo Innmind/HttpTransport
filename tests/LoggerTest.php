@@ -7,7 +7,7 @@ use Innmind\HttpTransport\{
     Transport,
     Success,
 };
-use Innmind\TimeContinuum\Clock;
+use Innmind\Time\Clock;
 use Innmind\Http\{
     Request,
     Method,

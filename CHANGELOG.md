@@ -11,6 +11,7 @@
 
 - Requires PHP `8.4`
 - `Innmind\HttpTransport\Transport` is now a final class, all previous implementations are now flagged as internal
+- Requires `innmind/time:~1.0`
 
 ### Removed
 

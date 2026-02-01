@@ -3,12 +3,12 @@ declare(strict_types = 1);
 
 namespace Innmind\HttpTransport;
 
-use Innmind\TimeWarp\Halt;
 use Innmind\Http\Request;
 use Innmind\IO\IO;
-use Innmind\TimeContinuum\{
+use Innmind\Time\{
     Clock,
     Period,
+    Halt,
 };
 use Innmind\Immutable\Either;
 use Psr\Log\LoggerInterface;

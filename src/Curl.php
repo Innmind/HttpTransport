@@ -12,7 +12,7 @@ use Innmind\Http\{
     Factory\Header\Factory,
 };
 use Innmind\Url\Url;
-use Innmind\TimeContinuum\{
+use Innmind\Time\{
     Clock,
     Period,
 };

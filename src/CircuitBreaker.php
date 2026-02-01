@@ -13,10 +13,10 @@ use Innmind\Http\{
     Header\Value,
 };
 use Innmind\Url\Url;
-use Innmind\TimeContinuum\{
+use Innmind\Time\{
     Clock,
     Period,
-    PointInTime,
+    Point,
 };
 use Innmind\Immutable\{
     Map,
@@ -30,7 +30,7 @@ use Innmind\Immutable\{
 final class CircuitBreaker implements Implementation
 {
     /**
-     * @param Map<string , PointInTime> $openedCircuits
+     * @param Map<string, Point> $openedCircuits
      */
     private function __construct(
         private Implementation $fulfill,

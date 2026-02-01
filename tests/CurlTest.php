@@ -28,7 +28,7 @@ use Innmind\Filesystem\{
     Name,
 };
 use Innmind\IO\IO;
-use Innmind\TimeContinuum\{
+use Innmind\Time\{
     Clock,
     Period,
 };

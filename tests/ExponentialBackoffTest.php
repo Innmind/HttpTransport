@@ -21,8 +21,10 @@ use Innmind\Http\{
     ProtocolVersion,
     Response\StatusCode,
 };
-use Innmind\TimeWarp\Halt;
-use Innmind\TimeContinuum\Period;
+use Innmind\Time\{
+    Halt,
+    Period,
+};
 use Innmind\Url\Url;
 use Innmind\Immutable\{
     Either,

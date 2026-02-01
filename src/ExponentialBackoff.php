@@ -3,10 +3,14 @@ declare(strict_types = 1);
 
 namespace Innmind\HttpTransport;
 
-use Innmind\Http\Request;
-use Innmind\Http\Response\StatusCode;
-use Innmind\TimeWarp\Halt;
-use Innmind\TimeContinuum\Period;
+use Innmind\Http\{
+    Request,
+    Response\StatusCode,
+};
+use Innmind\Time\{
+    Halt,
+    Period,
+};
 use Innmind\Immutable\{
     Sequence,
     Either,
