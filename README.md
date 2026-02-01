@@ -1,6 +1,6 @@
 # HttpTransport
 
-[![Build Status](https://github.com/innmind/httptransport/workflows/CI/badge.svg?branch=master)](https://github.com/innmind/httptransport/actions?query=workflow%3ACI)
+[![CI](https://github.com/Innmind/HttpTransport/actions/workflows/ci.yml/badge.svg?branch=master)](https://github.com/Innmind/HttpTransport/actions/workflows/ci.yml)
 [![codecov](https://codecov.io/gh/innmind/httptransport/branch/develop/graph/badge.svg)](https://codecov.io/gh/innmind/httptransport)
 [![Type Coverage](https://shepherd.dev/github/innmind/httptransport/coverage.svg)](https://shepherd.dev/github/innmind/httptransport)
 
