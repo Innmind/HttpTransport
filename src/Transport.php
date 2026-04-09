@@ -10,7 +10,10 @@ use Innmind\Time\{
     Period,
     Halt,
 };
-use Innmind\Immutable\Either;
+use Innmind\Immutable\{
+    Either,
+    Sequence,
+};
 use Psr\Log\LoggerInterface;
 
 /**
@@ -51,13 +54,18 @@ final class Transport
         ));
     }
 
+    /**
+     * @param ?Sequence<Period> $retries
+     */
     public static function exponentialBackoff(
         self $transport,
         Halt $halt,
+        ?Sequence $retries = null,
     ): self {
         return new self(ExponentialBackoff::of(
             $transport->implementation,
             $halt,
+            $retries,
         ));
     }
 

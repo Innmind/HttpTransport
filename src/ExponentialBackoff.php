@@ -42,14 +42,19 @@ final class ExponentialBackoff implements Implementation
 
     /**
      * @psalm-pure
+     *
+     * @param ?Sequence<Period> $retries
      */
-    public static function of(Implementation $fulfill, Halt $halt): self
-    {
+    public static function of(
+        Implementation $fulfill,
+        Halt $halt,
+        ?Sequence $retries = null,
+    ): self {
         /** @psalm-suppress ArgumentTypeCoercion Periods are necessarily positive */
         return new self(
             $fulfill,
             $halt,
-            Sequence::of(
+            $retries ?? Sequence::of(
                 Period::millisecond((int) (\exp(0) * 100.0)),
                 Period::millisecond((int) (\exp(1) * 100.0)),
                 Period::millisecond((int) (\exp(2) * 100.0)),

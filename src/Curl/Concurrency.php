@@ -26,13 +26,13 @@ final class Concurrency
     private Sequence $scheduled;
     /** @var \WeakMap<Scheduled, Either<Errors, Success>> */
     private \WeakMap $finished;
-    /** @var ?positive-int */
+    /** @var ?int<1, max> */
     private ?int $maxConcurrency;
 
     /**
      * @psalm-mutation-free
      *
-     * @param ?positive-int $maxConcurrency
+     * @param ?int<1, max> $maxConcurrency
      */
     private function __construct(?int $maxConcurrency = null)
     {
@@ -45,7 +45,7 @@ final class Concurrency
     /**
      * @psalm-mutation-free
      *
-     * @param ?positive-int $maxConcurrency
+     * @param ?int<1, max> $maxConcurrency
      */
     public static function new(?int $maxConcurrency = null): self
     {

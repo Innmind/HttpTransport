@@ -17,7 +17,7 @@ use Innmind\Http\{
 final class Timeout implements Custom
 {
     /**
-     * @param positive-int $seconds
+     * @param int<1, max> $seconds
      */
     private function __construct(
         private int $seconds,
@@ -27,7 +27,7 @@ final class Timeout implements Custom
     /**
      * @psalm-pure
      *
-     * @param positive-int $seconds
+     * @param int<1, max> $seconds
      */
     public static function of(int $seconds): self
     {
@@ -35,7 +35,7 @@ final class Timeout implements Custom
     }
 
     /**
-     * @return positive-int
+     * @return int<1, max>
      */
     public function seconds(): int
     {
