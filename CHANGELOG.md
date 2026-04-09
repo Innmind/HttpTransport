@@ -1,5 +1,11 @@
 # Changelog
 
+## [Unreleased]
+
+### Added
+
+- `Innmind\HttpTransport\Transport::exponentialBackoff()` now accepts a third parameter to specify the retry periods
+
 ## 9.0.0 - 2026-02-01
 
 ### Added
