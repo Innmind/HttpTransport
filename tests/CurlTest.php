@@ -498,16 +498,17 @@ class CurlTest extends TestCase
         $this->assertSame($initialCount, \count(\get_resources('stream')));
     }
 
+    #[\PHPUnit\Framework\Attributes\Group('wip')]
     public function testTimeout()
     {
+        $userAgent = Header::of('User-Agent', Value::of('Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.5.2 Safari/605.1.15'));
+
         foreach (['bin', 'bun'] as $server) {
             $request = Request::of(
                 Url::of("https://http$server.org/delay/2"),
                 Method::get,
                 ProtocolVersion::v11,
-                Headers::of(
-                    Header::of('User-Agent', Value::of('Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.5.2 Safari/605.1.15')),
-                )
+                Headers::of($userAgent),
             );
 
             $result = ($this->curl)($request)->match(
@@ -528,6 +529,7 @@ class CurlTest extends TestCase
             ProtocolVersion::v11,
             Headers::of(
                 Timeout::of(1),
+                $userAgent,
             ),
         );
 
