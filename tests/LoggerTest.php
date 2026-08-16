@@ -18,7 +18,10 @@ use Innmind\Http\{
 };
 use Innmind\Url\Url;
 use Psr\Log\NullLogger;
-use Innmind\BlackBox\PHPUnit\Framework\TestCase;
+use Innmind\BlackBox\PHPUnit\Framework\{
+    TestCase,
+    Attributes\Group,
+};
 
 class LoggerTest extends TestCase
 {
@@ -32,6 +35,8 @@ class LoggerTest extends TestCase
         );
     }
 
+    #[Group('local')]
+    #[Group('ci')]
     public function testFulfill()
     {
         $request = Request::of(

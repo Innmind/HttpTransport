@@ -24,10 +24,15 @@ use Innmind\Time\{
     Period,
 };
 use Innmind\Immutable\Either;
-use Innmind\BlackBox\PHPUnit\Framework\TestCase;
+use Innmind\BlackBox\PHPUnit\Framework\{
+    TestCase,
+    Attributes\Group,
+};
 
 class CircuitBreakerTest extends TestCase
 {
+    #[Group('local')]
+    #[Group('ci')]
     public function testDoesntOpenCircuitOnSuccessfulResponse()
     {
         $request = Request::of(
@@ -51,6 +56,8 @@ class CircuitBreakerTest extends TestCase
         $this->assertEquals($expected, $fulfill($request));
     }
 
+    #[Group('local')]
+    #[Group('ci')]
     public function testDoesntOpenCircuitOnRedirectionResponse()
     {
         $request = Request::of(
@@ -74,6 +81,8 @@ class CircuitBreakerTest extends TestCase
         $this->assertEquals($expected, $fulfill($request));
     }
 
+    #[Group('local')]
+    #[Group('ci')]
     public function testDoesntOpenCircuitOnClientErrorResponse()
     {
         $request = Request::of(
@@ -97,6 +106,8 @@ class CircuitBreakerTest extends TestCase
         $this->assertEquals($expected, $fulfill($request));
     }
 
+    #[Group('local')]
+    #[Group('ci')]
     public function testOpenCircuitOnServerError()
     {
         $request = Request::of(
@@ -125,6 +136,8 @@ class CircuitBreakerTest extends TestCase
         ));
     }
 
+    #[Group('local')]
+    #[Group('ci')]
     public function testOpenCircuitOnConnectionFailure()
     {
         $request = Request::of(
@@ -149,6 +162,8 @@ class CircuitBreakerTest extends TestCase
         ));
     }
 
+    #[Group('local')]
+    #[Group('ci')]
     public function testOpenCircuitOnlyForTheDomainThatFailed()
     {
         $request1 = Request::of(
@@ -185,6 +200,8 @@ class CircuitBreakerTest extends TestCase
         $this->assertEquals($expected2, $fulfill($request2));
     }
 
+    #[Group('local')]
+    #[Group('ci')]
     public function testRecloseTheCircuitAfterTheSpecifiedDelay()
     {
         $request = Request::of(

@@ -17,6 +17,8 @@ use Innmind\BlackBox\PHPUnit\Framework\TestCase;
 
 class SuccessTest extends TestCase
 {
+    #[Group('local')]
+    #[Group('ci')]
     public function testAcceptSuccessfulResponses()
     {
         $_ = Sequence::of(...StatusCode::cases())
@@ -38,6 +40,8 @@ class SuccessTest extends TestCase
             });
     }
 
+    #[Group('local')]
+    #[Group('ci')]
     public function testRejectOtherKindOfResponse()
     {
         $_ = Sequence::of(...StatusCode::cases())

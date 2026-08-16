@@ -13,10 +13,15 @@ use Innmind\Http\{
 };
 use Innmind\Url\Url;
 use Innmind\Immutable\Sequence;
-use Innmind\BlackBox\PHPUnit\Framework\TestCase;
+use Innmind\BlackBox\PHPUnit\Framework\{
+    TestCase,
+    Attributes\Group,
+};
 
 class RedirectionTest extends TestCase
 {
+    #[Group('local')]
+    #[Group('ci')]
     public function testAcceptRedirectionfulResponses()
     {
         $_ = Sequence::of(...StatusCode::cases())
@@ -38,6 +43,8 @@ class RedirectionTest extends TestCase
             });
     }
 
+    #[Group('local')]
+    #[Group('ci')]
     public function testRejectOtherKindOfResponse()
     {
         $_ = Sequence::of(...StatusCode::cases())

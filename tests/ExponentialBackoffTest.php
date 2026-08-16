@@ -31,10 +31,15 @@ use Innmind\Immutable\{
     Attempt,
     SideEffect,
 };
-use Innmind\BlackBox\PHPUnit\Framework\TestCase;
+use Innmind\BlackBox\PHPUnit\Framework\{
+    TestCase,
+    Attributes\Group,
+};
 
 class ExponentialBackoffTest extends TestCase
 {
+    #[Group('local')]
+    #[Group('ci')]
     public function testDoesntRetryWhenInformationResponseOnFirstCall()
     {
         $request = Request::of(
@@ -56,6 +61,8 @@ class ExponentialBackoffTest extends TestCase
         $this->assertEquals($expected, $fulfill($request));
     }
 
+    #[Group('local')]
+    #[Group('ci')]
     public function testDoesntRetryWhenSuccessfulResponseOnFirstCall()
     {
         $request = Request::of(
@@ -77,6 +84,8 @@ class ExponentialBackoffTest extends TestCase
         $this->assertEquals($expected, $fulfill($request));
     }
 
+    #[Group('local')]
+    #[Group('ci')]
     public function testDoesntRetryWhenRedirectionResponseOnFirstCall()
     {
         $request = Request::of(
@@ -98,6 +107,8 @@ class ExponentialBackoffTest extends TestCase
         $this->assertEquals($expected, $fulfill($request));
     }
 
+    #[Group('local')]
+    #[Group('ci')]
     public function testDoesntRetryWhenClientErrorResponseOnFirstCall()
     {
         $request = Request::of(
@@ -119,6 +130,8 @@ class ExponentialBackoffTest extends TestCase
         $this->assertEquals($expected, $fulfill($request));
     }
 
+    #[Group('local')]
+    #[Group('ci')]
     public function testDoesntRetryWhenMalformedResponseOnFirstCall()
     {
         $request = Request::of(
@@ -136,6 +149,8 @@ class ExponentialBackoffTest extends TestCase
         $this->assertEquals($expected, $fulfill($request));
     }
 
+    #[Group('local')]
+    #[Group('ci')]
     public function testDoesntRetryWhenFailureOnFirstCall()
     {
         $request = Request::of(
@@ -153,6 +168,8 @@ class ExponentialBackoffTest extends TestCase
         $this->assertEquals($expected, $fulfill($request));
     }
 
+    #[Group('local')]
+    #[Group('ci')]
     public function testRetryWhileThereIsStillATooManyRequestsError()
     {
         $request = Request::of(
@@ -195,6 +212,8 @@ class ExponentialBackoffTest extends TestCase
         $this->assertSame(12, $calls);
     }
 
+    #[Group('local')]
+    #[Group('ci')]
     public function testRetryWhileThereIsStillAServerError()
     {
         $request = Request::of(
@@ -237,6 +256,8 @@ class ExponentialBackoffTest extends TestCase
         $this->assertSame(12, $calls);
     }
 
+    #[Group('local')]
+    #[Group('ci')]
     public function testRetryWhileThereIsStillAConnectionFailure()
     {
         $request = Request::of(
@@ -275,6 +296,8 @@ class ExponentialBackoffTest extends TestCase
         $this->assertSame(12, $calls);
     }
 
+    #[Group('local')]
+    #[Group('ci')]
     public function testStopRetryingWhenNoLongerReceivingAServerError()
     {
         $request = Request::of(
@@ -317,6 +340,8 @@ class ExponentialBackoffTest extends TestCase
         $this->assertSame(2, $calls);
     }
 
+    #[Group('local')]
+    #[Group('ci')]
     public function testByDefaultRetriesFiveTimesByUsingAPowerOfE()
     {
         $request = Request::of(
