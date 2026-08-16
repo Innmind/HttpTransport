@@ -43,6 +43,7 @@ use Innmind\Immutable\{
 };
 use Innmind\BlackBox\{
     PHPUnit\Framework\TestCase,
+    PHPUnit\Framework\Attributes\Group,
     PHPUnit\BlackBox,
     Set,
 };
@@ -58,6 +59,8 @@ class CurlTest extends TestCase
         $this->curl = Transport::curl(Clock::live());
     }
 
+    #[Group('local')]
+    #[Group('ci')]
     public function testOkResponse()
     {
         $success = ($this->curl)(Request::of(
@@ -83,6 +86,8 @@ class CurlTest extends TestCase
         );
     }
 
+    #[Group('local')]
+    #[Group('ci')]
     public function testRedirection()
     {
         $redirection = ($this->curl)(Request::of(
@@ -109,6 +114,8 @@ class CurlTest extends TestCase
         );
     }
 
+    #[Group('local')]
+    #[Group('ci')]
     public function testClientError()
     {
         $error = ($this->curl)(Request::of(
@@ -135,6 +142,8 @@ class CurlTest extends TestCase
         );
     }
 
+    #[Group('local')]
+    #[Group('ci')]
     public function testFailure()
     {
         $error = ($this->curl)($request = Request::of(
@@ -157,6 +166,8 @@ class CurlTest extends TestCase
         );
     }
 
+    #[Group('local')]
+    #[Group('ci')]
     public function testResponseBody()
     {
         $success = ($this->curl)(Request::of(
@@ -208,6 +219,8 @@ class CurlTest extends TestCase
         );
     }
 
+    #[Group('local')]
+    #[Group('ci')]
     public function testHead()
     {
         $success = ($this->curl)(Request::of(
@@ -227,6 +240,8 @@ class CurlTest extends TestCase
         );
     }
 
+    #[Group('local')]
+    #[Group('ci')]
     public function testPost(): BlackBox\Proof
     {
         return $this
@@ -268,6 +283,8 @@ class CurlTest extends TestCase
             });
     }
 
+    #[Group('local')]
+    #[Group('ci')]
     public function testPostLargeContent()
     {
         // The file is a bit more than 2Mo, so if everything was kept in memory
@@ -304,6 +321,8 @@ class CurlTest extends TestCase
             ->megaBytes(3);
     }
 
+    #[Group('local')]
+    #[Group('ci')]
     public function testMinorVersionOfProtocolMayNotBePresent()
     {
         // Packagist respond with HTTP/2 instead of HTTP/2.0
@@ -320,6 +339,8 @@ class CurlTest extends TestCase
         $this->assertSame(ProtocolVersion::v20, $success->protocolVersion());
     }
 
+    #[Group('local')]
+    #[Group('ci')]
     public function testConcurrency()
     {
         $request = Request::of(
@@ -355,6 +376,8 @@ class CurlTest extends TestCase
             ->seconds((int) \ceil(2 * $forOneRequest));
     }
 
+    #[Group('local')]
+    #[Group('ci')]
     public function testMaxConcurrency()
     {
         $curl = $this->curl->map(static fn($config) => $config->limitConcurrencyTo(1));
@@ -395,6 +418,8 @@ class CurlTest extends TestCase
             ->seconds((int) (2 * $forOneRequest));
     }
 
+    #[Group('local')]
+    #[Group('ci')]
     public function testHeartbeat()
     {
         $heartbeat = 0;
@@ -419,6 +444,8 @@ class CurlTest extends TestCase
         $this->assertGreaterThan(1, $heartbeat);
     }
 
+    #[Group('local')]
+    #[Group('ci')]
     public function testOutOfOrderUnwrapWithMaxConcurrency()
     {
         $curl = $this->curl->map(static fn($config) => $config->limitConcurrencyTo(2));
@@ -444,6 +471,8 @@ class CurlTest extends TestCase
         );
     }
 
+    #[Group('local')]
+    #[Group('ci')]
     public function testSubsequentRequestsAreCalledCorrectlyInsideFlatMaps()
     {
         $curl = $this->curl->map(static fn($config) => $config->limitConcurrencyTo(2));
@@ -471,6 +500,8 @@ class CurlTest extends TestCase
         );
     }
 
+    #[Group('local')]
+    #[Group('ci')]
     public function testReleaseResources()
     {
         $initialCount = \count(\get_resources('stream'));
@@ -496,6 +527,7 @@ class CurlTest extends TestCase
         $this->assertSame($initialCount, \count(\get_resources('stream')));
     }
 
+    #[Group('local')]
     public function testTimeout()
     {
         foreach (['bin', 'bun'] as $server) {

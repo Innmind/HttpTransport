@@ -7,9 +7,12 @@ jobs:
     uses: innmind/github-workflows/.github/workflows/black-box-matrix.yml@main
     with:
       scenarii: 20
+      tags: ci
   coverage:
     uses: innmind/github-workflows/.github/workflows/coverage-matrix.yml@main
     secrets: inherit
+    with:
+      tags: ci
   psalm:
     uses: innmind/github-workflows/.github/workflows/psalm-matrix.yml@main
   cs:
