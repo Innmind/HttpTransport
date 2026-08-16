@@ -2,7 +2,10 @@
     "name": "innmind/http-transport",
     "type": "library",
     "description": "Library to fulfill http resquest",
-    "keywords": ["http", "client"],
+    "keywords": [
+        "http",
+        "client"
+    ],
     "homepage": "http://github.com/Innmind/HttpTransport",
     "license": "MIT",
     "authors": [
