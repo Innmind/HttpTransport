@@ -31,6 +31,7 @@ use Innmind\Url\{
 use Innmind\Immutable\Either;
 use Innmind\BlackBox\{
     PHPUnit\Framework\TestCase,
+    PHPUnit\Framework\Attributes\Group,
     PHPUnit\BlackBox,
     Set,
 };
@@ -40,6 +41,8 @@ class FollowRedirectionsTest extends TestCase
 {
     use BlackBox;
 
+    #[Group('local')]
+    #[Group('ci')]
     public function testDoesntModifyNonRedirectionResults(): BlackBox\Proof
     {
         $request = Request::of(
@@ -98,6 +101,8 @@ class FollowRedirectionsTest extends TestCase
             });
     }
 
+    #[Group('local')]
+    #[Group('ci')]
     public function testRedirectMaximum5Times(): BlackBox\Proof
     {
         return $this
@@ -155,6 +160,8 @@ class FollowRedirectionsTest extends TestCase
             });
     }
 
+    #[Group('local')]
+    #[Group('ci')]
     public function testDoesntRedirectWhenNoLocationHeader(): BlackBox\Proof
     {
         return $this
@@ -196,6 +203,8 @@ class FollowRedirectionsTest extends TestCase
             });
     }
 
+    #[Group('local')]
+    #[Group('ci')]
     public function testRedirectSeeOther(): BlackBox\Proof
     {
         return $this
@@ -270,6 +279,8 @@ class FollowRedirectionsTest extends TestCase
             });
     }
 
+    #[Group('local')]
+    #[Group('ci')]
     public function testRedirect(): BlackBox\Proof
     {
         return $this
@@ -350,6 +361,8 @@ class FollowRedirectionsTest extends TestCase
             });
     }
 
+    #[Group('local')]
+    #[Group('ci')]
     public function testDoesntRedirectUnsafeMethods(): BlackBox\Proof
     {
         return $this
