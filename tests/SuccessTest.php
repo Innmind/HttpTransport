@@ -13,7 +13,10 @@ use Innmind\Http\{
 };
 use Innmind\Url\Url;
 use Innmind\Immutable\Sequence;
-use Innmind\BlackBox\PHPUnit\Framework\TestCase;
+use Innmind\BlackBox\PHPUnit\Framework\{
+    TestCase,
+    Attributes\Group,
+};
 
 class SuccessTest extends TestCase
 {
