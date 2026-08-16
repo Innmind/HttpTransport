@@ -10,3 +10,5 @@ on:
 jobs:
   blackbox:
     uses: innmind/github-workflows/.github/workflows/extensive.yml@main
+    with:
+      tags: ci
