@@ -1,5 +1,15 @@
 # Changelog
 
+## [Unreleased]
+
+### Added
+
+- Internal `Innmind\HttpTransport\Config::asAsync()`
+
+### Deprecated
+
+- `Innmind\HttpTransport\Transport::async()`
+
 ## 9.2.0 - 2026-08-16
 
 ### Changed

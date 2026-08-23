@@ -4,6 +4,7 @@ declare(strict_types = 1);
 namespace Innmind\HttpTransport\Transport;
 
 use Innmind\HttpTransport\{
+    Config,
     Success,
     ServerError,
     ConnectionFailed,
@@ -78,12 +79,26 @@ final class CircuitBreaker implements Implementation
     #[\Override]
     public function map(callable $map): self
     {
+        $fulfill = $this->fulfill->map($map);
+
         return new self(
-            $this->fulfill->map($map),
-            $this->clock,
+            $fulfill,
+            $fulfill->config()->async()->match(
+                static fn($async) => $async->clock(),
+                fn() => $this->clock,
+            ),
             $this->delayBeforeRetry,
             Map::of(),
         );
+    }
+
+    /**
+     * @psalm-mutation-free
+     */
+    #[\Override]
+    public function config(): Config
+    {
+        return $this->fulfill->config();
     }
 
     private function open(

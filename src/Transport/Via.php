@@ -5,6 +5,7 @@ namespace Innmind\HttpTransport\Transport;
 
 use Innmind\HttpTransport\Success;
 use Innmind\Http\Request;
+use Innmind\HttpTransport\Config;
 use Innmind\Immutable\Either;
 
 /**
@@ -18,6 +19,7 @@ final class Via implements Implementation
      */
     private function __construct(
         private \Closure $fulfill,
+        private ?Config $config,
     ) {
     }
 
@@ -33,7 +35,7 @@ final class Via implements Implementation
     public static function of(callable $fulfill): self
     {
         // todo support exposing a Config to the callable ?
-        return new self(\Closure::fromCallable($fulfill));
+        return new self(\Closure::fromCallable($fulfill), null);
     }
 
     /**
@@ -42,6 +44,19 @@ final class Via implements Implementation
     #[\Override]
     public function map(callable $map): self
     {
-        return $this;
+        /** @psalm-suppress ImpureFunctionCall */
+        return new self(
+            $this->fulfill,
+            $map($this->config()),
+        );
+    }
+
+    /**
+     * @psalm-mutation-free
+     */
+    #[\Override]
+    public function config(): Config
+    {
+        return $this->config ?? Config::new();
     }
 }
