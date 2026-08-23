@@ -1,8 +1,15 @@
 <?php
 declare(strict_types = 1);
 
-namespace Innmind\HttpTransport;
+namespace Innmind\HttpTransport\Transport;
 
+use Innmind\HttpTransport\{
+    Success,
+    Information,
+    Redirection,
+    ClientError,
+    ServerError,
+};
 use Innmind\Http\{
     Request,
     Response,

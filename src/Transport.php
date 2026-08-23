@@ -3,6 +3,15 @@ declare(strict_types = 1);
 
 namespace Innmind\HttpTransport;
 
+use Innmind\HttpTransport\Transport\{
+    Implementation,
+    Curl,
+    CircuitBreaker,
+    ExponentialBackoff,
+    FollowRedirections,
+    Logger,
+    Via,
+};
 use Innmind\Http\Request;
 use Innmind\IO\IO;
 use Innmind\Time\{
