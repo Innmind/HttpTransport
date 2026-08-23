@@ -81,9 +81,14 @@ final class ExponentialBackoff implements Implementation
     #[\Override]
     public function map(callable $map): self
     {
+        $fulfill = $this->fulfill->map($map);
+
         return self::of(
-            $this->fulfill->map($map),
-            $this->halt,
+            $fulfill,
+            $fulfill->config()->async()->match(
+                static fn($async) => $async->halt(),
+                fn() => $this->halt,
+            ),
         );
     }
 
