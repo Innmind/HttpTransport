@@ -95,6 +95,7 @@ final class Transport
 
     /**
      * @internal
+     * @deprecated
      *
      * @param callable(): void $heartbeat
      */
