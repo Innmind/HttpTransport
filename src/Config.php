@@ -3,7 +3,13 @@ declare(strict_types = 1);
 
 namespace Innmind\HttpTransport;
 
+use Innmind\HttpTransport\Config\Async;
+use Innmind\IO\IO;
 use Innmind\Url\Url;
+use Innmind\Time\{
+    Clock,
+    Halt,
+};
 use Innmind\Immutable\Maybe;
 
 /**
@@ -14,11 +20,13 @@ final class Config
     /**
      * @param Maybe<int<1, max>> $maxConcurrency
      * @param Maybe<Url> $proxy
+     * @param Maybe<Async> $async,
      */
     private function __construct(
         private Maybe $maxConcurrency,
         private bool $verifySSL,
         private Maybe $proxy,
+        private Maybe $async,
     ) {
     }
 
@@ -31,11 +39,14 @@ final class Config
         $maxConcurrency = Maybe::nothing();
         /** @var Maybe<Url> */
         $proxy = Maybe::nothing();
+        /** @var Maybe<Async> */
+        $async = Maybe::nothing();
 
         return new self(
             $maxConcurrency,
             true,
             $proxy,
+            $async,
         );
     }
 
@@ -49,6 +60,7 @@ final class Config
             Maybe::just($max),
             $this->verifySSL,
             $this->proxy,
+            $this->async,
         );
     }
 
@@ -63,6 +75,7 @@ final class Config
             $this->maxConcurrency,
             false,
             $this->proxy,
+            $this->async,
         );
     }
 
@@ -73,6 +86,25 @@ final class Config
             $this->maxConcurrency,
             $this->verifySSL,
             Maybe::just($proxy),
+            $this->async,
+        );
+    }
+
+    #[\NoDiscard]
+    public function asAsync(
+        Clock $clock,
+        Halt $halt,
+        IO $io,
+    ): self {
+        return new self(
+            $this->maxConcurrency,
+            $this->verifySSL,
+            $this->proxy,
+            Maybe::just(new Async(
+                $clock,
+                $halt,
+                $io,
+            )),
         );
     }
 
@@ -102,5 +134,15 @@ final class Config
     public function proxy(): Maybe
     {
         return $this->proxy;
+    }
+
+    /**
+     * @internal
+     *
+     * @return Maybe<Async>
+     */
+    public function async(): Maybe
+    {
+        return $this->async;
     }
 }

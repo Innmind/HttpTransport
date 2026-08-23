@@ -2,6 +2,10 @@
 
 ## [Unreleased]
 
+### Added
+
+- Internal `Innmind\HttpTransport\Config::asAsync()`
+
 ### Deprecated
 
 - `Innmind\HttpTransport\Transport::async()`

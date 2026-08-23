@@ -114,13 +114,25 @@ final class Curl implements Implementation
         return new self(
             $config,
             $this->headerFactory,
-            $this->io,
+            $config->async()->match(
+                static fn($async) => $async->io(),
+                fn() => $this->io,
+            ),
             Concurrency::new($config->maxConcurrency()->match(
                 static fn($max) => $max,
                 static fn() => null,
             )),
-            $this->timeout,
-            $this->heartbeat,
+            $config->async()->match(
+                static fn() => Period::millisecond(10), // this is blocking the active task so it needs to be low
+                fn() => $this->timeout,
+            ),
+            $config
+                ->async()
+                ->map(static fn($async) => $async->halt())
+                ->match(
+                    static fn($halt) => static fn() => $halt(Period::millisecond(1))->unwrap(), // this allows to jump between tasks
+                    fn() => $this->heartbeat,
+                ),
             !$config->verifySSL(),
             $config->proxy()->match(
                 static fn($proxy) => $proxy,
