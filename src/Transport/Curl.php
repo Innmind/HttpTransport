@@ -140,4 +140,13 @@ final class Curl implements Implementation
             ),
         );
     }
+
+    /**
+     * @psalm-mutation-free
+     */
+    #[\Override]
+    public function config(): Config
+    {
+        return $this->config;
+    }
 }

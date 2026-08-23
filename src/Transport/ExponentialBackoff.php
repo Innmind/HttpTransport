@@ -4,6 +4,7 @@ declare(strict_types = 1);
 namespace Innmind\HttpTransport\Transport;
 
 use Innmind\HttpTransport\{
+    Config,
     Success,
     Information,
     Redirection,
@@ -84,6 +85,15 @@ final class ExponentialBackoff implements Implementation
             $this->fulfill->map($map),
             $this->halt,
         );
+    }
+
+    /**
+     * @psalm-mutation-free
+     */
+    #[\Override]
+    public function config(): Config
+    {
+        return $this->fulfill->config();
     }
 
     /**

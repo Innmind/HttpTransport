@@ -4,6 +4,7 @@ declare(strict_types = 1);
 namespace Innmind\HttpTransport\Transport;
 
 use Innmind\HttpTransport\{
+    Config,
     Success,
     ServerError,
     ConnectionFailed,
@@ -84,6 +85,15 @@ final class CircuitBreaker implements Implementation
             $this->delayBeforeRetry,
             Map::of(),
         );
+    }
+
+    /**
+     * @psalm-mutation-free
+     */
+    #[\Override]
+    public function config(): Config
+    {
+        return $this->fulfill->config();
     }
 
     private function open(

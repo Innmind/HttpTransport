@@ -4,6 +4,7 @@ declare(strict_types = 1);
 namespace Innmind\HttpTransport\Transport;
 
 use Innmind\HttpTransport\{
+    Config,
     Success,
     Redirection,
 };
@@ -57,6 +58,15 @@ final class FollowRedirections implements Implementation
     public function map(callable $map): self
     {
         return self::of($this->fulfill->map($map));
+    }
+
+    /**
+     * @psalm-mutation-free
+     */
+    #[\Override]
+    public function config(): Config
+    {
+        return $this->fulfill->config();
     }
 
     /**

@@ -5,6 +5,7 @@ namespace Innmind\HttpTransport\Transport;
 
 use Innmind\HttpTransport\Success;
 use Innmind\Http\Request;
+use Innmind\HttpTransport\Config;
 use Innmind\Immutable\Either;
 
 /**
@@ -43,5 +44,14 @@ final class Via implements Implementation
     public function map(callable $map): self
     {
         return $this;
+    }
+
+    /**
+     * @psalm-mutation-free
+     */
+    #[\Override]
+    public function config(): Config
+    {
+        return Config::new();
     }
 }

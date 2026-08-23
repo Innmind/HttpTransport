@@ -36,4 +36,10 @@ interface Implementation
      */
     #[\NoDiscard]
     public function map(callable $map): self;
+
+    /**
+     * @psalm-mutation-free
+     */
+    #[\NoDiscard]
+    public function config(): Config;
 }
