@@ -1,7 +1,7 @@
 <?php
 declare(strict_types = 1);
 
-namespace Innmind\HttpTransport\Curl;
+namespace Innmind\HttpTransport\Transport\Curl;
 
 use Innmind\HttpTransport\{
     Transport,

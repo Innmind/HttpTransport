@@ -1,11 +1,12 @@
 <?php
 declare(strict_types = 1);
 
-namespace Innmind\HttpTransport;
+namespace Innmind\HttpTransport\Transport;
 
-use Innmind\HttpTransport\Curl\{
-    Scheduled,
-    Concurrency
+use Innmind\HttpTransport\{
+    Config,
+    Transport\Curl\Scheduled,
+    Transport\Curl\Concurrency,
 };
 use Innmind\Http\{
     Request,
